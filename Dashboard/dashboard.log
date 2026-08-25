@@ -37,3 +37,9 @@
  GET /login 200 in 301ms
  GET /users 200 in 181ms
  GET /login 200 in 84ms
+ ○ Compiling /orders ...
+ ✓ Compiled /orders in 5.3s (962 modules)
+ ✓ Compiled in 5.8s (962 modules)
+ ✓ Compiled in 1621ms (957 modules)
+ ✓ Compiled in 1262ms (485 modules)
+ ✓ Compiled in 1180ms (485 modules)

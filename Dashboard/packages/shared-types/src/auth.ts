@@ -255,13 +255,12 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'profile:view', 'profile:edit',
   ],
 
-  // STAFF_MANAGER: manages users below manager (sales/support/content/
-  // customers), can view Staff and Settings. Cannot touch Manager/Admin/
-  // Super Admin roles, and has no role/permission administration.
+  // STAFF_MANAGER: inventory/business operations. Can VIEW users below
+  // manager but cannot add users or assign roles — that is admin-only.
   STAFF_MANAGER: [
     'dashboard:view',
-    // Users (manage below manager only)
-    'users:view', 'users:create', 'users:edit', 'users:delete',
+    // Users (view only — no create/edit/delete, no role assignment)
+    'users:view',
     // Staff (view)
     'staff:view',
     // Settings (view)
@@ -328,3 +327,63 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   RETAIL_CUSTOMER: ['profile:view', 'profile:edit'],
   WHOLESALE_CUSTOMER: ['profile:view', 'profile:edit'],
 };
+
+/**
+ * Which roles each actor may ADD (create) via the Add User / Add Staff flows.
+ * Actors absent from this map cannot create users at all.
+ *
+ *  - Super Admin / Admin / Staff Admin: any role except Super Admin
+ *  - Manager (incl. Staff Manager): Customer Support, Inventory Manager,
+ *    Sales, Content Manager
+ *  - Sales (incl. Staff Sales): Customer Support, Inventory Manager
+ */
+export const USER_CREATION_ALLOWED_TARGETS: Partial<Record<Role, Role[]>> = {
+  SUPER_ADMIN: [
+    'ADMIN', 'MANAGER', 'SALES', 'INVENTORY_MANAGER', 'CONTENT_MANAGER',
+    'CUSTOMER_SUPPORT', 'STAFF_ADMIN', 'STAFF_MANAGER', 'STAFF_SALES',
+    'STAFF_SUPPORT', 'RETAIL_CUSTOMER', 'WHOLESALE_CUSTOMER',
+  ],
+  ADMIN: [
+    'MANAGER', 'SALES', 'INVENTORY_MANAGER', 'CONTENT_MANAGER',
+    'CUSTOMER_SUPPORT', 'STAFF_MANAGER', 'STAFF_SALES', 'STAFF_SUPPORT',
+  ],
+  STAFF_ADMIN: [
+    'MANAGER', 'SALES', 'INVENTORY_MANAGER', 'CONTENT_MANAGER',
+    'CUSTOMER_SUPPORT', 'STAFF_MANAGER', 'STAFF_SALES', 'STAFF_SUPPORT',
+  ],
+  MANAGER: [
+    'CUSTOMER_SUPPORT', 'STAFF_SUPPORT', 'INVENTORY_MANAGER',
+    'SALES', 'STAFF_SALES', 'CONTENT_MANAGER',
+  ],
+  STAFF_MANAGER: [
+    'CUSTOMER_SUPPORT', 'STAFF_SUPPORT', 'INVENTORY_MANAGER',
+    'SALES', 'STAFF_SALES', 'CONTENT_MANAGER',
+  ],
+  SALES: ['CUSTOMER_SUPPORT', 'STAFF_SUPPORT', 'INVENTORY_MANAGER'],
+  STAFF_SALES: ['CUSTOMER_SUPPORT', 'STAFF_SUPPORT', 'INVENTORY_MANAGER'],
+};
+
+/** Roles an actor may pick when adding a user/staff member. */
+export function creatableRolesFor(role: Role | undefined | null): Role[] {
+  if (!role) return [];
+  return USER_CREATION_ALLOWED_TARGETS[role] ?? [];
+}
+
+/** Whether the actor can add users / staff members at all. */
+export function canCreateUsers(role: Role | undefined | null): boolean {
+  return creatableRolesFor(role).length > 0;
+}
+
+/**
+ * Who may use the "Add Staff" action on the Staff screen. Same actors that
+ * can create users, EXCEPT inventory managers — they never get Add Staff.
+ */
+const ADD_STAFF_ROLES: Role[] = [
+  'SUPER_ADMIN', 'ADMIN', 'STAFF_ADMIN',
+  'MANAGER', 'STAFF_MANAGER',
+  'SALES', 'STAFF_SALES',
+];
+
+export function canAddStaff(role: Role | undefined | null): boolean {
+  return !!role && ADD_STAFF_ROLES.includes(role);
+}

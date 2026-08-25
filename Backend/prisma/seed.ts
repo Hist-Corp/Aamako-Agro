@@ -41,6 +41,31 @@ async function main() {
       role: Role.CONTENT_MANAGER,
     },
   });
+  // Inventory manager: inventory@aamako.agro / Inventory123!
+  await prisma.user.upsert({
+    where: { email: 'inventory@aamako.agro' },
+    update: {},
+    create: {
+      email: 'inventory@aamako.agro',
+      passwordHash: await bcrypt.hash('Inventory123!', 12),
+      firstName: 'Gita',
+      lastName: 'Inventory',
+      role: Role.STAFF_MANAGER,
+    },
+  });
+
+  // Customer support: support@aamako.agro / Support123!
+  await prisma.user.upsert({
+    where: { email: 'support@aamako.agro' },
+    update: {},
+    create: {
+      email: 'support@aamako.agro',
+      passwordHash: await bcrypt.hash('Support123!', 12),
+      firstName: 'Rita',
+      lastName: 'Support',
+      role: Role.STAFF_SUPPORT,
+    },
+  });
 
   const tiers = Object.values(Tier);
   for (const [i, tier] of tiers.entries()) {

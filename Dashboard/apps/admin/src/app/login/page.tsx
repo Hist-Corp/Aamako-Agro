@@ -170,9 +170,6 @@ export default function LoginPage() {
               Sign in as {ROLES.find(r => r.value === selectedRole)?.label}
             </Button>
 
-            <p className="text-center text-xs text-surface-500 mt-2">
-              Demo mode — any email/password works
-            </p>
           </form>
         </div>
 

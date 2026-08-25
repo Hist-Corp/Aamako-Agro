@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import type { User, Role } from '@aamako/shared-types';
+import { creatableRolesFor } from '@aamako/shared-types';
 import { Users, Plus, Shield, ShieldCheck } from 'lucide-react';
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
@@ -53,26 +54,12 @@ const ROLE_BADGE_VARIANT: Record<Role, string> = {
 };
 
 /** Screen: Users Management
- *  Can view: SUPER_ADMIN, ADMIN
- *  Can create/edit: SUPER_ADMIN, ADMIN
- *  Can assign roles: SUPER_ADMIN only
+ *  Can view: SUPER_ADMIN, ADMIN, MANAGER, SALES (via users:view)
+ *  Can add users / assign roles: driven by USER_CREATION_ALLOWED_TARGETS
+ *  in @aamako/shared-types — Super Admin/Admin/Staff Admin (any role),
+ *  Manager (support, inventory mgr, sales, content mgr),
+ *  Sales (support, inventory mgr).
  */
-/** Authority ranking used to limit which roles a user may assign when adding users. */
-const ROLE_RANK: Record<Role, number> = {
-  RETAIL_CUSTOMER: 0,
-  WHOLESALE_CUSTOMER: 1,
-  CONTENT_MANAGER: 1,
-  CUSTOMER_SUPPORT: 1,
-  SALES: 2,
-  INVENTORY_MANAGER: 2,
-  STAFF_SALES: 2,
-  STAFF_SUPPORT: 2,
-  MANAGER: 3,
-  STAFF_MANAGER: 3,
-  ADMIN: 4,
-  STAFF_ADMIN: 4,
-  SUPER_ADMIN: 5,
-};
 
 export default function UsersPage() {
   const { user } = useAuth();
@@ -84,19 +71,16 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState<Role>('ADMIN');
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Roles the current user may assign when adding a user:
-  // - SUPER_ADMIN is never assignable from the Add User screen
-  // - a role is only selectable if it is strictly below the actor's own rank
-  //   (e.g. an Admin cannot add another Admin)
+  // Roles the current user may assign when adding a user, from the central
+  // USER_CREATION_ALLOWED_TARGETS map (Super Admin is never assignable).
   const assignableRoleOptions = useMemo(() => {
-    const actorRank = user ? ROLE_RANK[user.role] : -1;
-    return ROLE_OPTIONS.filter(
-      (option) => option.value !== 'SUPER_ADMIN' && ROLE_RANK[option.value] < actorRank,
-    );
+    const allowed = new Set(creatableRolesFor(user?.role));
+    return ROLE_OPTIONS.filter((option) => allowed.has(option.value));
   }, [user]);
 
-  const canManage = user && canAct(user.role, 'users:edit');
   const canAssignRoles = user && canAct(user.role, 'roles:manage');
+  // Whether the actor can add users at all (admins, managers, sales).
+  const canAddUsers = creatableRolesFor(user?.role).length > 0;
   const updateRoleMutation = useUpdateUserRole();
   const { data: users, isLoading } = useUsers();
 
@@ -186,7 +170,7 @@ export default function UsersPage() {
         <span className="text-xs text-surface-500">{formatDateTime(row.original.createdAt)}</span>
       ),
     },
-    ...(canManage
+    ...(canAssignRoles
       ? [
           {
             id: 'actions' as const,
@@ -213,7 +197,7 @@ export default function UsersPage() {
           },
         ]
       : []),
-  ], [canManage, user?.id]);
+  ], [canAssignRoles, user?.id]);
 
   return (
     <div className="space-y-6">
@@ -222,7 +206,7 @@ export default function UsersPage() {
         description="Manage team members and their access"
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Users' }]}
         actions={
-          canManage ? (
+          canAddUsers ? (
             <Button
               onClick={() => {
                 setNewUser({ name: '', email: '', role: assignableRoleOptions[0]?.value ?? DEFAULT_NEW_USER_ROLE });
@@ -319,9 +303,6 @@ export default function UsersPage() {
               onChange={(e) => setNewUser({ ...newUser, role: e.target.value as Role })}
               options={assignableRoleOptions.length > 0 ? assignableRoleOptions : [{ value: 'STAFF_MANAGER' as Role, label: 'Staff Manager' }]}
             />
-            <p className="text-xs text-surface-400">
-              You can only assign roles below your own. Super Admin cannot be assigned here.
-            </p>
           </div>
         </Dialog>
       )}

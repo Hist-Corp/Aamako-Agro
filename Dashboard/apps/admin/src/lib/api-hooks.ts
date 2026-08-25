@@ -554,7 +554,24 @@ export function useUpdateUserRole() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, role }: { id: string; role: Role }) =>
-      apiClient.patch(`/admin/users/${id}`, { role }),
+      apiClient.patch(`/admin/users/${id}/role`, { role }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users }),
+  });
+}
+
+export interface CreateStaffInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName?: string;
+  role: Role;
+}
+
+export function useCreateStaff() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateStaffInput) =>
+      apiClient.post<any>('/admin/users', data),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users }),
   });
 }

@@ -18,7 +18,7 @@ import {
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
-import { MANAGEABLE_USER_ROLES, outranks } from '../common/rbac';
+import { CREATABLE_ROLES_BY_ACTOR, MANAGEABLE_USER_ROLES, outranks } from '../common/rbac';
 
 export class CreateStaffUserDto {
   @ApiProperty() @IsEmail() email!: string;
@@ -38,6 +38,16 @@ export const USER_MANAGEMENT_ROLES = [
   Role.STAFF_MANAGER,
   Role.STAFF_ADMIN,
   Role.SUPER_ADMIN,
+];
+
+/** Actors that may hit the create/assign endpoints at all; the exact target
+ * roles each actor may use are enforced per-request via
+ * CREATABLE_ROLES_BY_ACTOR. */
+const USER_CREATION_ROLES = [
+  Role.STAFF_ADMIN,
+  Role.SUPER_ADMIN,
+  Role.STAFF_MANAGER,
+  Role.STAFF_SALES,
 ];
 
 const SELECT = {
@@ -79,11 +89,13 @@ export class AdminUsersController {
   }
 
   /**
-   * Add a user. The new user's role must be strictly below the actor's rank:
-   * Sales adds customers/content-managers; Manager adds Sales; Admin adds
-   * Managers. Super Admin can never be created via this endpoint.
+   * Add a user. Allowed actors & target roles come from
+   * CREATABLE_ROLES_BY_ACTOR: Super Admin/Staff Admin can add any manageable
+   * role; Manager (STAFF_MANAGER) can add support, content, sales and
+   * inventory managers; Sales (STAFF_SALES) can add support and inventory
+   * managers. Everyone else is forbidden.
    */
-  @Roles(...USER_MANAGEMENT_ROLES)
+  @Roles(...USER_CREATION_ROLES)
   @Post()
   async create(
     @Body() dto: CreateStaffUserDto,
@@ -96,7 +108,8 @@ export class AdminUsersController {
     if (dto.role === Role.SUPER_ADMIN) {
       throw new ForbiddenException('Super Admin users cannot be created here');
     }
-    if (!outranks(actor!.role, dto.role)) {
+    const allowed = CREATABLE_ROLES_BY_ACTOR[actor!.role] ?? [];
+    if (!allowed.includes(dto.role)) {
       throw new ForbiddenException(
         `A ${actor!.role} cannot create a user with the role ${dto.role}`,
       );
@@ -132,8 +145,8 @@ export class AdminUsersController {
     return target;
   }
 
-  /** Promote / demote / reassign — new role must also be below the actor. */
-  @Roles(...USER_MANAGEMENT_ROLES)
+  /** Promote / demote / reassign — same actor/target rules as creation. */
+  @Roles(...USER_CREATION_ROLES)
   @Patch(':id/role')
   async updateRole(
     @Param('id') id: string,
@@ -144,7 +157,11 @@ export class AdminUsersController {
     if (!MANAGEABLE_USER_ROLES.includes(dto.role)) {
       throw new BadRequestException(`Role ${dto.role} cannot be assigned here`);
     }
-    if (!outranks(actor!.role, dto.role)) {
+    if (dto.role === Role.SUPER_ADMIN) {
+      throw new ForbiddenException('Super Admin cannot be assigned here');
+    }
+    const allowed = CREATABLE_ROLES_BY_ACTOR[actor!.role] ?? [];
+    if (!allowed.includes(dto.role)) {
       throw new ForbiddenException(
         `A ${actor!.role} cannot assign the role ${dto.role}`,
       );

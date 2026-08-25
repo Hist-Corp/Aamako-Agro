@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useUsers } from '@/lib/api-hooks';
+import { useUsers, useCreateStaff } from '@/lib/api-hooks';
 import { useAuth } from '@/config/auth-context';
 import { formatDateTime } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
@@ -12,7 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
+import { Dialog } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import type { User, Role } from '@aamako/shared-types';
+import { canAddStaff, creatableRolesFor } from '@aamako/shared-types';
 import { UsersRound, Plus } from 'lucide-react';
 
 const DEPARTMENT_OPTIONS = [
@@ -23,6 +26,37 @@ const DEPARTMENT_OPTIONS = [
   { value: 'Content', label: 'Content' },
   { value: 'Support', label: 'Support' },
 ];
+
+/** Which department each role belongs to (used by the department filter). */
+const ROLE_DEPARTMENT: Record<Role, string> = {
+  SUPER_ADMIN: 'Operations',
+  ADMIN: 'Operations',
+  STAFF_ADMIN: 'Operations',
+  MANAGER: 'Operations',
+  SALES: 'Sales',
+  STAFF_SALES: 'Sales',
+  INVENTORY_MANAGER: 'Inventory',
+  STAFF_MANAGER: 'Inventory',
+  CONTENT_MANAGER: 'Content',
+  CUSTOMER_SUPPORT: 'Support',
+  STAFF_SUPPORT: 'Support',
+  RETAIL_CUSTOMER: 'Operations',
+  WHOLESALE_CUSTOMER: 'Operations',
+};
+
+/** Friendly labels for the roles selectable in the Add Staff dialog. */
+const ROLE_LABELS: Partial<Record<Role, string>> = {
+  INVENTORY_MANAGER: 'Inventory Manager',
+  STAFF_MANAGER: 'Staff Manager',
+  CUSTOMER_SUPPORT: 'Customer Support',
+  STAFF_SUPPORT: 'Staff Support',
+  CONTENT_MANAGER: 'Content Manager',
+  SALES: 'Sales',
+  STAFF_SALES: 'Staff Sales',
+  MANAGER: 'Manager',
+  ADMIN: 'Admin',
+  STAFF_ADMIN: 'Staff Admin',
+};
 
 const ROLE_BADGE_VARIANT: Record<Role, string> = {
   SUPER_ADMIN: 'danger',
@@ -42,18 +76,72 @@ const ROLE_BADGE_VARIANT: Record<Role, string> = {
 };
 
 /** Screen: Staff Management
- *  Can view: SUPER_ADMIN, ADMIN, MANAGER, INVENTORY_MANAGER
- *  Can manage: SUPER_ADMIN, ADMIN, MANAGER
+ *  Can view: roles with staff:view
+ *  Can Add Staff: Super Admin, Admin, Manager, Sales — NOT inventory
+ *  managers, content managers or customer support.
  */
 export default function StaffPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
   const [departmentFilter, setDepartmentFilter] = useState('');
+  const [addDialog, setAddDialog] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newStaff, setNewStaff] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    role: '' as Role | '',
+  });
 
+  const createStaff = useCreateStaff();
   const { data: users, isLoading } = useUsers();
 
-  // Filter to staff roles (exclude SUPER_ADMIN from staff list)
-  const staffUsers = (users ?? []).filter((u) => u.role !== 'SUPER_ADMIN');
+  const creatableRoles = creatableRolesFor(user?.role);
+
+  // Filter to staff roles (exclude SUPER_ADMIN from staff list), then apply
+  // the department filter based on each role's department.
+  const staffUsers = useMemo(() => {
+    return (users ?? []).filter((u) => {
+      if (u.role === 'SUPER_ADMIN') return false;
+      if (departmentFilter && ROLE_DEPARTMENT[u.role] !== departmentFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [users, departmentFilter]);
+
+  const handleCreateStaff = async () => {
+    if (!newStaff.firstName || !newStaff.email || !newStaff.password || !newStaff.role) {
+      addToast({
+        type: 'error',
+        title: 'Missing fields',
+        description: 'First name, email, password and role are required.',
+      });
+      return;
+    }
+    setIsCreating(true);
+    try {
+      await createStaff.mutateAsync({
+        email: newStaff.email,
+        password: newStaff.password,
+        firstName: newStaff.firstName,
+        lastName: newStaff.lastName || undefined,
+        role: newStaff.role as Role,
+      });
+      addToast({
+        type: 'success',
+        title: 'Staff member added',
+        description: `${newStaff.firstName} (${newStaff.email}) added as ${ROLE_LABELS[newStaff.role] ?? newStaff.role}`,
+      });
+      setAddDialog(false);
+      setNewStaff({ firstName: '', lastName: '', email: '', password: '', role: '' });
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Failed to add staff member', description: err?.message ?? 'Unknown error' });
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const columns = useMemo<ColumnDef<User>[]>(() => [
     {
@@ -128,9 +216,16 @@ export default function StaffPage() {
         description="Manage team members and their roles"
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Staff' }]}
         actions={
-          <Button>
-            <Plus className="h-4 w-4" /> Add Staff
-          </Button>
+          canAddStaff(user?.role) ? (
+            <Button
+              onClick={() => {
+                setNewStaff((s) => ({ ...s, role: creatableRoles[0] ?? '' }));
+                setAddDialog(true);
+              }}
+            >
+              <Plus className="h-4 w-4" /> Add Staff
+            </Button>
+          ) : undefined
         }
       />
 
@@ -156,6 +251,59 @@ export default function StaffPage() {
           />
         }
       />
+
+      {/* Add Staff Dialog */}
+      {addDialog && (
+        <Dialog
+          open={addDialog}
+          onClose={() => setAddDialog(false)}
+          title="Add Staff Member"
+          description="Create a new staff account. The member can sign in immediately with the email and password you set."
+          primaryAction={{
+            label: 'Add Staff',
+            onClick: handleCreateStaff,
+            isLoading: isCreating,
+          }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="First Name"
+              value={newStaff.firstName}
+              onChange={(e) => setNewStaff({ ...newStaff, firstName: e.target.value })}
+              placeholder="Gita"
+            />
+            <Input
+              label="Last Name"
+              value={newStaff.lastName}
+              onChange={(e) => setNewStaff({ ...newStaff, lastName: e.target.value })}
+              placeholder="Shrestha"
+            />
+            <Input
+              label="Email"
+              type="email"
+              value={newStaff.email}
+              onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+              placeholder="staff@aamako.agro"
+            />
+            <Input
+              label="Temporary Password"
+              type="password"
+              value={newStaff.password}
+              onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
+              placeholder="Min. 8 characters"
+            />
+            <Select
+              label="Role"
+              value={newStaff.role}
+              onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value as Role })}
+              options={creatableRoles.map((r) => ({
+                value: r,
+                label: ROLE_LABELS[r] ?? r.replace(/_/g, ' '),
+              }))}
+            />
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }
