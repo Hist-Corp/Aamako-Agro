@@ -1,8 +1,6 @@
-#!/bin/bash
-cd "/Users/aum/Desktop/project/Aamako-Agro-Frontend"
-node server.js &
-echo "Server PID: $!"
-sleep 1
-curl -s -o /dev/null -w "HTTP %{http_code}" http://localhost:8080/index.html
-echo ""
-echo "Site ready at http://localhost:8080"
+#!/usr/bin/env bash
+# Convenience launcher for macOS/Linux only.
+# On Windows, run the equivalent from this folder instead:  npm start
+# Or start everything at once from the repository root:     npm run dev
+cd "$(dirname "$0")" || exit 1
+exec npm start

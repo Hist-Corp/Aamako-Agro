@@ -1,0 +1,18 @@
+{
+  "name": "aamako-agro",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cross-platform development launcher for Aamako-Agro (Backend API + Admin Dashboard + Storefront)",
+  "scripts": {
+    "setup": "npm --prefix Backend install && npm --prefix Frontend install && npx --yes pnpm@9 --dir Dashboard install",
+    "dev": "node scripts/dev.js",
+    "dev:backend": "npm --prefix Backend run start:dev",
+    "dev:dashboard": "npm --prefix Dashboard run dev",
+    "dev:frontend": "npm --prefix Frontend run start",
+    "db:setup": "npm --prefix Backend run db:push && npm --prefix Backend run seed",
+    "build": "npm --prefix Backend run build && npm --prefix Dashboard run build"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
