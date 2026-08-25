@@ -40,7 +40,11 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email || `${selectedRole.toLowerCase()}@aamako.com`, password || 'demo123', showTotp ? totpCode : undefined, selectedRole as any);
+      if (!email.trim() || !password) {
+        setError('Please enter your email and password.');
+        return;
+      }
+      await login(email.trim(), password, showTotp ? totpCode : undefined);
       router.push('/dashboard');
     } catch (err: any) {
       if (err?.status === 401 && err?.data?.requiresMfa) {

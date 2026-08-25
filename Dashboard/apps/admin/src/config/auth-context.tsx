@@ -14,139 +14,78 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Demo mock users for preview without backend
-const DEMO_USERS: Record<string, { password: string; user: User }> = {
-  'superadmin@aamako.com': {
-    password: 'admin123',
-    user: {
-      id: 'demo-1',
-      email: 'superadmin@aamako.com',
-      name: 'Super Admin',
-      role: 'SUPER_ADMIN' as Role,
-      mfaEnabled: true,
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 31536000000).toISOString(),
-    },
-  },
-  'admin@aamako.com': {
-    password: 'admin123',
-    user: {
-      id: 'demo-2',
-      email: 'admin@aamako.com',
-      name: 'Admin User',
-      role: 'ADMIN' as Role,
-      mfaEnabled: false,
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 25920000000).toISOString(),
-    },
-  },
-  'manager@aamako.com': {
-    password: 'manager123',
-    user: {
-      id: 'demo-3',
-      email: 'manager@aamako.com',
-      name: 'Operations Manager',
-      role: 'MANAGER' as Role,
-      mfaEnabled: false,
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 15768000000).toISOString(),
-    },
-  },
-  'sales@aamako.com': {
-    password: 'sales123',
-    user: {
-      id: 'demo-4',
-      email: 'sales@aamako.com',
-      name: 'Ram Sales',
-      role: 'SALES' as Role,
-      mfaEnabled: false,
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 7884000000).toISOString(),
-    },
-  },
-  'inventory@aamako.com': {
-    password: 'inventory123',
-    user: {
-      id: 'demo-5',
-      email: 'inventory@aamako.com',
-      name: 'Gita Manager',
-      role: 'INVENTORY_MANAGER' as Role,
-      mfaEnabled: false,
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 5184000000).toISOString(),
-    },
-  },
-  'content@aamako.com': {
-    password: 'content123',
-    user: {
-      id: 'demo-6',
-      email: 'content@aamako.com',
-      name: 'Hari Editor',
-      role: 'CONTENT_MANAGER' as Role,
-      mfaEnabled: false,
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 3153600000).toISOString(),
-    },
-  },
-  'support@aamako.com': {
-    password: 'support123',
-    user: {
-      id: 'demo-7',
-      email: 'support@aamako.com',
-      name: 'Sita Support',
-      role: 'CUSTOMER_SUPPORT' as Role,
-      mfaEnabled: false,
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 1576800000).toISOString(),
-    },
-  },
-};
-
-const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  ADMIN: 'Admin',
-  MANAGER: 'Manager',
-  SALES: 'Sales',
-  INVENTORY_MANAGER: 'Inventory Manager',
-  CONTENT_MANAGER: 'Content Manager',
-  CUSTOMER_SUPPORT: 'Customer Support',
-  // Real backend roles
-  STAFF_ADMIN: 'Staff Admin',
-  STAFF_MANAGER: 'Staff Manager',
-  STAFF_SALES: 'Staff Sales',
-  STAFF_SUPPORT: 'Staff Support',
-  RETAIL_CUSTOMER: 'Retail Customer',
-  WHOLESALE_CUSTOMER: 'Wholesale Customer',
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore session on mount
+  // Restore session on mount — only trust real backend tokens,
+  // validated against /auth/me. No local-only sessions allowed.
   useEffect(() => {
-    const saved = localStorage.getItem('demo_user');
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem('demo_user');
+    let cancelled = false;
+    (async () => {
+      const accessToken = localStorage.getItem('access_token');
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!accessToken && !refreshToken) {
+        setIsLoading(false);
+        return;
       }
-    }
-    setIsLoading(false);
+      try {
+        const { apiClient } = await import('@/lib/api-client');
+        if (accessToken) apiClient.setAccessToken(accessToken);
+        const me = await apiClient.get<{
+          id: string;
+          email: string;
+          role: Role;
+          name?: string;
+          firstName?: string;
+          lastName?: string;
+          mfaEnabled?: boolean;
+          lastLoginAt?: string;
+          createdAt?: string;
+        }>('/auth/me');
+        if (!cancelled) {
+          setUser({
+            id: me.id,
+            email: me.email,
+            role: me.role,
+            name: me.name
+              || `${me.firstName ?? ''} ${me.lastName ?? ''}`.trim()
+              || me.email,
+            mfaEnabled: !!me.mfaEnabled,
+            lastLoginAt: me.lastLoginAt || new Date().toISOString(),
+            createdAt: me.createdAt || new Date().toISOString(),
+          });
+        }
+      } catch {
+        // Token invalid/expired and refresh failed — clear the session.
+        if (!cancelled) {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          setUser(null);
+        }
+      }
+      if (!cancelled) setIsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const login = useCallback(async (email: string, password: string, _totpCode?: string, _role?: Role) => {
-    // Try real API first
+  const login = useCallback(async (email: string, password: string, totpCode?: string, _role?: Role) => {
+    if (!email || !password) {
+      throw new Error('Email and password are required.');
+    }
+
+    // Authenticate strictly against the real backend — no local/demo bypass.
+    const { apiClient } = await import('@/lib/api-client');
     try {
-      const { apiClient } = await import('@/lib/api-client');
       // Backend shape: { accessToken, refreshToken, user: { id, email, role } }
       const response = await apiClient.post<{
         accessToken?: string;
         refreshToken?: string;
         tokens?: { accessToken: string; refreshToken: string };
         user: { id: string; email: string; role: Role; [k: string]: unknown };
-      }>('/auth/login', { email, password, totpCode: _totpCode });
+      }>('/auth/login', { email, password, totpCode });
 
       const accessToken = response.accessToken ?? response.tokens?.accessToken;
       const refreshToken = response.refreshToken ?? response.tokens?.refreshToken;
@@ -167,35 +106,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastLoginAt: (response.user as any).lastLoginAt || new Date().toISOString(),
         createdAt: (response.user as any).createdAt || new Date().toISOString(),
       };
-      // A real backend login replaces any prior demo session.
-      localStorage.removeItem('demo_user');
       setUser(realUser);
-      return;
-    } catch {
-      // Fall through to demo mode
+    } catch (err: any) {
+      // Surface backend errors (invalid credentials, etc.) to the UI.
+      throw err instanceof Error ? err : new Error('Login failed. Please check your credentials.');
     }
-
-    // Demo mode: accept any email/password combo
-    const effectiveRole = _role || 'SUPER_ADMIN';
-    const demoMatch = DEMO_USERS[email.toLowerCase()];
-    const demoUser: User = demoMatch?.password === password
-      ? { ...demoMatch.user, role: effectiveRole, name: ROLE_LABELS[effectiveRole] || effectiveRole }
-      : {
-          id: 'demo-' + Date.now(),
-          email,
-          name: ROLE_LABELS[effectiveRole] || email.split('@')[0],
-          role: effectiveRole,
-          mfaEnabled: false,
-          lastLoginAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-        };
-
-    localStorage.setItem('demo_user', JSON.stringify(demoUser));
-    setUser(demoUser);
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('demo_user');
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     setUser(null);
@@ -209,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { ROLE_PERMISSIONS } = require('@aamako/shared-types');
         return ROLE_PERMISSIONS[user.role]?.includes(permission) ?? false;
       } catch {
-        return true; // In demo mode, grant all permissions
+        return false; // Fail closed when permissions cannot be determined
       }
     },
     [user]
