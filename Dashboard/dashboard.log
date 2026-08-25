@@ -1,0 +1,39 @@
+
+> @aamako/admin@0.1.0 dev C:\Users\poude\Desktop\Aamako Agro\Dashboard\apps\admin
+> next dev --port 3001
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3001
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 6.1s
+ ○ Compiling /users ...
+ ✓ Compiled /users in 10.2s (877 modules)
+ GET /users 200 in 11018ms
+ ○ Compiling /staff ...
+ ✓ Compiled /staff in 6.2s (871 modules)
+ GET /staff 200 in 5493ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 1904ms (879 modules)
+ GET /settings 200 in 2014ms
+ ○ Compiling /roles ...
+ ✓ Compiled /roles in 2.4s (891 modules)
+ GET /roles 200 in 2550ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.6s (909 modules)
+ GET /login 200 in 2824ms
+ GET /login 200 in 62ms
+ GET /login 200 in 67ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 2.7s (908 modules)
+ ○ Compiling /users ...
+ ✓ Compiled /users in 630ms (460 modules)
+ ✓ Compiled /roles in 299ms (466 modules)
+ ✓ Compiled /staff in 220ms (471 modules)
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 2.2s (476 modules)
+ GET /login 200 in 214ms
+ GET /login 200 in 301ms
+ GET /users 200 in 181ms
+ GET /login 200 in 84ms

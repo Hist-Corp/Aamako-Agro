@@ -1,0 +1,13 @@
+{
+  "name": "aamako-agro-dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix apps/admin run dev",
+    "build": "npm --prefix apps/admin run build",
+    "typecheck": "npm --prefix apps/admin run typecheck",
+    "lint": "npm --prefix apps/admin run lint"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

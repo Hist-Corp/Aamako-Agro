@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freeze-Dried Mango — Aama ko Agro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+</head>
+<body>
+
+<div class="trust-strip"><span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span><span>MADE IN NEPAL</span><span>NO ADDED PRESERVATIVES</span></div>
+
+<header>
+  <nav class="wrap">
+    <a href="index.html" class="logo"><img src="logo.png" alt="Aama ko Agro"></a>
+    <div class="nav-links"><a href="shop.html" class="active">Shop</a><a href="process.html">Why Freeze-Dried</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a></div>
+    <div class="nav-actions"><a href="signin.html" class="btn btn-ghost">Sign in</a><div class="cart-btn-wrap"><a href="#" class="btn btn-primary" id="cartToggle">Cart<span class="cart-badge" id="cartBadge" style="display:none;">0</span></a></div></div>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+<div class="mobile-drawer" id="mobileDrawer"><a href="index.html">Home</a><a href="shop.html">Shop</a><a href="process.html">Why Freeze-Dried</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a><a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a></div>
+
+<div class="wrap breadcrumb"><a href="index.html">Home</a> / <a href="shop.html">Shop</a> / <a href="shop.html">Fruits</a> / Freeze-Dried Mango</div>
+
+<section style="padding-top:var(--space-4);">
+  <div class="wrap pdp-grid">
+    <div>
+      <div class="pdp-gallery-main"><img src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=800&q=80" alt="Freeze-Dried Mango front pack">
+        <div class="prod-stamp"><div class="stamp" style="width:64px;height:64px;"><div class="stamp-grade" style="font-size:14px;">A+</div></div></div>
+      </div>
+      <div class="pdp-thumbs">
+        <div class="photo active"><img src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=200&q=80" alt="Front view"></div>
+        <div class="photo"><img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=200&q=80" alt="Slice view"></div>
+        <div class="photo"><img src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=200&q=80" alt="Pack detail"></div>
+        <div class="photo"><img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=200&q=80" alt="Nutrition info"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="prod-badge">Best seller</div>
+      <h1 class="page-title" style="font-size:clamp(1.8rem,3.4vw,2.6rem); margin-top:8px;">Freeze-Dried Mango</h1>
+      <p class="section-desc" style="margin-top:10px;">Ripe mango, sliced and freeze-dried within hours of harvest. Crisp, intensely sweet, nothing added.</p>
+      <div class="pdp-price">Rs 450 <span class="was">Rs 550</span></div>
+      <div class="spec-row"><span>Pack size</span><span>50g pouch</span></div>
+      <div class="spec-row"><span>Availability</span><span>In stock</span></div>
+      <div class="spec-row"><span>Shelf life</span><span>[N] months, unopened</span></div>
+      <div class="qty-row">
+        <div class="qty-stepper"><button aria-label="Decrease quantity">−</button><span>1</span><button aria-label="Increase quantity">+</button></div>
+        <span style="font-family:var(--mono); font-size:12px; color:var(--ink-soft);">SKU: AKA-MNG-050</span>
+      </div>
+      <div class="pdp-cta">
+        <button class="btn btn-primary">Add to cart</button>
+        <a href="#" class="btn btn-ghost">Buy now</a>
+        <a href="#" class="btn btn-ghost" aria-label="Add to wishlist">♡</a>
+      </div>
+      <div class="tear" style="padding:var(--space-6) 0 0;"><span>Batch traceability</span></div>
+      <div class="batch-tag">
+        <div><span>Batch</span><span>AKA-2601-047</span></div>
+        <div><span>Source</span><span>[Region], Nepal</span></div>
+        <div><span>Processed</span><span>[Date]</span></div>
+        <div><span>Quality check</span><span>Passed</span></div>
+      </div>
+      <div class="accordion">
+        <div class="acc-item"><div class="acc-head">Ingredients &amp; allergens<span>+</span></div><div class="acc-body">100% freeze-dried mango. No added sugar, preservatives or colouring. [Placeholder — confirm allergen statement.]</div></div>
+        <div class="acc-item"><div class="acc-head">Nutrition (per 100g)<span>+</span></div><div class="acc-body">[Placeholder — energy, carbs, sugar, fibre, protein, fat figures pending lab data.]</div></div>
+        <div class="acc-item"><div class="acc-head">Origin &amp; sourcing<span>+</span></div><div class="acc-body">Sourced from partner growers in [region, Nepal]. See our <a href="story.html" style="text-decoration:underline;">story page</a> for more.</div></div>
+        <div class="acc-item"><div class="acc-head">Storage &amp; shelf life<span>+</span></div><div class="acc-body">Store in a cool, dry place. Reseal after opening. Best consumed within [N] weeks of opening.</div></div>
+        <div class="acc-item"><div class="acc-head">How to rehydrate<span>+</span></div><div class="acc-body"><div class="rehydrate-steps"><div class="rstep"><div class="rstep-num">01</div>Cover with hot water</div><div class="rstep"><div class="rstep-num">02</div>Wait 5–10 minutes</div><div class="rstep"><div class="rstep-num">03</div>Drain and enjoy — or eat straight from the pack</div></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section><div class="wrap"><div class="section-head"><div><h2 class="section-title">Reviews</h2></div></div><div class="review-grid">
+  <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"[Placeholder — real customer review pending]"</p><div class="review-name">[Name]</div><div class="review-loc">Verified purchase</div></div>
+  <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"[Placeholder — real customer review pending]"</p><div class="review-name">[Name]</div><div class="review-loc">Verified purchase</div></div>
+  <div class="review-card"><div class="review-stars">★★★★☆</div><p class="review-quote">"[Placeholder — real customer review pending]"</p><div class="review-name">[Name]</div><div class="review-loc">Verified purchase</div></div>
+</div></div></section>
+
+<section><div class="wrap"><div class="section-head"><div><h2 class="section-title">You might also like</h2></div></div><div class="prod-grid">
+  <div class="prod-card"><div class="prod-photo"><img src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=500&q=80" alt="Freeze-Dried Strawberry"></div><div class="prod-body"><div class="prod-name">Freeze-Dried Strawberry</div><div class="prod-meta">40g pouch</div><div class="prod-foot"><span class="prod-price">Rs 420</span><button class="add-btn" aria-label="Add to cart">+</button></div></div></div>
+  <div class="prod-card"><div class="prod-photo"><img src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=500&q=80" alt="Himalayan Spice Box"></div><div class="prod-body"><div class="prod-name">Himalayan Spice Box</div><div class="prod-meta">Gift set</div><div class="prod-foot"><span class="prod-price">Rs 1,200</span><button class="add-btn" aria-label="Add to cart">+</button></div></div></div>
+  <div class="prod-card"><div class="prod-photo"><img src="https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500&q=80" alt="Rehydrate Rice Bowl"></div><div class="prod-body"><div class="prod-name">Rehydrate Rice Bowl</div><div class="prod-meta">Meal</div><div class="prod-foot"><span class="prod-price">Rs 280</span><button class="add-btn" aria-label="Add to cart">+</button></div></div></div>
+  <div class="prod-card"><div class="prod-photo"><img src="https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=500&q=80" alt="Freeze-Dried Peas"></div><div class="prod-body"><div class="prod-name">Freeze-Dried Peas</div><div class="prod-meta">75g pouch</div><div class="prod-foot"><span class="prod-price">Rs 380</span><button class="add-btn" aria-label="Add to cart">+</button></div></div></div>
+</div></div></section>
+
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-drawer" id="cartDrawer"><div class="cart-drawer-head"><h3>Your cart<span class="cart-count-label" id="cartCountLabel"></span></h3><button class="cart-close-btn" id="cartClose" aria-label="Close cart">×</button></div><div class="cart-items" id="cartItems"><div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you'll love.</div></div></div><div class="cart-drawer-foot"><div class="cart-subtotal-row"><span>Subtotal</span><span id="cartSubtotal">Rs 0</span></div><div class="cart-total-row"><span class="cart-total-label">Total</span><span class="cart-total-price" id="cartTotal">Rs 0</span></div><button class="cart-checkout-btn" onclick="window.location.href='cart.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Proceed to checkout</button><a href="shop.html" class="cart-continue">← Continue shopping</a><div class="cart-secure">🔒 Secure checkout · SSL encrypted</div></div></div>
+
+<footer><div class="wrap"><div class="foot-grid"><div class="foot-col"><a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img src="logo-footer.png" alt="Aama ko Agro" style="height:72px;"></a><p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p></div><div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div><div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div><div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div><div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div></div><div class="foot-bottom"><span>© 2026 Aama ko Agro. All rights reserved.</span><span>DFTQC registration — [placeholder]</span></div></div></footer>
+
+<script>
+(function(){
+  var btn=document.getElementById("hamburgerBtn"),drawer=document.getElementById("mobileDrawer");
+  if(btn&&drawer){btn.addEventListener("click",function(){var o=drawer.classList.toggle("is-open");btn.classList.toggle("is-open",o);btn.setAttribute("aria-expanded",o?"true":"false");document.body.style.overflow=o?"hidden":"";document.body.classList.toggle('drawer-open',o);var hdr=document.querySelector('header');if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}else drawer.style.removeProperty('--drawer-top');});drawer.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){drawer.classList.remove("is-open");btn.classList.remove("is-open");document.body.style.overflow="";document.body.classList.remove('drawer-open');});});}
+  (function(){var header=document.querySelector('header');if(!header)return;var lastY=0;window.addEventListener('scroll',function(){var y=window.pageYOffset||document.documentElement.scrollTop;if(y>80&&y>lastY&&!drawer.classList.contains("is-open")){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}if(y<=80){header.classList.remove('is-hidden','is-scrolled');}lastY=y;});})();
+  document.querySelectorAll(".acc-item").forEach(function(item,i){var head=item.querySelector(".acc-head"),body=item.querySelector(".acc-body");if(!head||!body)return;if(i!==0){body.style.display="none";head.querySelector("span").textContent="+";}else{head.querySelector("span").textContent="−";}head.addEventListener("click",function(){var open=body.style.display!=="none";body.style.display=open?"none":"block";head.querySelector("span").textContent=open?"+":"−";});});
+  var main=document.querySelector(".pdp-gallery-main");
+  document.querySelectorAll(".pdp-thumbs .photo").forEach(function(thumb){thumb.style.cursor="pointer";thumb.addEventListener("click",function(){document.querySelectorAll(".pdp-thumbs .photo").forEach(function(t){t.style.outline="none";t.classList.remove("active");});thumb.classList.add("active");var img=thumb.querySelector("img");if(img&&main){var mainImg=main.querySelector("img");if(mainImg)mainImg.src=img.src.replace("w=200","w=800");}});});
+  if(typeof gsap!=='undefined'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){gsap.from('.pdp-gallery-main',{opacity:0,x:-20,duration:0.6,ease:'power3.out',delay:0.1});gsap.from('.pdp-thumbs .photo',{opacity:0,y:12,duration:0.4,ease:'power3.out',stagger:0.06,delay:0.3});}
+  var cart=JSON.parse(localStorage.getItem('aka-cart')||'[]'),overlay=document.getElementById('cartOverlay'),cartDrawer=document.getElementById('cartDrawer'),cartClose=document.getElementById('cartClose'),cartToggle=document.getElementById('cartToggle'),cartBadge=document.getElementById('cartBadge'),cartItems=document.getElementById('cartItems'),cartTotal=document.getElementById('cartTotal'),cartSubtotal=document.getElementById('cartSubtotal'),cartCountLabel=document.getElementById('cartCountLabel');
+  function openCart(){overlay.classList.add('is-open');cartDrawer.classList.add('is-open');document.body.style.overflow='hidden';}
+  function closeCart(){overlay.classList.remove('is-open');cartDrawer.classList.remove('is-open');document.body.style.overflow='';}
+  function updateBadge(){var count=cart.reduce(function(s,i){return s+i.qty;},0);var total=cart.reduce(function(s,i){return s+i.price*i.qty;},0);if(count>0){cartBadge.textContent=count;cartBadge.style.display='inline-flex';cartBadge.classList.remove('bounce');void cartBadge.offsetWidth;cartBadge.classList.add('bounce');}else{cartBadge.style.display='none';}cartTotal.textContent='Rs '+total;if(cartSubtotal)cartSubtotal.textContent='Rs '+total;if(cartCountLabel)cartCountLabel.textContent=count>0?'('+count+' item'+(count>1?'s':'')+')':'';renderCartItems();}
+  function renderCartItems(){if(cart.length===0){cartItems.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you\'ll love.</div></div>';return;}cartItems.innerHTML=cart.map(function(item,i){return '<div class="cart-item"><div class="cart-item-photo"><div class="photo" style="height:100%;background:var(--sage);"></div></div><div class="cart-item-info"><div class="cart-item-name">'+item.name+'</div><div class="cart-item-meta">'+item.meta+'</div><div class="cart-item-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div></div><div class="cart-item-right"><div class="cart-item-price">Rs '+(item.price*item.qty)+'</div><button class="cart-item-remove" data-idx="'+i+'" aria-label="Remove">×</button></div></div>';}).join('');cartItems.querySelectorAll('.cart-item-remove').forEach(function(b){b.addEventListener('click',function(){cart.splice(parseInt(b.dataset.idx),1);localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});cartItems.querySelectorAll('.cart-item-qty button').forEach(function(b){b.addEventListener('click',function(){var idx=parseInt(b.dataset.idx);if(b.dataset.action==='inc')cart[idx].qty++;else{cart[idx].qty--;if(cart[idx].qty<=0)cart.splice(idx,1);}localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});}
+  if(cartToggle)cartToggle.addEventListener('click',function(e){e.preventDefault();openCart();});if(cartClose)cartClose.addEventListener('click',closeCart);if(overlay)overlay.addEventListener('click',closeCart);
+  var addBtn=document.querySelector('.pdp-cta .btn-primary');
+  if(addBtn){addBtn.addEventListener('click',function(e){e.preventDefault();var name='Freeze-Dried Mango',meta='50g pouch · 100% fruit',price=0;var pEl=document.querySelector('.pdp-price');if(pEl)price=parseInt(pEl.textContent.replace(/[^0-9]/g,''))||0;var ex=cart.find(function(i){return i.name===name;});if(ex){ex.qty++;}else{cart.push({name:name,meta:meta,price:price,qty:1});}localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();addBtn.textContent='Added ✓';setTimeout(function(){addBtn.textContent='Add to cart';},1200);});}
+  updateBadge();
+})();
+</script>
+
+</body>
+</html>

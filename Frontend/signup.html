@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up — Aama ko Agro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="trust-strip">
+  <span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span>
+  <span>MADE IN NEPAL</span>
+  <span>NO ADDED PRESERVATIVES</span>
+</div>
+
+<header>
+  <nav class="wrap">
+    <a href="index.html" class="logo"><img src="logo.png" alt="Aama ko Agro"></a>
+    <div class="nav-links">
+      <a href="shop.html">Shop</a>
+      <a href="process.html">Why Freeze-Dried</a>
+      <a href="story.html">Our Story</a>
+      <a href="wholesale.html">Wholesale</a>
+      <a href="journal.html">Learn</a>
+    </div>
+    <div class="nav-actions">
+      <a href="signin.html" class="btn btn-ghost">Sign in</a>
+      <div class="cart-btn-wrap">
+        <a href="shop.html" class="btn btn-primary">Shop now</a>
+      </div>
+    </div>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+<div class="mobile-drawer" id="mobileDrawer">
+  <a href="index.html">Home</a>
+  <a href="shop.html">Shop</a>
+  <a href="process.html">Why Freeze-Dried</a>
+  <a href="story.html">Our Story</a>
+  <a href="wholesale.html">Wholesale</a>
+  <a href="journal.html">Learn</a>
+  <a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a>
+</div>
+
+<section class="auth-section">
+  <div class="auth-container">
+
+    <div class="auth-left">
+      <div class="auth-left-content">
+        <!-- Personal perks (default) -->
+        <div id="personalPerks">
+          <div class="eyebrow" style="color:var(--gold);">Join Aama ko Agro</div>
+          <h1 class="auth-headline">Create your account</h1>
+          <p class="auth-subtext">Track orders, save favourites, and get early access to new products and seasonal drops.</p>
+          <div class="auth-perks">
+            <div class="auth-perk">
+              <div class="auth-perk-icon">📦</div>
+              <div>
+                <div class="auth-perk-title">Track your orders</div>
+                <div class="auth-perk-desc">Real-time batch tracking from farm to door.</div>
+              </div>
+            </div>
+            <div class="auth-perk">
+              <div class="auth-perk-icon">❤️</div>
+              <div>
+                <div class="auth-perk-title">Save favourites</div>
+                <div class="auth-perk-desc">Build your pantry list and reorder in one tap.</div>
+              </div>
+            </div>
+            <div class="auth-perk">
+              <div class="auth-perk-icon">🌱</div>
+              <div>
+                <div class="auth-perk-title">Farm stories</div>
+                <div class="auth-perk-desc">See exactly where your food comes from.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Business perks (hidden by default) -->
+        <div id="businessPerks" style="display:none;">
+          <div class="eyebrow" style="color:var(--gold);">Wholesale &amp; Business</div>
+          <h1 class="auth-headline">Business account</h1>
+          <p class="auth-subtext">Access full wholesale catalogue, tiered pricing, and bulk ordering for your shop, mall, or distribution network.</p>
+          <div class="auth-perks">
+            <div class="auth-perk">
+              <div class="auth-perk-icon">🏪</div>
+              <div>
+                <div class="auth-perk-title">Full catalogue access</div>
+                <div class="auth-perk-desc">Browse wholesale-only products and bulk pricing tiers.</div>
+              </div>
+            </div>
+            <div class="auth-perk">
+              <div class="auth-perk-icon">📊</div>
+              <div>
+                <div class="auth-perk-title">Volume-based pricing</div>
+                <div class="auth-perk-desc">Better rates as your order volume grows.</div>
+              </div>
+            </div>
+            <div class="auth-perk">
+              <div class="auth-perk-icon">🤝</div>
+              <div>
+                <div class="auth-perk-title">Dedicated support</div>
+                <div class="auth-perk-desc">Priority customer service and account manager.</div>
+              </div>
+            </div>
+            <div class="auth-perk">
+              <div class="auth-perk-icon">🚛</div>
+              <div>
+                <div class="auth-perk-title">Bulk shipping</div>
+                <div class="auth-perk-desc">Custom logistics and delivery schedules.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-right">
+      <div class="auth-card">
+        <div class="auth-card-header">
+          <h2>Create account</h2>
+          <p>Fill in your details to get started.</p>
+        </div>
+
+        <!-- Account Type Selector -->
+        <div class="account-type-selector">
+          <button type="button" class="account-type-btn active" data-type="personal" onclick="switchAccountType('personal')">
+            <div class="at-icon-wrap">👤</div>
+            <div class="at-label">Personal</div>
+            <div class="at-desc">Individual shopper</div>
+          </button>
+          <button type="button" class="account-type-btn" data-type="business" onclick="switchAccountType('business')">
+            <div class="at-icon-wrap">🏢</div>
+            <div class="at-label">Business</div>
+            <div class="at-desc">Wholesale &amp; bulk</div>
+          </button>
+        </div>
+
+        <form class="auth-form" onsubmit="return false;">
+
+          <!-- Personal Account Fields (always visible) -->
+          <div class="auth-form-row">
+            <div class="field">
+              <label for="firstName">First name</label>
+              <input type="text" id="firstName" placeholder="Aama" required>
+            </div>
+            <div class="field">
+              <label for="lastName">Last name</label>
+              <input type="text" id="lastName" placeholder="Gurung" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="email">Email address</label>
+            <input type="email" id="email" placeholder="you@email.com" required>
+          </div>
+
+          <div class="field">
+            <label for="phone">Phone number</label>
+            <input type="tel" id="phone" placeholder="+977 98XXXXXXXX">
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="password-wrap">
+              <input type="password" id="password" placeholder="Min. 8 characters" required minlength="8">
+              <button type="button" class="password-toggle" onclick="var p=document.getElementById('password');p.type=p.type==='password'?'text':'password';this.textContent=p.type==='password'?'Show':'Hide';">Show</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="confirmPassword">Confirm password</label>
+            <input type="password" id="confirmPassword" placeholder="Re-enter password" required minlength="8">
+          </div>
+
+          <!-- Business Account Fields (hidden by default) -->
+          <div id="businessFields" style="display:none;">
+            <div class="business-divider">
+              <span>Business Information</span>
+            </div>
+
+            <div class="field">
+              <label for="businessName">Business / Company name <span class="required-badge">Required</span></label>
+              <input type="text" id="businessName" placeholder="e.g. Himalayan Foods Pvt. Ltd.">
+            </div>
+
+            <div class="field">
+              <label for="businessType">Business type <span class="required-badge">Required</span></label>
+              <select id="businessType">
+                <option value="">Select your business type…</option>
+                <option value="retail">Retail store</option>
+                <option value="supermarket">Supermarket / Shopping mall</option>
+                <option value="restaurant">Restaurant / Café</option>
+                <option value="distributor">Distributor</option>
+                <option value="exporter">Exporter</option>
+                <option value="private-label">Private label / White label</option>
+                <option value="online-retailer">Online retailer</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="auth-form-row">
+              <div class="field">
+                <label for="regNumber">Business registration no. <span class="required-badge">Required</span></label>
+                <input type="text" id="regNumber" placeholder="e.g. 12345/078">
+              </div>
+              <div class="field">
+                <label for="taxId">Tax ID / PAN number <span class="required-badge">Required</span></label>
+                <input type="text" id="taxId" placeholder="e.g. 301234567">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="businessAddress">Business address</label>
+              <input type="text" id="businessAddress" placeholder="Street, city, district">
+            </div>
+
+            <div class="field">
+              <label for="monthlyVolume">Expected monthly volume</label>
+              <select id="monthlyVolume">
+                <option value="">Select expected volume…</option>
+                <option value="24-120">24–120 units</option>
+                <option value="120-500">120–500 units</option>
+                <option value="500-2000">500–2,000 units</option>
+                <option value="2000+">2,000+ units</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Upload business proof <span class="required-badge">Required</span></label>
+              <p class="field-help">Upload business license, registration certificate, or tax clearance document.</p>
+              <div class="file-upload-area" id="fileUploadArea">
+                <input type="file" id="businessProof" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none;">
+                <div class="file-upload-content">
+                  <div class="file-upload-icon">📄</div>
+                  <div class="file-upload-text">Drag &amp; drop or <span class="file-upload-link">browse</span></div>
+                  <div class="file-upload-hint">PDF, JPG, or PNG — max 5MB each</div>
+                </div>
+                <div class="file-upload-list" id="fileUploadList"></div>
+              </div>
+            </div>
+
+            <div class="business-note">
+              <div class="business-note-icon">ℹ️</div>
+              <div class="business-note-text">
+                <strong>Verification required</strong> — Your business account will be reviewed by our team within 2 business days. You'll receive an email once approved. Until then, you can browse the catalogue but won't be able to place wholesale orders.
+              </div>
+            </div>
+          </div>
+
+          <label class="auth-checkbox">
+            <input type="checkbox" required>
+            <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+          </label>
+
+          <label class="auth-checkbox">
+            <input type="checkbox">
+            <span>Send me recipes, seasonal drops, and farm updates (optional)</span>
+          </label>
+
+          <button type="submit" class="auth-submit" id="authSubmitBtn">Create account</button>
+        </form>
+
+        <div class="auth-divider"><span>or</span></div>
+
+        <div class="auth-social">
+          <button class="auth-social-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.79-.07-1.54-.19-2.27h-11.3v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12.255 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96h-3.98v3.09C3.515 21.3 7.565 24 12.255 24z"/><path fill="#FBBC05" d="M5.525 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62h-3.98a11.86 11.86 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12.255 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C18.205 1.19 15.495 0 12.255 0c-4.69 0-8.74 2.7-10.71 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+            Continue with Google
+          </button>
+        </div>
+
+        <div class="auth-footer-text">
+          Already have an account? <a href="signin.html">Sign in</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img src="logo-footer.png" alt="Aama ko Agro" style="height:72px;"></a>
+        <p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p>
+      </div>
+      <div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div>
+      <div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div>
+      <div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div>
+      <div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Aama ko Agro. All rights reserved.</span>
+      <span>DFTQC registration — [placeholder]</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  /* hamburger */
+  var btn=document.getElementById("hamburgerBtn"),drawer=document.getElementById("mobileDrawer");
+  if(btn&&drawer){btn.addEventListener("click",function(){var o=drawer.classList.toggle("is-open");btn.classList.toggle("is-open",o);btn.setAttribute("aria-expanded",o?"true":"false");document.body.style.overflow=o?"hidden":"";document.body.classList.toggle('drawer-open',o);var hdr=document.querySelector('header');if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}else drawer.style.removeProperty('--drawer-top');});drawer.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){drawer.classList.remove("is-open");btn.classList.remove("is-open");document.body.style.overflow="";document.body.classList.remove('drawer-open');});});}
+  (function(){var header=document.querySelector('header');if(!header)return;var lastY=0;window.addEventListener('scroll',function(){var y=window.pageYOffset||document.documentElement.scrollTop;if(y>80&&y>lastY&&!drawer.classList.contains("is-open")){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}if(y<=80){header.classList.remove('is-hidden','is-scrolled');}lastY=y;});})();
+
+  /* Account type switcher */
+  window.switchAccountType = function(type) {
+    var personalBtn = document.querySelector('[data-type="personal"]');
+    var businessBtn = document.querySelector('[data-type="business"]');
+    var businessFields = document.getElementById('businessFields');
+    var personalPerks = document.getElementById('personalPerks');
+    var businessPerks = document.getElementById('businessPerks');
+    var submitBtn = document.getElementById('authSubmitBtn');
+
+    if(type === 'business') {
+      personalBtn.classList.remove('active');
+      businessBtn.classList.add('active');
+      businessFields.style.display = 'block';
+      personalPerks.style.display = 'none';
+      businessPerks.style.display = 'block';
+      submitBtn.textContent = 'Submit for verification';
+    } else {
+      businessBtn.classList.remove('active');
+      personalBtn.classList.add('active');
+      businessFields.style.display = 'none';
+      personalPerks.style.display = 'block';
+      businessPerks.style.display = 'none';
+      submitBtn.textContent = 'Create account';
+    }
+  };
+
+  /* File upload */
+  var fileUploadArea = document.getElementById('fileUploadArea');
+  var fileInput = document.getElementById('businessProof');
+  var fileList = document.getElementById('fileUploadList');
+
+  if(fileUploadArea && fileInput) {
+    fileUploadArea.addEventListener('click', function(e) {
+      if(e.target.closest('.file-remove')) return;
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', function() {
+      handleFiles(this.files);
+    });
+
+    fileUploadArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('drag-over');
+    });
+
+    fileUploadArea.addEventListener('dragleave', function() {
+      this.classList.remove('drag-over');
+    });
+
+    fileUploadArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+      handleFiles(e.dataTransfer.files);
+    });
+  }
+
+  function handleFiles(files) {
+    if(!fileList) return;
+    for(var i=0; i<files.length; i++) {
+      var file = files[i];
+      if(file.size > 5*1024*1024) {
+        alert(file.name + ' exceeds 5MB limit.');
+        continue;
+      }
+      var item = document.createElement('div');
+      item.className = 'file-item';
+      item.innerHTML = '<span class="file-name">📄 ' + file.name + '</span><span class="file-remove" onclick="this.parentElement.remove()">✕</span>';
+      fileList.appendChild(item);
+    }
+  }
+
+  /* Form validation */
+  var form = document.querySelector('.auth-form');
+  if(form){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var pw = document.getElementById('password').value;
+      var cpw = document.getElementById('confirmPassword').value;
+      if(pw !== cpw){
+        document.getElementById('confirmPassword').style.borderColor='var(--clay)';
+        return;
+      }
+      if(pw.length < 8){
+        document.getElementById('password').style.borderColor='var(--clay)';
+        return;
+      }
+
+      /* Business validation */
+      var isBusiness = document.querySelector('[data-type="business"]').classList.contains('active');
+      if(isBusiness) {
+        var bName = document.getElementById('businessName').value;
+        var bType = document.getElementById('businessType').value;
+        var regNo = document.getElementById('regNumber').value;
+        var taxId = document.getElementById('taxId').value;
+        if(!bName || !bType || !regNo || !taxId) {
+          alert('Please fill in all required business fields.');
+          return;
+        }
+        if(fileList && fileList.children.length === 0) {
+          alert('Please upload business proof documents.');
+          return;
+        }
+      }
+
+      var submitBtn = form.querySelector('.auth-submit');
+      if(isBusiness) {
+        submitBtn.textContent='Submitted for review ✓';
+        submitBtn.style.background='var(--gold)';
+        submitBtn.style.color='var(--ink)';
+      } else {
+        submitBtn.textContent='Account created ✓';
+        submitBtn.style.background='var(--sage)';
+      }
+      setTimeout(function(){
+        submitBtn.textContent=isBusiness?'Submit for verification':'Create account';
+        submitBtn.style.background='';
+        submitBtn.style.color='';
+      },2000);
+    });
+  }
+})();
+</script>
+
+  <script src="js/api.js"></script>
+  <script>
+    // Wire signup form to the backend: retail accounts register directly;
+    // business/wholesale signups also submit a wholesale inquiry for staff review.
+    document.addEventListener('DOMContentLoaded', function () {
+      var form = document.querySelector('.auth-form');
+      if (!form) return;
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var payload = {
+          firstName: document.getElementById('firstName').value.trim(),
+          lastName: (document.getElementById('lastName') || {}).value || '',
+          email: document.getElementById('email').value.trim(),
+          phone: (document.getElementById('phone') || {}).value || undefined,
+          password: (document.getElementById('password') || document.getElementById('confirmPassword')).value
+        };
+        try {
+          await window.AamakoAPI.signup(payload);
+          // Wholesale intent → file an inquiry for staff approval flow
+          var bName = document.getElementById('businessName');
+          if (bName && bName.value) {
+            await window.AamakoAPI.submitWholesaleInquiry({
+              companyName: bName.value,
+              contactName: payload.firstName + ' ' + payload.lastName,
+              email: payload.email,
+              phone: payload.phone,
+              message: 'Submitted via signup page'
+            });
+          }
+          window.location.href = 'shop.html';
+        } catch (err) {
+          alert(err.message || 'Signup failed');
+        }
+      }, true);
+    });
+  </script>
+</body>
+</html>

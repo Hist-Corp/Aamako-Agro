@@ -1,0 +1,401 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Users / Auth / RBAC ----------
+
+enum Role {
+  RETAIL_CUSTOMER
+  WHOLESALE_CUSTOMER
+  STAFF_SALES
+  CONTENT_MANAGER
+  STAFF_SUPPORT
+  STAFF_MANAGER
+  STAFF_ADMIN
+  SUPER_ADMIN
+}
+
+// ---------- Content management (moderated) ----------
+
+enum RevisionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// The LIVE (approved) version of a piece of website content.
+model ContentItem {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g. "home.hero", "about.story"
+  title       String
+  body        String
+  isPublished Boolean  @default(true)
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  revisions ContentRevision[]
+
+  @@map("content_items")
+}
+
+/// A proposed change. Created by CONTENT_MANAGER, applied to the live item
+/// only after a STAFF_MANAGER (or higher) approves it.
+model ContentRevision {
+  id            String         @id @default(uuid())
+  contentItemId String
+  contentItem   ContentItem    @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  proposedTitle String
+  proposedBody  String
+  status        RevisionStatus @default(PENDING)
+  submittedById String
+  reviewedById  String?
+  reviewNote    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime       @default(now())
+
+  @@index([status])
+  @@map("content_revisions")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String?
+  phone        String?
+  role         Role      @default(RETAIL_CUSTOMER)
+  isActive     Boolean   @default(true)
+  totpSecret   String? // placeholder: MFA (TOTP) on staff accounts — Phase 8
+  totpEnabled  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions             Session[]
+  wholesaleAccounts    WholesaleAccount[]
+  enterpriseContracts  EnterpriseContract[]
+  carts                Cart[]
+  orders               Order[]
+
+  @@map("users")
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ip               String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ---------- Catalog ----------
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  products  Product[]
+}
+
+model Product {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  variants ProductVariant[]
+}
+
+enum Unit {
+  UNIT_30G
+  UNIT_50G
+  UNIT_100G
+  UNIT_250G
+  CASE_12X30G
+  CASE_12X50G
+}
+
+model ProductVariant {
+  id             String   @id @default(uuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku            String   @unique
+  name           String
+  unit           Unit
+  basePriceCents Int // NPR paisa (base retail price)
+  currency       String   @default("NPR")
+  isActive       Boolean  @default(true)
+  inventory      Inventory?
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  priceLists PriceList[]
+  pricingRules PricingRule[]
+
+  @@map("product_variants")
+}
+
+// ---------- Pricing ----------
+
+enum Tier {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+model PricingTier {
+  id                 String @id @default(uuid())
+  tier               Tier   @unique
+  displayName        String
+  minOrderValueCents Int    @default(0)
+
+  accounts     WholesaleAccount[]
+  priceLists   PriceList[]
+  pricingRules PricingRule[]
+}
+
+// Base list prices per tier (wholesale list differs from retail)
+model PriceList {
+  id             String         @id @default(uuid())
+  tierId         String
+  tier           PricingTier    @relation(fields: [tierId], references: [id])
+  variantId      String
+  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  unitPriceCents Int
+  currency       String         @default("NPR")
+  effectiveFrom  DateTime       @default(now())
+  effectiveTo    DateTime?
+  createdAt      DateTime       @default(now())
+
+  @@unique([tierId, variantId])
+  @@map("price_lists")
+}
+
+// Volume/promo rules evaluated after contracts, before base list price
+enum RuleType {
+  VOLUME_DISCOUNT
+  PROMO
+  CONTRACT_OVERRIDE
+}
+
+model PricingRule {
+  id            String          @id @default(uuid())
+  name          String
+  ruleType      RuleType
+  tierId        String?
+  tier          PricingTier?    @relation(fields: [tierId], references: [id])
+  variantId     String?
+  variant       ProductVariant? @relation(fields: [variantId], references: [id])
+  minQuantity   Int             @default(1)
+  maxQuantity   Int? // null = unbounded (top band)
+  discountPercent Decimal? // e.g. 10.00 => 10% off list price
+  overrideUnitPriceCents Int? // absolute override (contracts / promos)
+  startsAt      DateTime        @default(now())
+  endsAt        DateTime?
+  priority      Int             @default(0) // higher wins within same rule type
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  history PricingHistory[]
+
+  @@index([ruleType, tierId, variantId])
+  @@map("pricing_rules")
+}
+
+// Immutable audit trail — every staff write to pricing appends here in the SAME tx.
+model PricingHistory {
+  id              String      @id @default(uuid())
+  ruleId          String?
+  rule            PricingRule? @relation(fields: [ruleId], references: [id])
+  priceListId     String?
+  action          String // CREATED | UPDATED | DEACTIVATED | DELETED
+  beforeJson      Json?
+  afterJson       Json?
+  changedByUserId String
+  changedAt       DateTime    @default(now())
+
+  @@map("pricing_history")
+}
+
+// Per-account negotiated contract prices (highest priority)
+model EnterpriseContract {
+  id                String   @id @default(uuid())
+  accountUserId     String
+  user              User     @relation(fields: [accountUserId], references: [id])
+  contractName      String
+  variantPricesJson Json // { [variantId]: unitPriceCents }
+  startsAt          DateTime @default(now())
+  endsAt            DateTime?
+  isActive          Boolean  @default(true)
+}
+
+// ---------- Inventory ----------
+
+model Inventory {
+  id                String         @id @default(uuid())
+  variantId         String         @unique
+  variant           ProductVariant @relation(fields: [variantId], references: [id])
+  stockOnHand       Int            @default(0)
+  reservedQty       Int            @default(0)
+  lowStockThreshold Int            @default(20)
+  updatedAt         DateTime       @updatedAt
+
+  @@map("inventory")
+}
+
+// ---------- Cart ----------
+
+model Cart {
+  id            String   @id @default(uuid())
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anonSessionId String?  @unique
+  items         CartItem[]
+  updatedAt     DateTime @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String         @id @default(uuid())
+  cartId    String
+  cart      Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  quantity  Int
+
+  @@unique([cartId, variantId])
+  @@map("cart_items")
+}
+
+// ---------- Orders ----------
+
+enum OrderStatus {
+  PLACED
+  CONFIRMED
+  PAID
+  PAYMENT_PENDING
+  FULFILLED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentTerms {
+  PREPAID
+  NET_30
+}
+
+model Order {
+  id              String       @id @default(uuid())
+  orderNumber     String       @unique
+  userId          String?
+  user            User?        @relation(fields: [userId], references: [id])
+  status          OrderStatus  @default(PLACED)
+  paymentTerms    PaymentTerms @default(PREPAID)
+  currency        String       @default("NPR")
+  subtotalCents   Int
+  totalCents      Int
+  contactName     String
+  contactEmail    String
+  contactPhone    String?
+  shippingAddress String
+  idempotencyKey  String?      @unique
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id              String         @id @default(uuid())
+  orderId         String
+  order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId       String
+  variant         ProductVariant @relation(fields: [variantId], references: [id])
+  quantity        Int
+  unitPriceCents  Int // snapshot of server-computed price at order time
+  appliedRuleName String?
+  lineTotalCents  Int
+  currency        String         @default("NPR")
+}
+
+// ---------- Wholesale workflow ----------
+
+model WholesaleAccount {
+  id           String      @id @default(uuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tierId       String
+  tier         PricingTier @relation(fields: [tierId], references: [id])
+  companyName  String
+  vatNumber    String?
+  isActive     Boolean     @default(true)
+  approvedById String?
+  createdAt    DateTime    @default(now())
+
+  @@unique([userId])
+  @@map("wholesale_accounts")
+}
+
+enum InquiryStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model WholesaleInquiry {
+  id               String        @id @default(uuid())
+  companyName      String
+  contactName      String
+  email            String
+  phone            String?
+  website          String?
+  message          String?
+  status           InquiryStatus @default(PENDING)
+  reviewNote       String?
+  reviewedById     String?
+  requestedUserId  String? // linked signup user when approved
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@map("wholesale_inquiries")
+}
+
+model PrivateLabelLead {
+  id               String        @id @default(uuid())
+  companyName      String
+  contactName      String
+  email            String
+  phone            String?
+  productInterest  String?
+  quantityEstimate String?
+  message          String?
+  status           InquiryStatus @default(PENDING)
+  createdAt        DateTime      @default(now())
+
+  @@map("private_label_leads")
+}
+

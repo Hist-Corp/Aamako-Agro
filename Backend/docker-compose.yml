@@ -1,0 +1,22 @@
+version: "3.9"
+
+# Optional local infra — in production Supabase replaces Postgres.
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: aamako
+      POSTGRES_PASSWORD: aamako
+      POSTGRES_DB: aamako_agro
+    ports:
+      - "5433:5432" # host 5433 -> container 5432 (local Postgres already uses 5432)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:

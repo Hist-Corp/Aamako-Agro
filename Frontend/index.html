@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aama ko Agro — Real food, kept honest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
+</head>
+<body>
+
+<div class="trust-strip">
+  <span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span>
+  <span>MADE IN NEPAL</span>
+  <span>NO ADDED PRESERVATIVES</span>
+</div>
+
+<header>
+  <nav class="wrap">
+    <a href="index.html" class="logo"><img src="logo.png" alt="Aama ko Agro"></a>
+    <div class="nav-links">
+      <a href="shop.html">Shop</a>
+      <a href="process.html">Why Freeze-Dried</a>
+      <a href="story.html">Our Story</a>
+      <a href="wholesale.html">Wholesale</a>
+      <a href="journal.html">Learn</a>
+    </div>
+    <div class="nav-actions">
+      <a href="signin.html" class="btn btn-ghost">Sign in</a>
+      <div class="cart-btn-wrap">
+        <a href="#" class="btn btn-primary" id="cartToggle">Cart<span class="cart-badge" id="cartBadge" style="display:none;">0</span></a>
+      </div>
+    </div>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+<div class="mobile-drawer" id="mobileDrawer">
+  <a href="index.html">Home</a>
+  <a href="shop.html">Shop</a>
+  <a href="process.html">Why Freeze-Dried</a>
+  <a href="story.html">Our Story</a>
+  <a href="wholesale.html">Wholesale</a>
+  <a href="journal.html">Learn</a>
+  <a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a>
+</div>
+
+<!-- HERO — full-width background image -->
+<section class="hero hero-entrance">
+  <div class="hero-bg">
+    <img src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=1600&q=80" alt="Fresh produce from Nepali farms" loading="eager">
+  </div>
+  <div class="wrap hero-grid">
+    <div class="hero-content">
+      <div class="eyebrow">Freeze-dried, since [placeholder year]</div>
+      <h1>What Aama would pack, <em>kept honest.</em></h1>
+      <p class="hero-sub">Real fruit, vegetables and Himalayan spice — flash-frozen and dried within hours of harvest, so nothing but the water leaves. No preservatives. Full batch traceability, back to the farm.</p>
+      <div class="hero-cta">
+        <a href="shop.html" class="btn btn-primary">Shop the range</a>
+        <a href="wholesale.html" class="btn btn-outline-dark">Wholesale &amp; bulk →</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-stamp-wrap">
+        <div class="stamp"><div class="stamp-grade">A+</div><div class="stamp-sub">Grade · Batch<br>Sealed</div></div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&q=80" alt="Freeze-dried mango product" loading="eager">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CATEGORIES -->
+<section id="shop-preview" class="reveal">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">With love, from Aama's kitchen</h2>
+        <p class="section-desc">Six ranges, one standard: picked ripe, processed fast, nothing added.</p>
+      </div>
+      <a href="shop.html" class="link-arrow">View all products</a>
+    </div>
+    <div class="cat-grid">
+      <a href="shop.html" class="cat-card">
+        <div class="photo cat-photo"><img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&q=80" alt="Fruits"></div>
+        <div class="cat-body"><div class="cat-name">Fruits</div><div class="cat-count">[N] products</div></div>
+      </a>
+      <a href="shop.html" class="cat-card">
+        <div class="photo cat-photo"><img src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80" alt="Vegetables"></div>
+        <div class="cat-body"><div class="cat-name">Vegetables</div><div class="cat-count">[N] products</div></div>
+      </a>
+      <a href="shop.html" class="cat-card">
+        <div class="photo cat-photo"><img src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&q=80" alt="Spices & Powders"></div>
+        <div class="cat-body"><div class="cat-name">Spices &amp; Powders</div><div class="cat-count">[N] products</div></div>
+      </a>
+      <a href="shop.html" class="cat-card">
+        <div class="photo cat-photo"><img src="https://images.unsplash.com/photo-1547592180-85f173990554?w=600&q=80" alt="Ready Meals"></div>
+        <div class="cat-body"><div class="cat-name">Ready Meals</div><div class="cat-count">[N] products</div></div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="tear"><span>Torn from the same batch</span></div></div>
+
+<!-- WHY FREEZE-DRIED -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="why-wrap">
+      <div class="why-grid">
+        <div>
+          <div class="eyebrow">Why freeze-dried</div>
+          <h2 class="section-title" style="max-width:12ch;">Less water. Same food.</h2>
+          <p class="section-desc" style="margin-top:12px;">Freeze-drying removes moisture at sub-zero temperatures, so flavour, nutrients and shape survive — unlike sun-dried or heat-dried alternatives.</p>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-num">[N]</div><div class="stat-label">Farmers sourced from</div></div>
+            <div class="stat"><div class="stat-num">[N]</div><div class="stat-label">Months shelf life</div></div>
+            <div class="stat"><div class="stat-num">[N]%</div><div class="stat-label">Nutrient retention</div></div>
+          </div>
+          <a href="process.html" class="link-arrow" style="display:inline-block; margin-top:24px;">See the full process</a>
+        </div>
+        <div class="photo" style="height:340px;"><img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&q=80" alt="Fresh produce from farms"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BEST SELLERS -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Our best sellers</h2>
+        <p class="section-desc">The ones people reorder without thinking twice.</p>
+      </div>
+      <a href="shop.html" class="link-arrow">Shop best sellers</a>
+    </div>
+    <div class="cat-grid">
+      <a href="product.html" class="cat-card">
+        <div class="photo cat-photo"><img src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=600&q=80" alt="Freeze-Dried Mango"></div>
+        <div class="cat-body">
+          <div class="cat-name">Freeze-Dried Mango</div>
+          <div class="cat-count">50g pouch · 100% fruit · Rs 450</div>
+        </div>
+      </a>
+      <a href="product.html" class="cat-card">
+        <div class="photo cat-photo"><img src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&q=80" alt="Himalayan Spice Box"></div>
+        <div class="cat-body">
+          <div class="cat-name">Himalayan Spice Box</div>
+          <div class="cat-count">4 spices · gift-ready · Rs 1,200</div>
+        </div>
+      </a>
+      <a href="product.html" class="cat-card">
+        <div class="photo cat-photo"><img src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&q=80" alt="Freeze-Dried Strawberry"></div>
+        <div class="cat-body">
+          <div class="cat-name">Freeze-Dried Strawberry</div>
+          <div class="cat-count">40g pouch · 100% fruit · Rs 420</div>
+        </div>
+      </a>
+      <a href="product.html" class="cat-card">
+        <div class="photo cat-photo"><img src="https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&q=80" alt="Rehydrate Rice Bowl"></div>
+        <div class="cat-body">
+          <div class="cat-name">Rehydrate Rice Bowl</div>
+          <div class="cat-count">Serves 1 · ready in 8 min · Rs 280</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- IMAGE GALLERY -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">From farm to your hands</h2>
+        <p class="section-desc">A glimpse into our journey — from Nepali farms to freeze-dried perfection.</p>
+      </div>
+    </div>
+    <div class="gallery-grid">
+      <div class="gallery-item gallery-large">
+        <img src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&q=80" alt="Fresh produce from farms">
+        <div class="gallery-label">Freshly harvested from local farms</div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=600&q=80" alt="Farming process">
+        <div class="gallery-label">Sustainable farming practices</div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&q=80" alt="Processing facility">
+        <div class="gallery-label">State-of-the-art processing</div>
+      </div>
+      <div class="gallery-item gallery-wide">
+        <img src="https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=1200&q=80" alt="Quality control">
+        <div class="gallery-label">Rigorous quality control</div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&q=80" alt="Final product">
+        <div class="gallery-label">Ready for your kitchen</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHOLESALE CTA -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="wholesale">
+      <div>
+        <div class="eyebrow" style="color:var(--gold);">For retailers &amp; distributors</div>
+        <h2>Built for shelves, kitchens and growing brands.</h2>
+        <p>Tiered wholesale pricing, sample requests and private-label production — the part of the business most suppliers make you call a phone number to find out about.</p>
+        <div class="wholesale-list">
+          <div>Wholesale pricing by volume tier</div>
+          <div>Sample kits before you commit</div>
+          <div>Private-label &amp; custom packaging</div>
+        </div>
+        <div class="wholesale-cta">
+          <a href="wholesale.html" class="btn btn-on-dark">Request wholesale access</a>
+          <a href="wholesale.html#catalogue" class="btn btn-outline-dark">Download catalogue</a>
+        </div>
+      </div>
+      <div class="photo ink" style="height:320px;"><img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80" alt="Facility packaging"></div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACEABILITY -->
+<section class="reveal">
+  <div class="wrap trace">
+    <div class="photo" style="height:360px;"><img src="https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=800&q=80" alt="Batch traceability"></div>
+    <div>
+      <div class="eyebrow">Traceability</div>
+      <h2 class="section-title" style="max-width:14ch;">Proof in every pack, not just promises.</h2>
+      <p class="section-desc" style="margin:16px 0 24px;">Every product carries a batch code that traces back to the farm it came from, the day it was processed, and the quality check it passed.</p>
+      <div class="batch-tag">
+        <div><span>Batch</span><span>AKA-2601-047</span></div>
+        <div><span>Source</span><span>[Region], Nepal</span></div>
+        <div><span>Processed</span><span>[Date]</span></div>
+        <div><span>Quality check</span><span>Passed</span></div>
+      </div>
+      <a href="story.html" class="link-arrow" style="display:inline-block; margin-top:20px;">Meet the people behind the batch</a>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">What people say</h2></div></div>
+    <div class="review-grid">
+      <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"The mango slices taste like they were just picked from the tree. My kids finish a pack in minutes!"</p><div class="review-name">Priya Sharma</div><div class="review-loc">Kathmandu, Nepal · Verified purchase</div></div>
+      <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"Perfect for my café's smoothie bowls. The quality is consistent and my customers love the vibrant colors."</p><div class="review-name">Rajesh Thapa</div><div class="review-loc">Pokhara, Nepal · Verified purchase</div></div>
+      <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"Finally, Nepali freeze-dried food that actually tastes like the real thing. No weird aftertaste like imported brands."</p><div class="review-name">Anita Gurung</div><div class="review-loc">Lalitpur, Nepal · Verified purchase</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- NEWSLETTER -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="newsletter">
+      <h2>Recipes, straight from Aama's notebook</h2>
+      <p>One email a month — a rehydration trick, a seasonal recipe, and what's new from the facility.</p>
+      <form class="nl-form" onsubmit="return false;">
+        <input type="email" placeholder="you@email.com" aria-label="Email address" required>
+        <button type="submit" class="btn btn-primary">Subscribe</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- CART DRAWER -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-drawer-head">
+    <h3>Your cart<span class="cart-count-label" id="cartCountLabel"></span></h3>
+    <button class="cart-close-btn" id="cartClose" aria-label="Close cart">×</button>
+  </div>
+  <div class="cart-items" id="cartItems"><div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you'll love.</div></div></div>
+  <div class="cart-drawer-foot">
+    <div class="cart-subtotal-row"><span>Subtotal</span><span id="cartSubtotal">Rs 0</span></div>
+    <div class="cart-total-row"><span class="cart-total-label">Total</span><span class="cart-total-price" id="cartTotal">Rs 0</span></div>
+    <button class="cart-checkout-btn" onclick="window.location.href='cart.html'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Proceed to checkout
+    </button>
+    <a href="shop.html" class="cart-continue">← Continue shopping</a>
+    <div class="cart-secure">🔒 Secure checkout · SSL encrypted</div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img src="logo-footer.png" alt="Aama ko Agro" style="height:72px;"></a>
+        <p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p>
+      </div>
+      <div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div>
+      <div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div>
+      <div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div>
+      <div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Aama ko Agro. All rights reserved.</span>
+      <span>DFTQC registration — [placeholder]</span>
+    </div>
+  </div>
+</footer>
+
+
+<script>
+(function(){
+  /* hamburger */
+  var btn = document.getElementById("hamburgerBtn");
+  var drawer = document.getElementById("mobileDrawer");
+  if(btn && drawer){
+    btn.addEventListener("click", function(){
+      var open = drawer.classList.toggle("is-open");
+      btn.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      document.body.style.overflow = open ? "hidden" : "";
+      document.body.classList.toggle("drawer-open", open);
+      var hdr = document.querySelector('header');
+      if(open && hdr){ hdr.classList.remove('is-hidden'); drawer.style.setProperty('--drawer-top', hdr.getBoundingClientRect().bottom + 'px'); }
+      else drawer.style.removeProperty('--drawer-top');
+    });
+    drawer.querySelectorAll("a").forEach(function(a){
+      a.addEventListener("click", function(){ drawer.classList.remove("is-open"); btn.classList.remove("is-open"); document.body.style.overflow = ""; document.body.classList.remove("drawer-open"); });
+    });
+  }
+
+  /* hide header on scroll down, show on scroll up */
+  (function(){
+    var header=document.querySelector('header');
+    if(!header)return;
+    var lastY=0;
+    window.addEventListener('scroll',function(){
+      var y=window.pageYOffset||document.documentElement.scrollTop;
+      if(y>80&&y>lastY&&!drawer.classList.contains("is-open")){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}
+      else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}
+      if(y<=80){header.classList.remove('is-hidden','is-scrolled');}
+      lastY=y;
+    });
+  })();
+
+  /* Lenis smooth scroll */
+  var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(typeof Lenis !== 'undefined' && !prefersReducedMotion){
+    var lenis = new Lenis({ duration:1.2, easing:function(t){ return Math.min(1, 1.001 - Math.pow(2, -10*t)); } });
+    function raf(t){ lenis.raf(t); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+  }
+
+  /* GSAP ScrollTrigger reveals */
+  if(typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined' && !prefersReducedMotion){
+    gsap.registerPlugin(ScrollTrigger);
+    document.querySelectorAll('.reveal').forEach(function(el){
+      gsap.from(el, { opacity:0, y:30, duration:0.7, ease:'power3.out', scrollTrigger:{ trigger:el, start:'top 88%', once:true }});
+    });
+    var prodGrid = document.querySelector('.prod-grid');
+    if(prodGrid){
+      gsap.from(prodGrid.querySelectorAll('.prod-card'), { opacity:0, y:24, duration:0.5, ease:'power3.out', stagger:0.08, scrollTrigger:{ trigger:prodGrid, start:'top 88%', once:true }});
+    }
+    var catGrid = document.querySelector('.cat-grid');
+    if(catGrid){
+      gsap.from(catGrid.querySelectorAll('.cat-card'), { opacity:0, y:20, duration:0.45, ease:'power3.out', stagger:0.06, scrollTrigger:{ trigger:catGrid, start:'top 88%', once:true }});
+    }
+    var stamp = document.querySelector('.hero-stamp-wrap .stamp');
+    if(stamp){ gsap.to(stamp, { rotation:-6, duration:3, ease:'sine.inOut', yoyo:true, repeat:-1 }); }
+    setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 3000);
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; });
+  }
+
+  /* Mini cart */
+  var cart = JSON.parse(localStorage.getItem('aka-cart') || '[]');
+  var overlay = document.getElementById('cartOverlay');
+  var cartDrawer = document.getElementById('cartDrawer');
+  var cartClose = document.getElementById('cartClose');
+  var cartToggle = document.getElementById('cartToggle');
+  var cartBadge = document.getElementById('cartBadge');
+  var cartItems = document.getElementById('cartItems');
+  var cartTotal = document.getElementById('cartTotal');
+  var cartSubtotal = document.getElementById('cartSubtotal');
+  var cartCountLabel = document.getElementById('cartCountLabel');
+
+  function openCart(){ overlay.classList.add('is-open'); cartDrawer.classList.add('is-open'); document.body.style.overflow='hidden'; }
+  function closeCart(){ overlay.classList.remove('is-open'); cartDrawer.classList.remove('is-open'); document.body.style.overflow=''; }
+  function updateBadge(){
+    var count = cart.reduce(function(s,i){ return s+i.qty; }, 0);
+    var total = cart.reduce(function(s,i){return s+i.price*i.qty;},0);
+    if(count>0){ cartBadge.textContent=count; cartBadge.style.display='inline-flex'; cartBadge.classList.remove('bounce'); void cartBadge.offsetWidth; cartBadge.classList.add('bounce'); }
+    else { cartBadge.style.display='none'; }
+    cartTotal.textContent='Rs '+total;
+    if(cartSubtotal) cartSubtotal.textContent='Rs '+total;
+    if(cartCountLabel) cartCountLabel.textContent = count > 0 ? '(' + count + ' item' + (count > 1 ? 's' : '') + ')' : '';
+    renderCartItems();
+  }
+  function renderCartItems(){
+    if(cart.length===0){
+      cartItems.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you\'ll love.</div></div>';
+      return;
+    }
+    cartItems.innerHTML=cart.map(function(item,i){
+      return '<div class="cart-item">'
+        + '<div class="cart-item-photo"><div class="photo" style="height:100%;background:var(--sage);"></div></div>'
+        + '<div class="cart-item-info"><div class="cart-item-name">'+item.name+'</div><div class="cart-item-meta">'+item.meta+'</div>'
+        + '<div class="cart-item-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div>'
+        + '</div><div class="cart-item-right"><div class="cart-item-price">Rs '+(item.price*item.qty)+'</div>'
+        + '<button class="cart-item-remove" data-idx="'+i+'" aria-label="Remove">×</button></div></div>';
+    }).join('');
+    cartItems.querySelectorAll('.cart-item-remove').forEach(function(b){ b.addEventListener('click',function(){ cart.splice(parseInt(b.dataset.idx),1); localStorage.setItem('aka-cart',JSON.stringify(cart)); updateBadge(); }); });
+    cartItems.querySelectorAll('.cart-item-qty button').forEach(function(b){ b.addEventListener('click',function(){
+      var idx=parseInt(b.dataset.idx);
+      if(b.dataset.action==='inc') cart[idx].qty++;
+      else { cart[idx].qty--; if(cart[idx].qty<=0) cart.splice(idx,1); }
+      localStorage.setItem('aka-cart',JSON.stringify(cart)); updateBadge();
+    }); });
+  }
+  if(cartToggle) cartToggle.addEventListener('click',function(e){ e.preventDefault(); openCart(); });
+  if(cartClose) cartClose.addEventListener('click',closeCart);
+  if(overlay) overlay.addEventListener('click',closeCart);
+
+  /* Add to cart */
+  document.querySelectorAll('.add-btn').forEach(function(b){
+    b.addEventListener('click',function(){
+      var card=b.closest('.prod-card'); var name=card?(card.querySelector('.prod-name')||{}).textContent:'Product'; var meta=card?(card.querySelector('.prod-meta')||{}).textContent:''; var pStr=card?(card.querySelector('.prod-price')||{}).textContent:'0'; var price=parseInt(pStr.replace(/[^0-9]/g,''))||0;
+      var ex=cart.find(function(i){return i.name===name;}); if(ex){ex.qty++;} else {cart.push({name:name,meta:meta,price:price,qty:1});}
+      localStorage.setItem('aka-cart',JSON.stringify(cart)); updateBadge(); b.classList.add('is-added'); setTimeout(function(){b.classList.remove('is-added');},500);
+    });
+  });
+  updateBadge();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Aama ko Agro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="trust-strip">
+  <span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span>
+  <span>MADE IN NEPAL</span>
+  <span>NO ADDED PRESERVATIVES</span>
+</div>
+
+<header>
+  <nav class="wrap">
+    <a href="index.html" class="logo"><img src="logo.png" alt="Aama ko Agro"></a>
+    <div class="nav-links">
+      <a href="shop.html">Shop</a>
+      <a href="process.html">Why Freeze-Dried</a>
+      <a href="story.html">Our Story</a>
+      <a href="wholesale.html">Wholesale</a>
+      <a href="journal.html">Learn</a>
+    </div>
+    <div class="nav-actions">
+      <a href="signin.html" class="btn btn-ghost">Sign in</a>
+      <div class="cart-btn-wrap">
+        <a href="shop.html" class="btn btn-primary">Shop now</a>
+      </div>
+    </div>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+<div class="mobile-drawer" id="mobileDrawer">
+  <a href="index.html">Home</a>
+  <a href="shop.html">Shop</a>
+  <a href="process.html">Why Freeze-Dried</a>
+  <a href="story.html">Our Story</a>
+  <a href="wholesale.html">Wholesale</a>
+  <a href="journal.html">Learn</a>
+  <a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a>
+</div>
+
+<section class="auth-section">
+  <div class="auth-container auth-container--center">
+
+    <div class="auth-card auth-card--signin">
+      <div class="auth-card-header" style="text-align:center;">
+        <div style="margin:0 auto var(--space-4);"><img src="logo.png" alt="Aama ko Agro" style="height:56px;"></div>
+        <h2>Welcome back</h2>
+        <p>Sign in to your Aama ko Agro account.</p>
+      </div>
+
+      <form class="auth-form" onsubmit="return false;">
+        <div class="field">
+          <label for="email">Email address</label>
+          <input type="email" id="email" placeholder="you@email.com" required>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="password" placeholder="Enter your password" required>
+            <button type="button" class="password-toggle" onclick="var p=document.getElementById('password');p.type=p.type==='password'?'text':'password';this.textContent=p.type==='password'?'Show':'Hide';">Show</button>
+          </div>
+        </div>
+
+        <p id="signin-error" style="color:#b3261e; font-size:13px; display:none;"></p>
+
+        <div class="auth-form-row" style="justify-content:space-between; align-items:center;">
+          <label class="auth-checkbox" style="margin:0;">
+            <input type="checkbox">
+            <span>Remember me</span>
+          </label>
+          <a href="#" class="link-arrow" style="font-size:13px;">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="auth-submit" onclick="handleSignIn(event)">Sign in</button>
+      </form>
+
+      <div class="auth-divider"><span>or</span></div>
+
+      <div class="auth-social">
+        <button class="auth-social-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.79-.07-1.54-.19-2.27h-11.3v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12.255 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96h-3.98v3.09C3.515 21.3 7.565 24 12.255 24z"/><path fill="#FBBC05" d="M5.525 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62h-3.98a11.86 11.86 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12.255 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C18.205 1.19 15.495 0 12.255 0c-4.69 0-8.74 2.7-10.71 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+          Continue with Google
+        </button>
+      </div>
+
+      <div class="auth-footer-text">
+        Don't have an account? <a href="signup.html">Create one</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img src="logo-footer.png" alt="Aama ko Agro" style="height:72px;"></a>
+        <p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p>
+      </div>
+      <div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div>
+      <div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div>
+      <div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div>
+      <div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Aama ko Agro. All rights reserved.</span>
+      <span>DFTQC registration — [placeholder]</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var btn=document.getElementById("hamburgerBtn"),drawer=document.getElementById("mobileDrawer");
+  if(btn&&drawer){btn.addEventListener("click",function(){var o=drawer.classList.toggle("is-open");btn.classList.toggle("is-open",o);btn.setAttribute("aria-expanded",o?"true":"false");document.body.style.overflow=o?"hidden":"";document.body.classList.toggle('drawer-open',o);var hdr=document.querySelector('header');if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}else drawer.style.removeProperty('--drawer-top');});drawer.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){drawer.classList.remove("is-open");btn.classList.remove("is-open");document.body.style.overflow="";document.body.classList.remove('drawer-open');});});}
+  (function(){var header=document.querySelector('header');if(!header)return;var lastY=0;window.addEventListener('scroll',function(){var y=window.pageYOffset||document.documentElement.scrollTop;if(y>80&&y>lastY&&!drawer.classList.contains("is-open")){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}if(y<=80){header.classList.remove('is-hidden','is-scrolled');}lastY=y;});})();
+
+  var form = document.querySelector('.auth-form');
+  if(form){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var btn = form.querySelector('.auth-submit');
+      btn.textContent='Signing in...';
+      setTimeout(function(){ btn.textContent='Sign in'; },1500);
+    });
+  }
+})();
+</script>
+
+  <script src="js/api.js"></script>
+  <script>
+    async function handleSignIn(e) {
+      e.preventDefault();
+      var errEl = document.getElementById('signin-error');
+      errEl.style.display = 'none';
+      try {
+        var user = await window.AamakoAPI.login(
+          document.getElementById('email').value.trim(),
+          document.getElementById('password').value
+        );
+        localStorage.setItem('aamako_user', JSON.stringify(user));
+        // Staff go to dashboard, customers to shop
+        if (String(user.role).indexOf('STAFF') === 0) {
+          window.location.href = 'http://localhost:5173';
+        } else {
+          window.location.href = 'shop.html';
+        }
+      } catch (err) {
+        errEl.textContent = err.message || 'Sign in failed';
+        errEl.style.display = 'block';
+      }
+      return false;
+    }
+  </script>
+</body>
+</html>

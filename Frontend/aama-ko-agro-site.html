@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aama ko Agro — Real food, kept honest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================
+   AAMA KO AGRO — shared design system
+   Signature device: the produce grading stamp — a real artifact
+   from Nepali farm-to-market practice (graded fresh produce,
+   batch-coded packaging). Used sparingly: hero, product cards,
+   process steps, page headers. Everything else stays quiet.
+=========================================================== */
+
+:root{
+  --bg: #F7F1E4;
+  --surface: #ECE3CC;
+  --paper: #FFFDF7;
+  --ink: #211F17;
+  --ink-soft: #55503F;
+  --sage: #5C6B3E;
+  --sage-deep: #38401F;
+  --gold: #BE8A2A;
+  --clay: #9C4E30;
+  --rust: #7A3820;
+  --line: #D9CBA4;
+  --stamp: #38401F;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 100px;
+  --radius-sm: 3px; --radius-md: 6px;
+  --shadow-sm: 0 1px 2px rgba(33,31,23,0.08);
+  --shadow-md: 0 10px 28px rgba(33,31,23,0.14);
+
+  --display: 'Fraunces', serif;
+  --body: 'Work Sans', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--body);
+  line-height:1.5; font-size:16px;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(33,31,23,0.035) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+img{max-width:100%; display:block;}
+a{color:inherit; text-decoration:none;}
+.wrap{max-width:1180px; margin:0 auto; padding:0 var(--space-5);}
+@media (max-width:640px){ .wrap{padding:0 var(--space-4);} }
+
+/* ---------- photography placeholders ---------- */
+.photo{
+  position:relative; overflow:hidden; border-radius:var(--radius-md);
+  background:linear-gradient(150deg, var(--sage) 0%, var(--sage-deep) 100%);
+  display:flex; align-items:flex-end; color:var(--paper); min-height:200px;
+}
+.photo.gold{background:linear-gradient(150deg, var(--gold) 0%, #7C5A15 100%); color:#241A05;}
+.photo.clay{background:linear-gradient(150deg, var(--clay) 0%, #5C2C18 100%); color:var(--paper);}
+.photo.ink{background:linear-gradient(150deg, #4A4636 0%, var(--ink) 100%); color:var(--paper);}
+.photo-label{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;
+  padding:var(--space-3) var(--space-4); background:rgba(0,0,0,0.22); width:100%;
+}
+.photo-icon{
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:34%; max-width:110px; min-width:32px; opacity:0.6; color:var(--paper);
+}
+.photo.gold .photo-icon{color:#241A05;}
+.photo-icon svg{width:100%; height:100%; display:block;}
+
+/* ---------- grading stamp (signature element) ---------- */
+.stamp{
+  position:relative; display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+  width:104px; height:104px; border-radius:50%; border:1.5px solid var(--stamp);
+  color:var(--stamp); font-family:var(--mono); text-align:center; transform:rotate(-8deg);
+  flex-shrink:0; background:var(--paper);
+}
+.stamp::before{
+  content:''; position:absolute; inset:6px; border:1px dashed var(--stamp); border-radius:50%; opacity:0.55;
+}
+.stamp .stamp-grade{font-size:19px; font-weight:700; letter-spacing:0.02em;}
+.stamp .stamp-sub{font-size:8px; letter-spacing:0.09em; text-transform:uppercase; margin-top:2px;}
+.stamp.on-dark{color:var(--paper); border-color:var(--paper); background:transparent;}
+.stamp.on-dark::before{border-color:var(--paper);}
+
+/* ---------- perforated divider (packaging tear line) ---------- */
+.tear{
+  display:flex; align-items:center; gap:6px; padding:var(--space-6) 0; overflow:hidden;
+}
+.tear::before, .tear::after{
+  content:''; flex:1; height:0; border-top:1px dashed var(--line);
+}
+.tear span{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--ink-soft); white-space:nowrap;
+}
+
+/* ---------- nav / header ---------- */
+.trust-strip{
+  background:var(--sage-deep); color:#EDE7CC; font-family:var(--mono);
+  font-size:11.5px; letter-spacing:0.05em; padding:var(--space-2) 0;
+  display:flex; justify-content:center; gap:var(--space-6); flex-wrap:wrap; text-align:center;
+}
+header{position:sticky; top:0; z-index:50; background:var(--bg); border-bottom:1px solid var(--line);}
+nav.wrap{display:flex; align-items:center; justify-content:space-between; padding-top:var(--space-4); padding-bottom:var(--space-4);}
+.logo{font-family:var(--display); font-weight:600; font-size:21px; letter-spacing:-0.01em;}
+.logo span{color:var(--sage);}
+.nav-links{display:flex; gap:var(--space-6); font-size:14px; font-weight:500;}
+.nav-links a{padding:var(--space-2) 0; border-bottom:2px solid transparent;}
+.nav-links a:hover, .nav-links a:focus-visible, .nav-links a.active{border-bottom-color:var(--gold);}
+.nav-actions{display:flex; gap:var(--space-4); align-items:center;}
+.btn{
+  display:inline-block; font-family:var(--body); font-weight:600; font-size:14px;
+  padding:11px 22px; border-radius:var(--radius-sm); cursor:pointer; border:1px solid transparent;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.btn:focus-visible{outline:2px solid var(--sage); outline-offset:2px;}
+.btn-primary{background:var(--sage-deep); color:var(--paper);}
+.btn-primary:hover{box-shadow:var(--shadow-md); transform:translateY(-1px);}
+.btn-ghost{background:transparent; color:var(--ink); border-color:var(--line);}
+.btn-ghost:hover{border-color:var(--ink);}
+.btn-on-dark{background:var(--gold); color:#241A05;}
+.btn-on-dark:hover{box-shadow:0 8px 22px rgba(190,138,42,0.32); transform:translateY(-1px);}
+.btn-outline-dark{border:1px solid #6B6650; color:var(--paper);}
+@media (max-width:900px){ .nav-links{display:none;} }
+
+/* ---------- mobile hamburger + drawer ---------- */
+.hamburger{
+  display:none; flex-direction:column; justify-content:center; gap:5px;
+  width:38px; height:38px; border:1px solid var(--line); border-radius:var(--radius-sm);
+  background:var(--paper); cursor:pointer;
+}
+.hamburger span{width:16px; height:1.5px; background:var(--ink); margin:0 auto; transition:transform .2s ease, opacity .2s ease;}
+.hamburger.is-open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
+.hamburger.is-open span:nth-child(2){opacity:0;}
+.hamburger.is-open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
+@media (max-width:900px){ .hamburger{display:flex;} }
+.mobile-drawer{
+  display:none; flex-direction:column; gap:2px; background:var(--bg); border-bottom:1px solid var(--line);
+  padding:var(--space-4) var(--space-5) var(--space-5);
+}
+.mobile-drawer.is-open{display:flex;}
+.mobile-drawer a{padding:12px 4px; font-size:15px; font-weight:500; border-bottom:1px solid var(--line);}
+.mobile-drawer a:last-child{border-bottom:none;}
+
+/* ---------- hero decorative watermark (signature, oversized, quiet) ---------- */
+.hero{overflow:hidden;}
+.hero-watermark{
+  position:absolute; top:-6%; left:-4%; width:46%; opacity:0.05; color:var(--sage-deep);
+  pointer-events:none; z-index:0; transform:rotate(-6deg);
+}
+.hero-watermark svg{width:100%; height:auto; display:block;}
+.hero .wrap{position:relative; z-index:1;}
+
+/* ---------- page header (sub-pages) ---------- */
+.page-header{padding:var(--space-8) 0 var(--space-7); border-bottom:1px solid var(--line);}
+.page-header-grid{display:flex; justify-content:space-between; align-items:flex-end; gap:var(--space-6); flex-wrap:wrap;}
+.eyebrow{
+  font-family:var(--mono); font-size:11.5px; letter-spacing:0.09em; text-transform:uppercase;
+  color:var(--sage-deep); margin-bottom:var(--space-4); display:flex; align-items:center; gap:var(--space-2);
+}
+.eyebrow::before{content:''; width:22px; height:1px; background:var(--gold);}
+h1.page-title{
+  font-family:var(--display); font-weight:600; font-size:clamp(2.2rem,4.6vw,3.6rem);
+  line-height:1.03; letter-spacing:-0.015em; max-width:16ch;
+}
+.page-sub{margin-top:var(--space-4); font-size:16.5px; color:var(--ink-soft); max-width:52ch;}
+
+/* ---------- hero (home) ---------- */
+.hero{padding:var(--space-9) 0 var(--space-8); position:relative;}
+.hero-grid{display:grid; grid-template-columns:1.05fr 0.95fr; gap:var(--space-8); align-items:center;}
+@media (max-width:900px){ .hero-grid{grid-template-columns:1fr; gap:var(--space-6);} }
+h1.headline{
+  font-family:var(--display); font-weight:600; font-size:clamp(2.6rem,5.4vw,4.6rem);
+  line-height:1.0; letter-spacing:-0.02em; color:var(--ink); max-width:12ch;
+}
+h1.headline em{font-style:italic; color:var(--sage-deep); font-weight:500;}
+.hero-sub{margin-top:var(--space-5); font-size:18px; color:var(--ink-soft); max-width:46ch;}
+.hero-cta{margin-top:var(--space-7); display:flex; gap:var(--space-4); flex-wrap:wrap; align-items:center;}
+.hero-photo{aspect-ratio:4/5; height:520px;}
+@media (max-width:900px){ .hero-photo{height:340px;} }
+.hero-stamp-wrap{position:absolute; top:var(--space-8); right:var(--space-5); z-index:2;}
+@media (max-width:900px){ .hero-stamp-wrap{display:none;} }
+
+/* ---------- section shell ---------- */
+section{padding:var(--space-8) 0;}
+.section-head{display:flex; justify-content:space-between; align-items:flex-end; gap:var(--space-5); margin-bottom:var(--space-6); flex-wrap:wrap;}
+h2.section-title{font-family:var(--display); font-weight:600; font-size:clamp(1.7rem,3vw,2.4rem); letter-spacing:-0.01em;}
+.section-desc{color:var(--ink-soft); max-width:52ch; font-size:15px;}
+.link-arrow{font-weight:600; font-size:14px; white-space:nowrap;}
+.link-arrow::after{content:' →';}
+
+/* ---------- categories ---------- */
+.cat-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:var(--space-4);}
+@media (max-width:900px){ .cat-grid{grid-template-columns:repeat(2,1fr);} }
+.cat-card{border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow-sm); transition:box-shadow .15s ease;}
+.cat-card:hover{box-shadow:var(--shadow-md);}
+.cat-photo{height:150px;}
+.cat-body{background:var(--paper); padding:var(--space-4); border:1px solid var(--line); border-top:none;}
+.cat-name{font-weight:600; font-size:14.5px;}
+.cat-count{font-family:var(--mono); font-size:11px; color:var(--ink-soft); margin-top:2px;}
+
+/* ---------- why / stats ---------- */
+.why-wrap{background:var(--surface); border-radius:var(--radius-md);}
+.why-grid{display:grid; grid-template-columns:0.9fr 1.1fr; gap:var(--space-8); padding:var(--space-8) var(--space-7); align-items:center;}
+@media (max-width:900px){ .why-grid{grid-template-columns:1fr; padding:var(--space-6) var(--space-5);} }
+.stat-row{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--space-5); margin-top:var(--space-6);}
+.stat{border-top:2px solid var(--gold); padding-top:var(--space-3);}
+.stat-num{font-family:var(--display); font-size:28px; font-weight:600;}
+.stat-label{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+
+/* ---------- process list ---------- */
+.process-list{display:flex; flex-direction:column; border-top:1px solid var(--line);}
+.process-step{
+  display:grid; grid-template-columns:110px 1fr 1.3fr; gap:var(--space-6);
+  padding:var(--space-6) 0; border-bottom:1px solid var(--line); align-items:start;
+}
+@media (max-width:760px){ .process-step{grid-template-columns:60px 1fr;} .process-step .photo{grid-column:1 / -1; margin-top:var(--space-4); height:150px;} }
+.process-num-wrap{padding-top:2px;}
+.process-name{font-family:var(--display); font-weight:600; font-size:22px; margin-bottom:var(--space-2);}
+.process-desc{color:var(--ink-soft); font-size:15px; max-width:42ch;}
+.process-step .photo{height:120px;}
+
+/* ---------- products ---------- */
+.prod-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--space-5);}
+@media (max-width:900px){ .prod-grid{grid-template-columns:repeat(2,1fr);} }
+.prod-card{border:1px solid var(--line); border-radius:var(--radius-md); overflow:hidden; background:var(--paper); position:relative;}
+.prod-photo{height:180px;}
+.prod-stamp{position:absolute; top:10px; right:10px; z-index:2;}
+.prod-body{padding:var(--space-4);}
+.prod-badge{
+  display:inline-block; font-family:var(--mono); font-size:10px; text-transform:uppercase;
+  letter-spacing:0.05em; background:var(--surface); color:var(--sage-deep); padding:3px 8px; border-radius:3px; margin-bottom:var(--space-2);
+}
+.prod-name{font-weight:600; font-size:15px; margin-bottom:2px;}
+.prod-meta{font-size:13px; color:var(--ink-soft); margin-bottom:var(--space-3);}
+.prod-foot{display:flex; justify-content:space-between; align-items:center;}
+.prod-price{font-family:var(--mono); font-weight:500;}
+.add-btn{
+  width:32px; height:32px; border-radius:50%; border:1px solid var(--ink); background:transparent;
+  font-size:16px; cursor:pointer; line-height:1;
+}
+.add-btn:hover{background:var(--ink); color:var(--paper);}
+
+/* ---------- filter bar (shop) ---------- */
+.filter-bar{display:flex; gap:var(--space-3); flex-wrap:wrap; margin-bottom:var(--space-6);}
+.filter-chip{
+  font-family:var(--mono); font-size:12px; padding:8px 14px; border-radius:20px;
+  border:1px solid var(--line); background:var(--paper); cursor:pointer;
+}
+.filter-chip.active{background:var(--sage-deep); color:var(--paper); border-color:var(--sage-deep);}
+
+/* ---------- wholesale banner ---------- */
+.wholesale{
+  background:var(--ink); color:#EDE7CC; border-radius:var(--radius-md);
+  padding:var(--space-8) var(--space-7); display:grid; grid-template-columns:1.2fr 0.8fr; gap:var(--space-7); align-items:center;
+}
+@media (max-width:900px){ .wholesale{grid-template-columns:1fr; padding:var(--space-6) var(--space-5);} }
+.wholesale h2{font-family:var(--display); font-weight:600; font-size:clamp(1.8rem,3vw,2.6rem); letter-spacing:-0.01em; max-width:14ch;}
+.wholesale p{color:#C4BCA0; margin-top:var(--space-4); max-width:44ch; font-size:15.5px;}
+.wholesale-list{margin-top:var(--space-6); display:flex; flex-direction:column; gap:var(--space-3); font-family:var(--mono); font-size:13px; color:#E4DDC0;}
+.wholesale-list div::before{content:'— '; color:var(--gold);}
+.wholesale-cta{display:flex; gap:var(--space-4); margin-top:var(--space-7); flex-wrap:wrap;}
+
+/* ---------- tier / pricing table (wholesale page) ---------- */
+.tier-table{width:100%; border-collapse:collapse; background:var(--paper); border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--line);}
+.tier-table th, .tier-table td{padding:var(--space-4); text-align:left; font-size:14px; border-bottom:1px solid var(--line);}
+.tier-table th{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); background:var(--surface);}
+.tier-table tr:last-child td{border-bottom:none;}
+
+/* ---------- traceability ---------- */
+.trace{display:grid; grid-template-columns:0.9fr 1.1fr; gap:var(--space-8); align-items:center;}
+@media (max-width:900px){ .trace{grid-template-columns:1fr;} }
+.batch-tag{
+  border:1px dashed var(--sage-deep); border-radius:var(--radius-sm); padding:var(--space-5);
+  font-family:var(--mono); font-size:12.5px; color:var(--sage-deep); background:var(--surface);
+}
+.batch-tag div{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line);}
+.batch-tag div:last-child{border-bottom:none;}
+
+/* ---------- reviews ---------- */
+.review-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--space-5);}
+@media (max-width:900px){ .review-grid{grid-template-columns:1fr;} }
+.review-card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius-md); padding:var(--space-5);}
+.review-stars{color:var(--gold); font-size:14px; margin-bottom:var(--space-3); letter-spacing:2px;}
+.review-quote{font-size:15px; color:var(--ink); margin-bottom:var(--space-4); line-height:1.55;}
+.review-name{font-weight:600; font-size:13.5px;}
+.review-loc{font-size:12px; color:var(--ink-soft);}
+
+/* ---------- team / values (story page) ---------- */
+.value-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--space-5);}
+@media (max-width:900px){ .value-grid{grid-template-columns:repeat(2,1fr);} }
+.value-card{padding:var(--space-5) 0; border-top:2px solid var(--gold);}
+.value-num{font-family:var(--mono); font-size:11px; color:var(--ink-soft);}
+.value-name{font-family:var(--display); font-weight:600; font-size:19px; margin:var(--space-2) 0;}
+.value-desc{font-size:14px; color:var(--ink-soft);}
+
+.team-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--space-5);}
+@media (max-width:900px){ .team-grid{grid-template-columns:repeat(2,1fr);} }
+.team-card .photo{height:180px; margin-bottom:var(--space-3);}
+.team-name{font-weight:600; font-size:14.5px;}
+.team-role{font-size:12.5px; color:var(--ink-soft);}
+
+/* ---------- journal / learn ---------- */
+.article-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:var(--space-5);}
+@media (max-width:900px){ .article-grid{grid-template-columns:1fr;} }
+.article-card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius-md); overflow:hidden;}
+.article-card.feature .photo{height:280px;}
+.article-card .photo{height:160px;}
+.article-body{padding:var(--space-4);}
+.article-cat{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; color:var(--sage-deep); letter-spacing:0.05em;}
+.article-title{font-family:var(--display); font-weight:600; font-size:17px; margin-top:6px;}
+.article-card.feature .article-title{font-size:24px;}
+.article-meta{font-size:12px; color:var(--ink-soft); margin-top:var(--space-2);}
+
+.faq-item{border-bottom:1px solid var(--line); padding:var(--space-5) 0;}
+.faq-q{font-weight:600; font-size:15.5px; display:flex; justify-content:space-between; cursor:pointer;}
+.faq-a{font-size:14.5px; color:var(--ink-soft); margin-top:var(--space-3); max-width:60ch;}
+
+/* ---------- newsletter / footer ---------- */
+.newsletter{background:var(--surface); border-radius:var(--radius-md); padding:var(--space-7); text-align:center;}
+.newsletter h2{font-family:var(--display); font-weight:600; font-size:clamp(1.6rem,2.6vw,2.2rem); margin-bottom:var(--space-3);}
+.newsletter p{color:var(--ink-soft); max-width:44ch; margin:0 auto var(--space-6);}
+.nl-form{display:flex; gap:var(--space-3); max-width:420px; margin:0 auto; flex-wrap:wrap; justify-content:center;}
+.nl-form input{
+  flex:1; min-width:220px; padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius-sm);
+  font-family:var(--body); font-size:14px; background:var(--paper);
+}
+.nl-form input:focus-visible{outline:2px solid var(--sage); outline-offset:1px;}
+
+footer{border-top:1px solid var(--line); margin-top:var(--space-8); padding:var(--space-7) 0 var(--space-6);}
+.foot-grid{display:grid; grid-template-columns:1.4fr repeat(4,1fr); gap:var(--space-6);}
+@media (max-width:760px){ .foot-grid{grid-template-columns:repeat(2,1fr);} }
+.foot-col h4{font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; font-family:var(--mono); color:var(--ink-soft); margin-bottom:var(--space-3);}
+.foot-col a{display:block; font-size:14px; padding:4px 0; color:var(--ink-soft);}
+.foot-col a:hover{color:var(--ink);}
+.foot-bottom{margin-top:var(--space-7); padding-top:var(--space-5); border-top:1px solid var(--line); display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); flex-wrap:wrap; gap:var(--space-3);}
+
+/* ---------- form elements (wholesale/private label forms) ---------- */
+.form-grid{display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);}
+@media (max-width:640px){ .form-grid{grid-template-columns:1fr;} }
+.field{display:flex; flex-direction:column; gap:6px;}
+.field label{font-size:13px; font-weight:600;}
+.field input, .field select, .field textarea{
+  padding:11px 12px; border:1px solid var(--line); border-radius:var(--radius-sm);
+  font-family:var(--body); font-size:14.5px; background:var(--paper);
+}
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible{outline:2px solid var(--sage); outline-offset:1px;}
+.field.full{grid-column:1 / -1;}
+
+@media (prefers-reduced-motion: reduce){ *{transition:none !important; scroll-behavior:auto !important;} }
+
+
+.route-page[hidden]{ display:none !important; }
+
+
+  [data-route="/wholesale"]{background:#EFE7D2;}
+  [data-route="/wholesale"] .page-header{background:var(--ink); color:#EDE7CC; border-bottom:none;}
+  [data-route="/wholesale"] .page-header .eyebrow{color:var(--gold);}
+  [data-route="/wholesale"] .page-header .page-sub{color:#C4BCA0;}
+
+
+
+  .breadcrumb{font-family:var(--mono); font-size:12px; color:var(--ink-soft); padding:var(--space-4) 0;}
+  .breadcrumb a:hover{color:var(--ink);}
+  .pdp-grid{display:grid; grid-template-columns:1fr 1fr; gap:var(--space-8); align-items:start;}
+  @media (max-width:900px){ .pdp-grid{grid-template-columns:1fr;} }
+  .pdp-gallery-main{height:460px; position:relative;}
+  .pdp-thumbs{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--space-3); margin-top:var(--space-3);}
+  .pdp-thumbs .photo{height:80px;}
+  .pdp-price{font-family:var(--mono); font-size:24px; font-weight:500; margin:var(--space-4) 0;}
+  .pdp-price .was{font-size:15px; color:var(--ink-soft); text-decoration:line-through; margin-left:10px;}
+  .qty-row{display:flex; align-items:center; gap:var(--space-4); margin:var(--space-6) 0;}
+  .qty-stepper{display:flex; align-items:center; border:1px solid var(--line); border-radius:var(--radius-sm);}
+  .qty-stepper button{width:38px; height:38px; border:none; background:transparent; font-size:16px; cursor:pointer;}
+  .qty-stepper span{width:32px; text-align:center; font-family:var(--mono);}
+  .pdp-cta{display:flex; gap:var(--space-3); flex-wrap:wrap;}
+  .accordion{border-top:1px solid var(--line); margin-top:var(--space-7);}
+  .acc-item{border-bottom:1px solid var(--line);}
+  .acc-head{padding:var(--space-4) 0; display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-weight:600; font-size:15px;}
+  .acc-body{padding-bottom:var(--space-4); font-size:14.5px; color:var(--ink-soft); max-width:60ch;}
+  .spec-row{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px;}
+  .spec-row span:first-child{color:var(--ink-soft);}
+  .rehydrate-steps{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--space-4); margin-top:var(--space-3);}
+  .rstep{padding:var(--space-4); background:var(--surface); border-radius:var(--radius-sm);}
+  .rstep-num{font-family:var(--mono); font-size:11px; color:var(--sage-deep);}
+
+</style>
+</head>
+<body>
+
+<div class="trust-strip">
+  <span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span>
+  <span>MADE IN NEPAL</span>
+  <span>NO ADDED PRESERVATIVES</span>
+</div>
+
+<header>
+  <nav class="wrap">
+    <a href="#/" class="logo">Aama<span>ko</span>Agro</a>
+    <div class="nav-links">
+      <a href="#/shop">Shop</a>
+      <a href="#/process">Why Freeze-Dried</a>
+      <a href="#/story">Our Story</a>
+      <a href="#/wholesale">Wholesale</a>
+      <a href="#/journal">Learn</a>
+    </div>
+    <div class="nav-actions">
+      <a href="#" class="btn btn-ghost">Sign in</a>
+      <a href="#/shop" class="btn btn-primary">Shop now</a>
+    </div>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </nav>
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="#/">Home</a>
+    <a href="#/shop">Shop</a>
+    <a href="#/process">Why Freeze-Dried</a>
+    <a href="#/story">Our Story</a>
+    <a href="#/wholesale">Wholesale</a>
+    <a href="#/journal">Learn</a>
+    <a href="#" class="btn btn-primary" style="margin-top:12px;">Sign in</a>
+  </div>
+</header>
+
+<main id="app">
+
+<div class="route-page" data-route="/" hidden>
+
+
+<section class="hero">
+  <div class="hero-watermark"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="10" r="4"/><path d="M4 36l10-10 6 6 8-10 16 14"/><path d="M4 40h40M4 40l6-6M14 40l6-6M24 40l6-6M34 40l6-6"/></svg></div>
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Freeze-dried, since [placeholder year]</div>
+      <h1 class="headline">What Aama would pack, <em>kept honest.</em></h1>
+      <p class="hero-sub">Real fruit, vegetables and Himalayan spice — flash-frozen and dried within hours of harvest, so nothing but the water leaves. No preservatives. Full batch traceability, back to the farm.</p>
+      <div class="hero-cta">
+        <a href="#/shop" class="btn btn-primary">Shop the range</a>
+        <a href="#/wholesale" class="btn btn-ghost">Wholesale &amp; bulk →</a>
+      </div>
+    </div>
+    <div style="position:relative;">
+      <div class="hero-stamp-wrap">
+        <div class="stamp"><div class="stamp-grade">A+</div><div class="stamp-sub">Grade · Batch<br>Sealed</div></div>
+      </div>
+      <div class="photo hero-photo">
+        <div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="10" r="4"/><path d="M4 36l10-10 6 6 8-10 16 14"/><path d="M4 40h40M4 40l6-6M14 40l6-6M24 40l6-6M34 40l6-6"/></svg></div>
+        <div class="photo-label">Photography placeholder — facility/product photo pending</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="shop-preview">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">With love, from Aama's kitchen</h2>
+        <p class="section-desc">Six ranges, one standard: picked ripe, processed fast, nothing added.</p>
+      </div>
+      <a href="#/shop" class="link-arrow">View all products</a>
+    </div>
+    <div class="cat-grid">
+      <div class="cat-card"><div class="photo cat-photo clay"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div><div class="cat-body"><div class="cat-name">Fruits</div><div class="cat-count">[N] products</div></div></div>
+      <div class="cat-card"><div class="photo cat-photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 12c6 0 10 5 9 12-1 8-5 13-9 13s-8-5-9-13c-1-7 3-12 9-12z"/><path d="M24 12V7"/><path d="M20 8c1-2 4-2 5 0"/><path d="M18 24h12M17 30h14"/></svg></div></div><div class="cat-body"><div class="cat-name">Vegetables</div><div class="cat-count">[N] products</div></div></div>
+      <div class="cat-card"><div class="photo cat-photo gold"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="15" y="18" width="18" height="20" rx="2"/><path d="M18 18v-4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"/><path d="M20 25c1-2 3-2 4 0s3 2 4 0"/><path d="M20 31c1-2 3-2 4 0s3 2 4 0"/></svg></div></div><div class="cat-body"><div class="cat-name">Spices &amp; Powders</div><div class="cat-count">[N] products</div></div></div>
+      <div class="cat-card"><div class="photo cat-photo ink"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 22a14 14 0 0 0 28 0z"/><path d="M9 22h30"/><path d="M18 22c0-6 2.5-9 3-12M24 22c0-7 1-10 1-13M30 22c0-6-2-9-2.5-11"/></svg></div></div><div class="cat-body"><div class="cat-name">Ready Meals</div><div class="cat-count">[N] products</div></div></div>
+      <div class="cat-card"><div class="photo cat-photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="19" width="28" height="18" rx="1.5"/><path d="M10 25h28"/><path d="M24 19v18"/><path d="M24 19c-3-6-11-6-11 0M24 19c3-6 11-6 11 0"/></svg></div></div><div class="cat-body"><div class="cat-name">Gift Sets</div><div class="cat-count">[N] products</div></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="tear"><span>Torn from the same batch</span></div></div>
+
+<section>
+  <div class="wrap">
+    <div class="why-wrap">
+      <div class="why-grid">
+        <div>
+          <div class="eyebrow">Why freeze-dried</div>
+          <h2 class="section-title" style="max-width:10ch;">Less water. Same food.</h2>
+          <p class="section-desc" style="margin-top:12px;">Freeze-drying removes moisture at sub-zero temperatures, so flavour, nutrients and shape survive — unlike sun-dried or heat-dried alternatives.</p>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-num">[N]</div><div class="stat-label">Farmers sourced from</div></div>
+            <div class="stat"><div class="stat-num">[N]</div><div class="stat-label">Months typical shelf life</div></div>
+            <div class="stat"><div class="stat-num">[N]%</div><div class="stat-label">Nutrient retention</div></div>
+          </div>
+          <a href="#/process" class="link-arrow" style="display:inline-block; margin-top:24px;">See the full process</a>
+        </div>
+        <div class="photo" style="height:320px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8c6 8 9 13 9 18a9 9 0 1 1-18 0c0-5 3-10 9-18z"/><path d="M24 40V6"/><path d="M20 10l4-4 4 4"/></svg></div><div class="photo-label">Process photography placeholder</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Our best sellers</h2>
+        <p class="section-desc">The ones people reorder without thinking twice.</p>
+      </div>
+      <a href="#/shop" class="link-arrow">Shop best sellers</a>
+    </div>
+    <div class="prod-grid">
+      <div class="prod-card">
+        <div class="prod-stamp"><div class="stamp" style="width:64px; height:64px;"><div class="stamp-grade" style="font-size:13px;">A+</div></div></div>
+        <div class="photo prod-photo clay"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div>
+        <div class="prod-body">
+          <div class="prod-badge">Best seller</div>
+          <div class="prod-name">Freeze-Dried Mango</div>
+          <div class="prod-meta">50g pouch · 100% fruit</div>
+          <div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div>
+        </div>
+      </div>
+      <div class="prod-card">
+        <div class="photo prod-photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="15" y="18" width="18" height="20" rx="2"/><path d="M18 18v-4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"/><path d="M20 25c1-2 3-2 4 0s3 2 4 0"/><path d="M20 31c1-2 3-2 4 0s3 2 4 0"/></svg></div></div>
+        <div class="prod-body">
+          <div class="prod-badge">New</div>
+          <div class="prod-name">Ginger Powder</div>
+          <div class="prod-meta">100g jar · high-altitude</div>
+          <div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div>
+        </div>
+      </div>
+      <div class="prod-card">
+        <div class="photo prod-photo gold"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 22a14 14 0 0 0 28 0z"/><path d="M9 22h30"/><path d="M18 22c0-6 2.5-9 3-12M24 22c0-7 1-10 1-13M30 22c0-6-2-9-2.5-11"/></svg></div></div>
+        <div class="prod-body">
+          <div class="prod-badge">Best seller</div>
+          <div class="prod-name">Rehydrate Rice Bowl</div>
+          <div class="prod-meta">Serves 1 · ready in 8 min</div>
+          <div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div>
+        </div>
+      </div>
+      <div class="prod-card">
+        <div class="photo prod-photo ink"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="19" width="28" height="18" rx="1.5"/><path d="M10 25h28"/><path d="M24 19v18"/><path d="M24 19c-3-6-11-6-11 0M24 19c3-6 11-6 11 0"/></svg></div></div>
+        <div class="prod-body">
+          <div class="prod-badge">Gift set</div>
+          <div class="prod-name">Himalayan Spice Box</div>
+          <div class="prod-meta">4 spices · gift-ready</div>
+          <div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="wholesale">
+      <div>
+        <div class="eyebrow" style="color:var(--gold);">For retailers &amp; distributors</div>
+        <h2>Built for shelves, kitchens and growing brands.</h2>
+        <p>Tiered wholesale pricing, sample requests and private-label production — the part of the business most suppliers make you call a phone number to find out about.</p>
+        <div class="wholesale-list">
+          <div>Wholesale pricing by volume tier</div>
+          <div>Sample kits before you commit</div>
+          <div>Private-label &amp; custom packaging</div>
+        </div>
+        <div class="wholesale-cta">
+          <a href="#/wholesale" class="btn btn-on-dark">Request wholesale access</a>
+          <a href="#/wholesale" data-scroll="catalogue" class="btn btn-outline-dark">Download catalogue</a>
+        </div>
+      </div>
+      <div class="photo ink" style="height:320px; border:1px solid #454E33;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16l16-8 16 8-16 8-16-8z"/><path d="M8 16v16l16 8 16-8V16"/><path d="M24 24v16"/></svg></div><div class="photo-label">Facility photography placeholder</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap trace">
+    <div class="photo" style="height:340px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="21" cy="21" r="12"/><path d="M16 21l4 4 8-8"/><path d="M30 30l7 7"/></svg></div><div class="photo-label">Batch photography placeholder</div></div>
+    <div>
+      <div class="eyebrow">Traceability</div>
+      <h2 class="section-title" style="max-width:14ch;">Proof in every pack, not just promises.</h2>
+      <p class="section-desc" style="margin:16px 0 24px;">Every product carries a batch code that traces back to the farm it came from, the day it was processed, and the quality check it passed.</p>
+      <div class="batch-tag">
+        <div><span>Batch</span><span>AKA-2601-047</span></div>
+        <div><span>Source</span><span>[Region], Nepal</span></div>
+        <div><span>Processed</span><span>[Date]</span></div>
+        <div><span>Quality check</span><span>Passed</span></div>
+      </div>
+      <a href="#/story" class="link-arrow" style="display:inline-block; margin-top:20px;">Meet the people behind the batch</a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">What people say</h2></div></div>
+    <div class="review-grid">
+      <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"[Placeholder — real customer review pending]"</p><div class="review-name">[Name]</div><div class="review-loc">[City], Nepal · Verified purchase</div></div>
+      <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"[Placeholder — real customer review pending]"</p><div class="review-name">[Name]</div><div class="review-loc">[City], Nepal · Verified purchase</div></div>
+      <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"[Placeholder — real customer review pending]"</p><div class="review-name">[Name]</div><div class="review-loc">[City], Nepal · Verified purchase</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="newsletter">
+      <h2>Recipes, straight from Aama's notebook</h2>
+      <p>One email a month — a rehydration trick, a seasonal recipe, and what's new from the facility.</p>
+      <form class="nl-form" onsubmit="return false;">
+        <input type="email" placeholder="you@email.com" aria-label="Email address" required>
+        <button type="submit" class="btn btn-primary">Subscribe</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+
+</div>
+
+<div class="route-page" data-route="/shop" hidden>
+
+
+<div class="page-header">
+  <div class="wrap page-header-grid">
+    <div>
+      <div class="eyebrow">Full range</div>
+      <h1 class="page-title">Everything we make, one shelf.</h1>
+      <p class="page-sub">Every pack is batch-coded and graded before it ships — pick a category or filter by what matters to you.</p>
+    </div>
+    <div class="stamp"><div class="stamp-grade">[N]</div><div class="stamp-sub">SKUs<br>Live</div></div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="filter-bar">
+      <span class="filter-chip active" data-filter="all">All</span>
+      <span class="filter-chip" data-filter="fruits">Fruits</span>
+      <span class="filter-chip" data-filter="vegetables">Vegetables</span>
+      <span class="filter-chip" data-filter="spices">Spices &amp; Powders</span>
+      <span class="filter-chip" data-filter="meals">Ready Meals</span>
+      <span class="filter-chip" data-filter="gifts">Gift Sets</span>
+      <span class="filter-chip" data-filter="best">Best sellers</span>
+      <span class="filter-chip" data-filter="new">New arrivals</span>
+    </div>
+
+    <div class="prod-grid" style="grid-template-columns:repeat(4,1fr);">
+      <a href="#/product" class="prod-card" style="display:block;" data-cat="fruits" data-tag="best">
+        <div class="prod-stamp"><div class="stamp" style="width:60px;height:60px;"><div class="stamp-grade" style="font-size:12px;">A+</div></div></div>
+        <div class="photo prod-photo clay"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div>
+        <div class="prod-body"><div class="prod-badge">Best seller</div><div class="prod-name">Freeze-Dried Mango</div><div class="prod-meta">50g pouch · 100% fruit</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      </a>
+      <div class="prod-card" data-cat="vegetables">
+        <div class="photo prod-photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 12c6 0 10 5 9 12-1 8-5 13-9 13s-8-5-9-13c-1-7 3-12 9-12z"/><path d="M24 12V7"/><path d="M20 8c1-2 4-2 5 0"/><path d="M18 24h12M17 30h14"/></svg></div></div>
+        <div class="prod-body"><div class="prod-badge">Vegetable</div><div class="prod-name">Freeze-Dried Peas</div><div class="prod-meta">75g pouch · 100% vegetable</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      </div>
+      <div class="prod-card" data-cat="spices" data-tag="new">
+        <div class="photo prod-photo gold"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="15" y="18" width="18" height="20" rx="2"/><path d="M18 18v-4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"/><path d="M20 25c1-2 3-2 4 0s3 2 4 0"/><path d="M20 31c1-2 3-2 4 0s3 2 4 0"/></svg></div></div>
+        <div class="prod-body"><div class="prod-badge">New</div><div class="prod-name">Ginger Powder</div><div class="prod-meta">100g jar · high-altitude</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      </div>
+      <div class="prod-card" data-cat="meals">
+        <div class="photo prod-photo ink"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 22a14 14 0 0 0 28 0z"/><path d="M9 22h30"/><path d="M18 22c0-6 2.5-9 3-12M24 22c0-7 1-10 1-13M30 22c0-6-2-9-2.5-11"/></svg></div></div>
+        <div class="prod-body"><div class="prod-badge">Meal</div><div class="prod-name">Rehydrate Rice Bowl</div><div class="prod-meta">Serves 1 · ready in 8 min</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      </div>
+      <div class="prod-card" data-cat="fruits">
+        <div class="photo prod-photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div>
+        <div class="prod-body"><div class="prod-badge">Fruit</div><div class="prod-name">Freeze-Dried Strawberry</div><div class="prod-meta">40g pouch · 100% fruit</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      </div>
+      <div class="prod-card" data-cat="spices">
+        <div class="photo prod-photo clay"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="15" y="18" width="18" height="20" rx="2"/><path d="M18 18v-4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"/><path d="M20 25c1-2 3-2 4 0s3 2 4 0"/><path d="M20 31c1-2 3-2 4 0s3 2 4 0"/></svg></div></div>
+        <div class="prod-body"><div class="prod-badge">Spice</div><div class="prod-name">Turmeric Powder</div><div class="prod-meta">100g jar · high-curcumin</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      </div>
+      <div class="prod-card" data-cat="gifts">
+        <div class="photo prod-photo ink"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="19" width="28" height="18" rx="1.5"/><path d="M10 25h28"/><path d="M24 19v18"/><path d="M24 19c-3-6-11-6-11 0M24 19c3-6 11-6 11 0"/></svg></div></div>
+        <div class="prod-body"><div class="prod-badge">Gift set</div><div class="prod-name">Himalayan Spice Box</div><div class="prod-meta">4 spices · gift-ready</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      </div>
+      <div class="prod-card" data-cat="vegetables">
+        <div class="photo prod-photo gold"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 12c6 0 10 5 9 12-1 8-5 13-9 13s-8-5-9-13c-1-7 3-12 9-12z"/><path d="M24 12V7"/><path d="M20 8c1-2 4-2 5 0"/><path d="M18 24h12M17 30h14"/></svg></div></div>
+        <div class="prod-body"><div class="prod-badge">Vegetable</div><div class="prod-name">Freeze-Dried Corn</div><div class="prod-meta">75g pouch · 100% vegetable</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      </div>
+    </div>
+
+    <p style="font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-top:32px; text-align:center;">[PLACEHOLDER — full catalogue pending actual SKU list from business]</p>
+  </div>
+</section>
+
+
+</div>
+
+<div class="route-page" data-route="/product" hidden>
+
+
+<div class="wrap breadcrumb"><a href="#/">Home</a> / <a href="#/shop">Shop</a> / <a href="#/shop">Fruits</a> / Freeze-Dried Mango</div>
+
+<section style="padding-top:var(--space-4);">
+  <div class="wrap pdp-grid">
+    <div>
+      <div class="pdp-gallery-main photo clay">
+        <div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div>
+        <div class="prod-stamp"><div class="stamp" style="width:68px;height:68px;"><div class="stamp-grade" style="font-size:14px;">A+</div></div></div>
+        <div class="photo-label">Product photography placeholder — front pack</div>
+      </div>
+      <div class="pdp-thumbs">
+        <div class="photo clay"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div>
+        <div class="photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div>
+        <div class="photo gold"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div>
+        <div class="photo ink"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="prod-badge">Best seller</div>
+      <h1 class="page-title" style="font-size:clamp(1.9rem,3.4vw,2.6rem); margin-top:8px;">Freeze-Dried Mango</h1>
+      <p class="section-desc" style="margin-top:10px;">Ripe mango, sliced and freeze-dried within hours of harvest. Crisp, intensely sweet, nothing added.</p>
+      <div class="pdp-price">Rs [price] <span class="was">Rs [was-price]</span></div>
+
+      <div class="spec-row"><span>Pack size</span><span>50g pouch</span></div>
+      <div class="spec-row"><span>Availability</span><span>In stock</span></div>
+      <div class="spec-row"><span>Shelf life</span><span>[N] months, unopened</span></div>
+
+      <div class="qty-row">
+        <div class="qty-stepper"><button aria-label="Decrease quantity">−</button><span>1</span><button aria-label="Increase quantity">+</button></div>
+        <span style="font-family:var(--mono); font-size:12px; color:var(--ink-soft);">SKU: AKA-MNG-050</span>
+      </div>
+
+      <div class="pdp-cta">
+        <a href="#" class="btn btn-primary">Add to cart</a>
+        <a href="#" class="btn btn-ghost">Buy now</a>
+        <a href="#" class="btn btn-ghost" aria-label="Add to wishlist">♡</a>
+      </div>
+
+      <div class="tear" style="padding:var(--space-6) 0 0;"><span>Batch traceability</span></div>
+      <div class="batch-tag">
+        <div><span>Batch</span><span>AKA-2601-047</span></div>
+        <div><span>Source</span><span>[Region], Nepal</span></div>
+        <div><span>Processed</span><span>[Date]</span></div>
+        <div><span>Quality check</span><span>Passed</span></div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-item"><div class="acc-head">Ingredients &amp; allergens<span>+</span></div><div class="acc-body">100% freeze-dried mango. No added sugar, preservatives or colouring. [Placeholder — confirm allergen statement with business/DFTQC labeling requirement.]</div></div>
+        <div class="acc-item"><div class="acc-head">Nutrition (per 100g)<span>+</span></div><div class="acc-body">[Placeholder — energy, carbs, sugar, fibre, protein, fat figures pending lab data.]</div></div>
+        <div class="acc-item"><div class="acc-head">Origin &amp; sourcing<span>+</span></div><div class="acc-body">Sourced from partner growers in [region, Nepal — placeholder]. See our <a href="#/story" style="text-decoration:underline;">story page</a> for more.</div></div>
+        <div class="acc-item"><div class="acc-head">Storage &amp; shelf life<span>+</span></div><div class="acc-body">Store in a cool, dry place. Reseal after opening. Best consumed within [N] weeks of opening.</div></div>
+        <div class="acc-item"><div class="acc-head">How to rehydrate<span>+</span></div>
+          <div class="acc-body">
+            <div class="rehydrate-steps">
+              <div class="rstep"><div class="rstep-num">01</div>Cover with hot water</div>
+              <div class="rstep"><div class="rstep-num">02</div>Wait 5–10 minutes</div>
+              <div class="rstep"><div class="rstep-num">03</div>Drain and enjoy — or eat straight from the pack</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">Reviews</h2></div></div>
+    <div class="review-grid">
+      <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"[Placeholder — real customer review pending]"</p><div class="review-name">[Name]</div><div class="review-loc">Verified purchase</div></div>
+      <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"[Placeholder — real customer review pending]"</p><div class="review-name">[Name]</div><div class="review-loc">Verified purchase</div></div>
+      <div class="review-card"><div class="review-stars">★★★★☆</div><p class="review-quote">"[Placeholder — real customer review pending]"</p><div class="review-name">[Name]</div><div class="review-loc">Verified purchase</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">You might also like</h2></div></div>
+    <div class="prod-grid">
+      <div class="prod-card"><div class="photo prod-photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div><div class="prod-body"><div class="prod-name">Freeze-Dried Strawberry</div><div class="prod-meta">40g pouch</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div></div>
+      <div class="prod-card"><div class="photo prod-photo gold"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="19" width="28" height="18" rx="1.5"/><path d="M10 25h28"/><path d="M24 19v18"/><path d="M24 19c-3-6-11-6-11 0M24 19c3-6 11-6 11 0"/></svg></div></div><div class="prod-body"><div class="prod-name">Himalayan Spice Box</div><div class="prod-meta">Gift set</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div></div>
+      <div class="prod-card"><div class="photo prod-photo ink"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 22a14 14 0 0 0 28 0z"/><path d="M9 22h30"/><path d="M18 22c0-6 2.5-9 3-12M24 22c0-7 1-10 1-13M30 22c0-6-2-9-2.5-11"/></svg></div></div><div class="prod-body"><div class="prod-name">Rehydrate Rice Bowl</div><div class="prod-meta">Meal</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div></div>
+      <div class="prod-card"><div class="photo prod-photo clay"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 12c6 0 10 5 9 12-1 8-5 13-9 13s-8-5-9-13c-1-7 3-12 9-12z"/><path d="M24 12V7"/><path d="M20 8c1-2 4-2 5 0"/><path d="M18 24h12M17 30h14"/></svg></div></div><div class="prod-body"><div class="prod-name">Freeze-Dried Peas</div><div class="prod-meta">75g pouch</div><div class="prod-foot"><span class="prod-price">Rs [price]</span><button class="add-btn" aria-label="Add to cart">+</button></div></div></div>
+    </div>
+  </div>
+</section>
+
+
+</div>
+
+<div class="route-page" data-route="/process" hidden>
+
+
+<div class="page-header">
+  <div class="wrap page-header-grid">
+    <div>
+      <div class="eyebrow">The process</div>
+      <h1 class="page-title">Less water. Same food.</h1>
+      <p class="page-sub">Freeze-drying pulls moisture out at sub-zero temperature under vacuum, so the structure, flavour and nutrients of the fresh food stay intact — unlike sun-drying or heat-drying, which cook out most of what made it good.</p>
+    </div>
+    <div class="stamp"><div class="stamp-grade">7</div><div class="stamp-sub">Stage<br>Process</div></div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="why-wrap" style="margin-bottom:var(--space-8);">
+      <div class="why-grid">
+        <div>
+          <h2 class="section-title" style="max-width:12ch;">Freeze-dried vs. everything else</h2>
+          <p class="section-desc" style="margin-top:12px;">Sun-drying and oven-drying use heat, which breaks down vitamins and flattens flavour. Freeze-drying uses cold and vacuum instead — the ice inside the food turns straight to vapour, leaving the shape and nutrients behind.</p>
+        </div>
+        <div class="stat-row" style="grid-template-columns:1fr; gap:var(--space-4);">
+          <div class="stat"><div class="stat-num">[N]%</div><div class="stat-label">Nutrient retention vs. fresh</div></div>
+          <div class="stat"><div class="stat-num">[N]x</div><div class="stat-label">Lighter than fresh, same volume</div></div>
+          <div class="stat"><div class="stat-num">[N]</div><div class="stat-label">Months typical shelf life, unopened</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head"><div><h2 class="section-title">Source to shelf, in seven steps</h2><p class="section-desc">Every batch follows the same path — the one we'd want to see if it were our own family's food.</p></div></div>
+
+    <div class="process-list">
+      <div class="process-step"><div class="process-num-wrap"><div class="stamp" style="width:76px;height:76px;"><div class="stamp-grade" style="font-size:15px;">01</div></div></div><div><div class="process-name">Source</div><div class="process-desc">Fruit and vegetables graded at the farm gate by our partner growers in [region, Nepal — placeholder].</div></div><div class="photo" style="height:120px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 38V22"/><path d="M24 22c0-6-5-9-11-9 0 6 3 11 11 9z"/><path d="M24 26c0-5 5-8 11-8 0 5-3 10-11 8z"/><path d="M16 38h16"/></svg></div></div></div>
+      <div class="process-step"><div class="process-num-wrap"><div class="stamp" style="width:76px;height:76px;"><div class="stamp-grade" style="font-size:15px;">02</div></div></div><div><div class="process-name">Preparation</div><div class="process-desc">Washed, sorted and cut by hand within hours of arrival to preserve freshness.</div></div><div class="photo clay" style="height:120px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 30h20l10-10a3 3 0 0 0-4-4L14 26"/><path d="M8 30l4 4"/><path d="M6 32l6 6"/></svg></div></div></div>
+      <div class="process-step"><div class="process-num-wrap"><div class="stamp" style="width:76px;height:76px;"><div class="stamp-grade" style="font-size:15px;">03</div></div></div><div><div class="process-name">Freezing</div><div class="process-desc">Rapidly frozen to lock cell structure in place before drying begins.</div></div><div class="photo ink" style="height:120px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 6v36M10 14l28 20M38 14L10 34"/><path d="M24 6l-4 4m4-4l4 4M24 42l-4-4m4 4l4-4M10 14l1 5m-1-5l5-1M38 14l-1 5m1-5l-5-1M10 34l1-5m-1 5l5 1M38 34l-1-5m1 5l-5 1"/></svg></div></div></div>
+      <div class="process-step"><div class="process-num-wrap"><div class="stamp" style="width:76px;height:76px;"><div class="stamp-grade" style="font-size:15px;">04</div></div></div><div><div class="process-name">Vacuum Drying</div><div class="process-desc">Ice sublimates directly to vapour under controlled vacuum — no heat, no shrinkage.</div></div><div class="photo gold" style="height:120px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8c6 8 9 13 9 18a9 9 0 1 1-18 0c0-5 3-10 9-18z"/><path d="M24 40V6"/><path d="M20 10l4-4 4 4"/></svg></div></div></div>
+      <div class="process-step"><div class="process-num-wrap"><div class="stamp" style="width:76px;height:76px;"><div class="stamp-grade" style="font-size:15px;">05</div></div></div><div><div class="process-name">Quality Control</div><div class="process-desc">Every batch tested and logged — moisture content, appearance, taste — before packaging.</div></div><div class="photo" style="height:120px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="21" cy="21" r="12"/><path d="M16 21l4 4 8-8"/><path d="M30 30l7 7"/></svg></div></div></div>
+      <div class="process-step"><div class="process-num-wrap"><div class="stamp" style="width:76px;height:76px;"><div class="stamp-grade" style="font-size:15px;">06</div></div></div><div><div class="process-name">Packaging</div><div class="process-desc">Sealed against moisture and oxygen, and batch-coded so every pack is traceable.</div></div><div class="photo clay" style="height:120px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16l16-8 16 8-16 8-16-8z"/><path d="M8 16v16l16 8 16-8V16"/><path d="M24 24v16"/></svg></div></div></div>
+      <div class="process-step"><div class="process-num-wrap"><div class="stamp" style="width:76px;height:76px;"><div class="stamp-grade" style="font-size:15px;">07</div></div></div><div><div class="process-name">Delivery</div><div class="process-desc">To your door, a retailer's shelf, or a distributor's warehouse.</div></div><div class="photo ink" style="height:120px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="16" width="22" height="14" rx="1"/><path d="M26 20h8l6 6v4h-14z"/><circle cx="14" cy="34" r="3"/><circle cx="34" cy="34" r="3"/></svg></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">How to use it</h2><p class="section-desc">Most of what we make rehydrates in minutes — no soaking overnight, no guesswork.</p></div></div>
+    <div class="value-grid">
+      <div class="value-card"><div class="value-num">01</div><div class="value-name">Add hot water</div><div class="value-desc">Cover the freeze-dried piece completely.</div></div>
+      <div class="value-card"><div class="value-num">02</div><div class="value-name">Wait 5–10 min</div><div class="value-desc">Longer for meals, seconds for powders.</div></div>
+      <div class="value-card"><div class="value-num">03</div><div class="value-name">Drain if needed</div><div class="value-desc">Fruit and veg regain their original texture.</div></div>
+      <div class="value-card"><div class="value-num">04</div><div class="value-name">Eat as-is or cook</div><div class="value-desc">Works straight in the pack or in a recipe.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="newsletter">
+      <h2>See it for yourself</h2>
+      <p>Shop the range, or read about who's behind it.</p>
+      <div class="hero-cta" style="justify-content:center;">
+        <a href="#/shop" class="btn btn-primary">Shop the range</a>
+        <a href="#/story" class="btn btn-ghost">Meet our team</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+</div>
+
+<div class="route-page" data-route="/story" hidden>
+
+
+<div class="page-header">
+  <div class="wrap page-header-grid">
+    <div>
+      <div class="eyebrow">Our story</div>
+      <h1 class="page-title">Built the way Aama would insist on.</h1>
+      <p class="page-sub">[PLACEHOLDER — real founding story pending business input: who started this, why, and when.]</p>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="trace">
+      <div>
+        <h2 class="section-title" style="max-width:14ch;">Why we exist</h2>
+        <p class="section-desc" style="margin-top:16px; max-width:56ch;">[PLACEHOLDER — origin story: what problem prompted this company, whose kitchen or farm it started from, what "Aama ko Agro" means to the founders specifically.]</p>
+        <p class="section-desc" style="margin-top:16px; max-width:56ch;">[PLACEHOLDER — mission statement: e.g. reducing post-harvest loss for smallholder farmers, bringing Nepali produce to more tables, etc. — to be confirmed with the business.]</p>
+      </div>
+      <div class="photo" style="height:360px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="10" r="4"/><path d="M4 36l10-10 6 6 8-10 16 14"/><path d="M4 40h40M4 40l6-6M14 40l6-6M24 40l6-6M34 40l6-6"/></svg></div><div class="photo-label">Founder/facility photography placeholder</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">What we stand for</h2></div></div>
+    <div class="value-grid">
+      <div class="value-card"><div class="value-num">01 — ECONOMY</div><div class="value-name">Fair prices</div><div class="value-desc">Stable, dependable pricing for the farmers we source from.</div></div>
+      <div class="value-card"><div class="value-num">02 — EMPLOYMENT</div><div class="value-name">Local jobs</div><div class="value-desc">Processing happens close to where the food is grown.</div></div>
+      <div class="value-card"><div class="value-num">03 — EMPOWERMENT</div><div class="value-name">Skills, not charity</div><div class="value-desc">Training and technical know-how, not one-off aid.</div></div>
+      <div class="value-card"><div class="value-num">04 — ENVIRONMENT</div><div class="value-name">Less waste</div><div class="value-desc">Freeze-drying extends shelf life, cutting post-harvest loss.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">Meet the people behind it</h2><p class="section-desc">The farmers, processors and team that get every batch from field to pack.</p></div></div>
+    <div class="team-grid">
+      <div class="team-card"><div class="photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="16" r="8"/><path d="M8 40c0-9 7-15 16-15s16 6 16 15"/></svg></div></div><div class="team-name">[Name — placeholder]</div><div class="team-role">Founder</div></div>
+      <div class="team-card"><div class="photo clay"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="16" r="8"/><path d="M8 40c0-9 7-15 16-15s16 6 16 15"/></svg></div></div><div class="team-name">[Name — placeholder]</div><div class="team-role">Operations Lead</div></div>
+      <div class="team-card"><div class="photo gold"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="16" r="8"/><path d="M8 40c0-9 7-15 16-15s16 6 16 15"/></svg></div></div><div class="team-name">[Name — placeholder]</div><div class="team-role">Quality &amp; Sourcing</div></div>
+      <div class="team-card"><div class="photo ink"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="16" r="8"/><path d="M8 40c0-9 7-15 16-15s16 6 16 15"/></svg></div></div><div class="team-name">[Farmer — placeholder]</div><div class="team-role">Partner grower, [region]</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="why-wrap">
+      <div class="why-grid">
+        <div>
+          <div class="eyebrow">Our community</div>
+          <h2 class="section-title" style="max-width:12ch;">Grown with, not just from.</h2>
+          <p class="section-desc" style="margin-top:12px;">We work directly with smallholder farmers, paying stable prices and reducing the post-harvest loss that usually eats into their income.</p>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-num">[N]+</div><div class="stat-label">Farmers we work with</div></div>
+            <div class="stat"><div class="stat-num">[N]</div><div class="stat-label">Villages/districts sourced from</div></div>
+            <div class="stat"><div class="stat-num">[N]%</div><div class="stat-label">Women in operational roles</div></div>
+          </div>
+        </div>
+        <div class="photo clay" style="height:300px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="10" r="4"/><path d="M4 36l10-10 6 6 8-10 16 14"/><path d="M4 40h40M4 40l6-6M14 40l6-6M24 40l6-6M34 40l6-6"/></svg></div><div class="photo-label">Community/farmer photography placeholder</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+</div>
+
+<div class="route-page" data-route="/wholesale" hidden>
+
+
+<div class="page-header">
+  <div class="wrap page-header-grid">
+    <div>
+      <div class="eyebrow">For retailers, distributors &amp; food service</div>
+      <h1 class="page-title">Built for shelves, kitchens and growing brands.</h1>
+      <p class="page-sub">Tiered pricing, sample kits, and private-label production — everything a buyer needs to evaluate us without a phone call.</p>
+      <div class="wholesale-cta">
+        <a href="#apply" class="btn btn-on-dark">Request wholesale access</a>
+        <a href="#catalogue" class="btn btn-outline-dark">Download catalogue</a>
+      </div>
+    </div>
+    <div class="stamp on-dark"><div class="stamp-grade">B2B</div><div class="stamp-sub">Trade<br>Portal</div></div>
+  </div>
+</div>
+
+<section id="catalogue">
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">Wholesale pricing tiers</h2><p class="section-desc">Indicative tiers — final pricing confirmed after your business account is approved.</p></div></div>
+    <table class="tier-table">
+      <thead><tr><th>Tier</th><th>Order volume</th><th>Discount off retail</th><th>Lead time</th></tr></thead>
+      <tbody>
+        <tr><td>Retailer</td><td>[N]–[N] units / order</td><td>[X]%</td><td>[N] days</td></tr>
+        <tr><td>Distributor</td><td>[N]+ units / order</td><td>[X]%</td><td>[N] days</td></tr>
+        <tr><td>Food Service / HoReCa</td><td>Custom pack sizes</td><td>Quoted</td><td>[N] days</td></tr>
+        <tr><td>Private Label / OEM</td><td>Per project MOQ</td><td>Quoted</td><td>[N]–[N] weeks</td></tr>
+      </tbody>
+    </table>
+    <p style="font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-top:16px;">[PLACEHOLDER — actual tiers, MOQs and pricing pending business input]</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">What's included</h2></div></div>
+    <div class="value-grid">
+      <div class="value-card"><div class="value-num">01</div><div class="value-name">Sample kits</div><div class="value-desc">Try before you commit — request a sample box of any SKU.</div></div>
+      <div class="value-card"><div class="value-num">02</div><div class="value-name">Bulk packaging</div><div class="value-desc">Case sizes and pack formats built for retail or food service.</div></div>
+      <div class="value-card"><div class="value-num">03</div><div class="value-name">Batch documentation</div><div class="value-desc">Full traceability paperwork on request for every shipment.</div></div>
+      <div class="value-card"><div class="value-num">04</div><div class="value-name">Reorder dashboard</div><div class="value-desc">Repeat past orders and track invoices from your account.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="why-wrap">
+      <div class="why-grid">
+        <div>
+          <div class="eyebrow">Private label / OEM</div>
+          <h2 class="section-title" style="max-width:12ch;">Your brand, our process.</h2>
+          <p class="section-desc" style="margin-top:12px;">From concept to packaging, we handle sourcing, processing and quality control — you bring the brand and the market.</p>
+          <p class="section-desc" style="margin-top:12px; font-family:var(--mono); font-size:13px;">Concept → Sourcing → Processing → Packaging → QC → Delivery</p>
+        </div>
+        <div class="photo gold" style="height:280px;"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16l16-8 16 8-16 8-16-8z"/><path d="M8 16v16l16 8 16-8V16"/><path d="M24 24v16"/></svg></div><div class="photo-label">Production floor photography placeholder</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="apply">
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">Request wholesale access</h2><p class="section-desc">Tell us about your business — we'll follow up with pricing and next steps.</p></div></div>
+    <form class="form-grid" onsubmit="return false;" style="max-width:760px;">
+      <div class="field"><label for="biz-name">Business name</label><input id="biz-name" type="text" required></div>
+      <div class="field"><label for="contact-name">Contact name</label><input id="contact-name" type="text" required></div>
+      <div class="field"><label for="email">Email</label><input id="email" type="email" required></div>
+      <div class="field"><label for="phone">Phone</label><input id="phone" type="tel"></div>
+      <div class="field"><label for="biz-type">Business type</label>
+        <select id="biz-type">
+          <option>Retailer</option>
+          <option>Distributor</option>
+          <option>Food Service / HoReCa</option>
+          <option>Private Label / OEM</option>
+        </select>
+      </div>
+      <div class="field"><label for="volume">Estimated monthly volume</label><input id="volume" type="text" placeholder="e.g. 200 units/month"></div>
+      <div class="field full"><label for="notes">Anything else we should know</label><textarea id="notes" rows="4"></textarea></div>
+      <div class="field full"><button type="submit" class="btn btn-primary" style="width:fit-content;">Submit request</button></div>
+    </form>
+  </div>
+</section>
+
+
+</div>
+
+<div class="route-page" data-route="/journal" hidden>
+
+
+<div class="page-header">
+  <div class="wrap page-header-grid">
+    <div>
+      <div class="eyebrow">Recipes, guides &amp; the journal</div>
+      <h1 class="page-title">From Aama's notebook.</h1>
+      <p class="page-sub">Rehydration tricks, seasonal recipes, nutrition notes, and what's happening at the facility.</p>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="article-grid">
+      <div class="article-card feature">
+        <div class="photo clay"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c-7 0-12 6-12 14 0 7 5 13 12 13s12-6 12-13c0-8-5-14-12-14z"/><path d="M24 10c0-4 3-6 6-6"/><path d="M18 20c2-1 4-1 6 0s4 1 6 0"/></svg></div></div>
+        <div class="article-body"><div class="article-cat">Recipe</div><div class="article-title">[Placeholder — seasonal recipe headline]</div><div class="article-meta">[Date] · [N] min read</div></div>
+      </div>
+      <div class="article-card">
+        <div class="photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8c6 8 9 13 9 18a9 9 0 1 1-18 0c0-5 3-10 9-18z"/><path d="M24 40V6"/><path d="M20 10l4-4 4 4"/></svg></div></div>
+        <div class="article-body"><div class="article-cat">Guide</div><div class="article-title">[Placeholder — rehydration guide]</div><div class="article-meta">[Date]</div></div>
+      </div>
+      <div class="article-card">
+        <div class="photo gold"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 12c6 0 10 5 9 12-1 8-5 13-9 13s-8-5-9-13c-1-7 3-12 9-12z"/><path d="M24 12V7"/><path d="M20 8c1-2 4-2 5 0"/><path d="M18 24h12M17 30h14"/></svg></div></div>
+        <div class="article-body"><div class="article-cat">Nutrition</div><div class="article-title">[Placeholder — nutrition article]</div><div class="article-meta">[Date]</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">Latest from the journal</h2></div></div>
+    <div class="article-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="article-card"><div class="photo ink"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 38V22"/><path d="M24 22c0-6-5-9-11-9 0 6 3 11 11 9z"/><path d="M24 26c0-5 5-8 11-8 0 5-3 10-11 8z"/><path d="M16 38h16"/></svg></div></div><div class="article-body"><div class="article-cat">Sourcing</div><div class="article-title">[Placeholder — farmer/sourcing story]</div><div class="article-meta">[Date]</div></div></div>
+      <div class="article-card"><div class="photo clay"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16l16-8 16 8-16 8-16-8z"/><path d="M8 16v16l16 8 16-8V16"/><path d="M24 24v16"/></svg></div></div><div class="article-body"><div class="article-cat">Behind the scenes</div><div class="article-title">[Placeholder — facility update]</div><div class="article-meta">[Date]</div></div></div>
+      <div class="article-card"><div class="photo"><div class="photo-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 22a14 14 0 0 0 28 0z"/><path d="M9 22h30"/><path d="M18 22c0-6 2.5-9 3-12M24 22c0-7 1-10 1-13M30 22c0-6-2-9-2.5-11"/></svg></div></div><div class="article-body"><div class="article-cat">Recipe</div><div class="article-title">[Placeholder — recipe]</div><div class="article-meta">[Date]</div></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head"><div><h2 class="section-title">Frequently asked</h2></div></div>
+    <div style="max-width:760px;">
+      <div class="faq-item"><div class="faq-q">How long does freeze-dried food last?<span>+</span></div><div class="faq-a">[Placeholder — actual shelf-life figures per product category, unopened and after opening.]</div></div>
+      <div class="faq-item"><div class="faq-q">How do I rehydrate it?<span>+</span></div><div class="faq-a">Most fruits and vegetables rehydrate in 5–10 minutes with hot water. See our full process page for details.</div></div>
+      <div class="faq-item"><div class="faq-q">Do you ship outside Nepal?<span>+</span></div><div class="faq-a">[Placeholder — shipping/export scope pending business input.]</div></div>
+      <div class="faq-item"><div class="faq-q">Are your products certified?<span>+</span></div><div class="faq-a">[Placeholder — DFTQC/other certification details pending confirmation.]</div></div>
+      <div class="faq-item"><div class="faq-q">Can I buy in bulk?<span>+</span></div><div class="faq-a">Yes — see our <a href="#/wholesale" style="text-decoration:underline;">wholesale page</a> for tiered pricing and MOQs.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="wrap">
+    <div class="why-wrap">
+      <div class="why-grid">
+        <div>
+          <div class="eyebrow">Get in touch</div>
+          <h2 class="section-title" style="max-width:12ch;">Questions? We're listening.</h2>
+          <p class="section-desc" style="margin-top:12px;">[Placeholder — office address, phone, email pending business input.]</p>
+        </div>
+        <form class="form-grid" onsubmit="return false;">
+          <div class="field full"><label for="c-name">Name</label><input id="c-name" type="text" required></div>
+          <div class="field full"><label for="c-email">Email</label><input id="c-email" type="email" required></div>
+          <div class="field full"><label for="c-msg">Message</label><textarea id="c-msg" rows="4"></textarea></div>
+          <div class="field full"><button type="submit" class="btn btn-primary" style="width:fit-content;">Send message</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+</div>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <a href="#/" class="logo" style="margin-bottom:12px; display:inline-block;">Aama<span>ko</span>Agro</a>
+        <p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p>
+      </div>
+      <div class="foot-col"><h4>Shop</h4><a href="#/shop">All products</a><a href="#/shop">Fruits</a><a href="#/shop">Vegetables</a><a href="#/shop">Gift sets</a></div>
+      <div class="foot-col"><h4>Company</h4><a href="#/story">Our story</a><a href="#/process">Our process</a><a href="#/wholesale">Wholesale</a><a href="#/journal" data-scroll="contact">Contact</a></div>
+      <div class="foot-col"><h4>Learn</h4><a href="#/journal">Recipes</a><a href="#/journal">Journal</a><a href="#/journal" data-scroll="faq">FAQ</a></div>
+      <div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Aama ko Agro. All rights reserved.</span>
+      <span>DFTQC registration — [placeholder]</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+
+(function(){
+  var btn = document.getElementById("hamburgerBtn");
+  var drawer = document.getElementById("mobileDrawer");
+  if(!btn || !drawer) return;
+  btn.addEventListener("click", function(){
+    var open = drawer.classList.toggle("is-open");
+    btn.classList.toggle("is-open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  drawer.querySelectorAll("a").forEach(function(a){
+    a.addEventListener("click", function(){ drawer.classList.remove("is-open"); btn.classList.remove("is-open"); });
+  });
+})();
+
+
+(function(){
+  var routes = ["/", "/shop", "/product", "/process", "/story", "/wholesale", "/journal"];
+  function currentRoute(){
+    var h = window.location.hash.replace(/^#/, "");
+    if (!h) return "/";
+    if (routes.indexOf(h) !== -1) return h;
+    return "/";
+  }
+  function render(){
+    var route = currentRoute();
+    document.querySelectorAll(".route-page").forEach(function(el){
+      el.hidden = (el.getAttribute("data-route") !== route);
+    });
+    document.querySelectorAll(".nav-links a, .mobile-drawer a").forEach(function(a){
+      var r = (a.getAttribute("href") || "").replace(/^#/, "").split("#")[0] || "/";
+      a.classList.toggle("active", r === route);
+    });
+    window.scrollTo(0,0);
+    document.title = {
+      "/": "Aama ko Agro — Real food, kept honest",
+      "/shop": "Shop — Aama ko Agro",
+      "/product": "Freeze-Dried Mango — Aama ko Agro",
+      "/process": "Why Freeze-Dried — Aama ko Agro",
+      "/story": "Our Story — Aama ko Agro",
+      "/wholesale": "Wholesale — Aama ko Agro",
+      "/journal": "Learn — Aama ko Agro"
+    }[route] || "Aama ko Agro";
+  }
+  window.addEventListener("hashchange", render);
+  window.addEventListener("DOMContentLoaded", render);
+  document.addEventListener("click", function(e){
+    var a = e.target.closest("a[data-scroll]");
+    if (!a) return;
+    var frag = a.getAttribute("data-scroll");
+    setTimeout(function(){
+      var target = document.getElementById(frag);
+      if (target) target.scrollIntoView({behavior:"smooth"});
+    }, 30);
+  });
+})();
+
+
+(function(){
+  document.querySelectorAll(".acc-item").forEach(function(item, i){
+    var head = item.querySelector(".acc-head");
+    var body = item.querySelector(".acc-body");
+    if(!head || !body) return;
+    if(i !== 0){ body.style.display = "none"; head.querySelector("span").textContent = "+"; }
+    else { head.querySelector("span").textContent = "−"; }
+    head.addEventListener("click", function(){
+      var open = body.style.display !== "none";
+      body.style.display = open ? "none" : "block";
+      head.querySelector("span").textContent = open ? "+" : "−";
+    });
+  });
+  var main = document.querySelector(".pdp-gallery-main");
+  document.querySelectorAll(".pdp-thumbs .photo").forEach(function(thumb){
+    thumb.style.cursor = "pointer";
+    thumb.addEventListener("click", function(){
+      document.querySelectorAll(".pdp-thumbs .photo").forEach(function(t){ t.style.outline = "none"; });
+      thumb.style.outline = "2px solid var(--sage)";
+      var cls = ["clay","gold","ink"].find(function(c){ return thumb.classList.contains(c); });
+      main.className = "pdp-gallery-main photo" + (cls ? " " + cls : "");
+      var label = main.querySelector(".photo-label");
+      if(label) main.appendChild(label);
+    });
+  });
+})();
+
+
+(function(){
+  document.querySelectorAll(".faq-item").forEach(function(item, i){
+    var q = item.querySelector(".faq-q");
+    var a = item.querySelector(".faq-a");
+    if(!q || !a) return;
+    if(i !== 0){ a.style.display = "none"; }
+    var span = q.querySelector("span");
+    if(span) span.textContent = i === 0 ? "−" : "+";
+    q.addEventListener("click", function(){
+      var open = a.style.display !== "none";
+      a.style.display = open ? "none" : "block";
+      if(span) span.textContent = open ? "+" : "−";
+    });
+  });
+})();
+
+
+(function(){
+  var chips = document.querySelectorAll(".filter-chip");
+  var cards = document.querySelectorAll(".prod-grid .prod-card");
+  chips.forEach(function(chip){
+    chip.addEventListener("click", function(){
+      chips.forEach(function(c){ c.classList.remove("active"); });
+      chip.classList.add("active");
+      var f = chip.getAttribute("data-filter");
+      cards.forEach(function(card){
+        var show = f === "all" ||
+          card.getAttribute("data-cat") === f ||
+          card.getAttribute("data-tag") === f;
+        card.style.display = show ? "" : "none";
+      });
+    });
+  });
+})();
+
+</script>
+
+</body>
+</html>
