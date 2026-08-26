@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
+import { Dialog } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, AlertTriangle, TrendingDown, Package } from 'lucide-react';
 
 interface MonitoredItem {
@@ -92,6 +94,34 @@ export default function InventoryMonitoringPage() {
 
   const canManage = user && canAct(user.role, 'inventory-monitoring:manage');
 
+  // Live list so restock actions update the table immediately.
+  const [items, setItems] = useState<MonitoredItem[]>(MOCK_MONITORED);
+  const [restockItem, setRestockItem] = useState<MonitoredItem | null>(null);
+  const [restockQty, setRestockQty] = useState('');
+
+  const handleRestock = () => {
+    if (!restockItem) return;
+    const qty = parseInt(restockQty, 10);
+    if (!qty || qty <= 0) {
+      addToast({ type: 'error', title: 'Invalid quantity', description: 'Enter a restock quantity greater than 0.' });
+      return;
+    }
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === restockItem.id
+          ? { ...i, currentStock: i.currentStock + qty, lastUpdated: new Date().toISOString(), daysUntilStockout: Math.round((i.currentStock + qty) / Math.max(i.averageDailySales, 1)) }
+          : i,
+      ),
+    );
+    addToast({
+      type: 'success',
+      title: 'Restock recorded',
+      description: `${qty} units added to ${restockItem.productName} at ${restockItem.warehouseName}.`,
+    });
+    setRestockItem(null);
+    setRestockQty('');
+  };
+
   const columns = useMemo<ColumnDef<MonitoredItem>[]>(() => [
     {
       accessorKey: 'productName',
@@ -163,7 +193,14 @@ export default function InventoryMonitoringPage() {
             size: 100,
             cell: ({ row }: { row: any }) => (
               <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                <Button variant="secondary" size="sm">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setRestockItem(row.original);
+                    setRestockQty(String(Math.max(row.original.reorderLevel - row.original.currentStock, 10)));
+                  }}
+                >
                   Restock
                 </Button>
               </div>
@@ -173,8 +210,8 @@ export default function InventoryMonitoringPage() {
       : []),
   ], [canManage]);
 
-  const criticalItems = MOCK_MONITORED.filter((i) => i.daysUntilStockout <= 2);
-  const warningItems = MOCK_MONITORED.filter((i) => i.daysUntilStockout > 2 && i.daysUntilStockout <= 7);
+  const criticalItems = items.filter((i) => i.daysUntilStockout <= 2);
+  const warningItems = items.filter((i) => i.daysUntilStockout > 2 && i.daysUntilStockout <= 7);
 
   return (
     <div className="space-y-6">
@@ -215,7 +252,7 @@ export default function InventoryMonitoringPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-surface-500 uppercase">Total Monitored</p>
-              <p className="text-2xl font-bold text-surface-900">{MOCK_MONITORED.length}</p>
+              <p className="text-2xl font-bold text-surface-900">{items.length}</p>
             </div>
           </div>
         </Card>
@@ -223,7 +260,7 @@ export default function InventoryMonitoringPage() {
 
       <DataTable
         columns={columns}
-        data={MOCK_MONITORED}
+        data={items}
         isLoading={false}
         searchPlaceholder="Search monitored items…"
         emptyState={
@@ -234,6 +271,37 @@ export default function InventoryMonitoringPage() {
           />
         }
       />
+
+      {/* Restock Dialog */}
+      {restockItem && (
+        <Dialog
+          open={!!restockItem}
+          onClose={() => setRestockItem(null)}
+          title="Restock item"
+          description={`Record incoming stock for ${restockItem.productName}.`}
+          primaryAction={{
+            label: 'Add Stock',
+            onClick: handleRestock,
+          }}
+        >
+          <div className="space-y-4">
+            <div className="rounded-lg bg-surface-50 p-3 text-sm">
+              <p><span className="font-medium">Product:</span> {restockItem.productName}</p>
+              <p><span className="font-medium">Warehouse:</span> {restockItem.warehouseName}</p>
+              <p><span className="font-medium">Current stock:</span> {restockItem.currentStock} units</p>
+              <p><span className="font-medium">Reorder level:</span> {restockItem.reorderLevel} units</p>
+            </div>
+            <Input
+              label="Restock quantity (units)"
+              type="number"
+              min="1"
+              value={restockQty}
+              onChange={(e) => setRestockQty(e.target.value)}
+              placeholder="e.g. 50"
+            />
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }

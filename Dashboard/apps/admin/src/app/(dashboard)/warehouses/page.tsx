@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
+import { useRouter } from 'next/navigation';
 import type { Warehouse } from '@aamako/shared-types';
 import { MapPin, Plus, Package, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -38,10 +39,27 @@ export default function WarehousesPage() {
   const { addToast } = useToast();
   const [createDialog, setCreateDialog] = useState(false);
   const [newWarehouse, setNewWarehouse] = useState({ name: '', code: '', address: '' });
+  const [warehouses, setWarehouses] = useState<Warehouse[]>(MOCK_WAREHOUSES);
+  const [editWarehouse, setEditWarehouse] = useState<Warehouse | null>(null);
+  const router = useRouter();
 
   const canManage = user && canAct(user.role, 'warehouses:manage');
 
   const handleCreate = () => {
+    if (!newWarehouse.name.trim() || !newWarehouse.code.trim()) {
+      addToast({ type: 'error', title: 'Missing fields', description: 'Name and code are required.' });
+      return;
+    }
+    setWarehouses((prev) => [
+      ...prev,
+      {
+        id: 'WH' + String(Date.now()).slice(-3),
+        name: newWarehouse.name.trim(),
+        code: newWarehouse.code.trim().toUpperCase(),
+        address: newWarehouse.address.trim(),
+        isActive: true,
+      },
+    ]);
     addToast({
       type: 'success',
       title: 'Warehouse created',
@@ -49,6 +67,21 @@ export default function WarehousesPage() {
     });
     setCreateDialog(false);
     setNewWarehouse({ name: '', code: '', address: '' });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editWarehouse) return;
+    if (!editWarehouse.name.trim()) {
+      addToast({ type: 'error', title: 'Name required', description: 'Warehouse name cannot be empty.' });
+      return;
+    }
+    setWarehouses((prev) => prev.map((w) => (w.id === editWarehouse.id ? editWarehouse : w)));
+    addToast({
+      type: 'success',
+      title: 'Warehouse updated',
+      description: `${editWarehouse.name} has been saved.`,
+    });
+    setEditWarehouse(null);
   };
 
   return (
@@ -70,12 +103,12 @@ export default function WarehousesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Total Warehouses</p>
-          <p className="mt-1 text-2xl font-semibold text-surface-900">{MOCK_WAREHOUSES.length}</p>
+          <p className="mt-1 text-2xl font-semibold text-surface-900">{warehouses.length}</p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Active Warehouses</p>
           <p className="mt-1 text-2xl font-semibold text-surface-900">
-            {MOCK_WAREHOUSES.filter((w) => w.isActive).length}
+            {warehouses.filter((w) => w.isActive).length}
           </p>
         </Card>
         <Card>
@@ -94,7 +127,7 @@ export default function WarehousesPage() {
 
       {/* Warehouse Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {MOCK_WAREHOUSES.map((warehouse) => {
+        {warehouses.map((warehouse) => {
           const stats = MOCK_WAREHOUSE_STATS.find((s) => s.warehouseId === warehouse.id);
           return (
             <Card key={warehouse.id}>
@@ -138,11 +171,11 @@ export default function WarehousesPage() {
                 )}
 
                 <div className="flex items-center gap-2 mt-4">
-                  <Button variant="secondary" size="sm" className="flex-1">
+                  <Button variant="secondary" size="sm" className="flex-1" onClick={() => router.push('/inventory')}>
                     View Inventory
                   </Button>
                   {canManage && (
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => setEditWarehouse({ ...warehouse })}>
                       Edit
                     </Button>
                   )}
@@ -183,6 +216,38 @@ export default function WarehousesPage() {
               value={newWarehouse.address}
               onChange={(e) => setNewWarehouse({ ...newWarehouse, address: e.target.value })}
               placeholder="Full address"
+            />
+          </div>
+        </Dialog>
+      )}
+
+      {/* Edit Warehouse Dialog */}
+      {editWarehouse && (
+        <Dialog
+          open={!!editWarehouse}
+          onClose={() => setEditWarehouse(null)}
+          title="Edit warehouse"
+          description="Update the warehouse details."
+          primaryAction={{
+            label: 'Save Changes',
+            onClick: handleSaveEdit,
+          }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Warehouse Name"
+              value={editWarehouse.name}
+              onChange={(e) => setEditWarehouse({ ...editWarehouse, name: e.target.value })}
+            />
+            <Input
+              label="Warehouse Code"
+              value={editWarehouse.code}
+              onChange={(e) => setEditWarehouse({ ...editWarehouse, code: e.target.value })}
+            />
+            <Input
+              label="Address"
+              value={editWarehouse.address ?? ''}
+              onChange={(e) => setEditWarehouse({ ...editWarehouse, address: e.target.value })}
             />
           </div>
         </Dialog>

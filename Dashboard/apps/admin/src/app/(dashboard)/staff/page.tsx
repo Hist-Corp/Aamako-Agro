@@ -96,6 +96,7 @@ export default function StaffPage() {
 
   const createStaff = useCreateStaff();
   const { data: users, isLoading } = useUsers();
+  const [profileUser, setProfileUser] = useState<User | null>(null);
 
   const creatableRoles = creatableRolesFor(user?.role);
 
@@ -201,7 +202,7 @@ export default function StaffPage() {
       size: 100,
       cell: ({ row }) => (
         <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-          <Button variant="secondary" size="sm">
+          <Button variant="secondary" size="sm" onClick={() => setProfileUser(row.original)}>
             View Profile
           </Button>
         </div>
@@ -251,6 +252,28 @@ export default function StaffPage() {
           />
         }
       />
+
+      {/* View Profile Dialog */}
+      {profileUser && (
+        <Dialog
+          open={!!profileUser}
+          onClose={() => setProfileUser(null)}
+          title="Staff Profile"
+          description="Account details for this team member."
+        >
+          <div className="space-y-2 rounded-lg bg-surface-50 p-4 text-sm">
+            <p><span className="font-medium">Name:</span> {profileUser.name}</p>
+            <p><span className="font-medium">Email:</span> {profileUser.email}</p>
+            <p><span className="font-medium">Role:</span> {ROLE_LABELS[profileUser.role] ?? profileUser.role}</p>
+            <p><span className="font-medium">Department:</span> {ROLE_DEPARTMENT[profileUser.role] ?? '—'}</p>
+            <p><span className="font-medium">MFA Enabled:</span> {profileUser.mfaEnabled ? 'Yes' : 'No'}</p>
+            <p><span className="font-medium">Joined:</span> {formatDateTime(profileUser.createdAt)}</p>
+            {profileUser.lastLoginAt && (
+              <p><span className="font-medium">Last Login:</span> {formatDateTime(profileUser.lastLoginAt)}</p>
+            )}
+          </div>
+        </Dialog>
+      )}
 
       {/* Add Staff Dialog */}
       {addDialog && (

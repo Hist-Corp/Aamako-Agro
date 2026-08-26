@@ -72,10 +72,14 @@ export default function SupportPage() {
   const [assignDialog, setAssignDialog] = useState<SupportTicket | null>(null);
   const [resolveDialog, setResolveDialog] = useState<SupportTicket | null>(null);
   const [resolveNote, setResolveNote] = useState('');
+  const [tickets, setTickets] = useState<SupportTicket[]>(MOCK_TICKETS);
+  const [assignAgent, setAssignAgent] = useState('');
+  const [newTicketDialog, setNewTicketDialog] = useState(false);
+  const [newTicket, setNewTicket] = useState({ subject: '', customerName: '', customerEmail: '', category: 'General Inquiry', priority: 'MEDIUM' as TicketPriority });
 
   const canManage = user && canAct(user.role, 'support:manage');
 
-  const filteredTickets = MOCK_TICKETS.filter((t) => {
+  const filteredTickets = tickets.filter((t) => {
     if (statusFilter && t.status !== statusFilter) return false;
     if (priorityFilter && t.priority !== priorityFilter) return false;
     return true;
@@ -83,6 +87,13 @@ export default function SupportPage() {
 
   const handleResolve = async () => {
     if (!resolveDialog) return;
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === resolveDialog.id
+          ? { ...t, status: 'RESOLVED', lastMessage: resolveNote.trim() || t.lastMessage, updatedAt: new Date().toISOString(), resolvedAt: new Date().toISOString() }
+          : t,
+      ),
+    );
     addToast({
       type: 'success',
       title: 'Ticket resolved',
@@ -94,12 +105,53 @@ export default function SupportPage() {
 
   const handleAssign = async () => {
     if (!assignDialog) return;
+    if (!assignAgent) {
+      addToast({ type: 'error', title: 'No agent selected', description: 'Choose an agent to assign this ticket to.' });
+      return;
+    }
+    const agentName = { sita: 'Sita Support', ram: 'Ram Sales', gita: 'Gita Manager' }[assignAgent] ?? assignAgent;
+    setTickets((prev) =>
+      prev.map((t) => (t.id === assignDialog.id ? { ...t, assignedTo: agentName, status: t.status === 'OPEN' ? 'IN_PROGRESS' : t.status, updatedAt: new Date().toISOString() } : t)),
+    );
     addToast({
       type: 'success',
       title: 'Ticket assigned',
-      description: `${assignDialog.subject} has been assigned.`,
+      description: `${assignDialog.subject} has been assigned to ${agentName}.`,
     });
     setAssignDialog(null);
+    setAssignAgent('');
+  };
+
+  const handleCreateTicket = () => {
+    if (!newTicket.subject.trim() || !newTicket.customerName.trim()) {
+      addToast({ type: 'error', title: 'Missing fields', description: 'Subject and customer name are required.' });
+      return;
+    }
+    const now = new Date().toISOString();
+    setTickets((prev) => [
+      {
+        id: 'TKT-' + String(Date.now()).slice(-3),
+        subject: newTicket.subject.trim(),
+        customerName: newTicket.customerName.trim(),
+        customerEmail: newTicket.customerEmail.trim(),
+        category: newTicket.category,
+        status: 'OPEN',
+        priority: newTicket.priority,
+        assignedTo: 'Unassigned',
+        lastMessage: 'Ticket created',
+        messageCount: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+      ...prev,
+    ]);
+    addToast({
+      type: 'success',
+      title: 'Ticket created',
+      description: `${newTicket.subject} is now open.`,
+    });
+    setNewTicket({ subject: '', customerName: '', customerEmail: '', category: 'General Inquiry', priority: 'MEDIUM' });
+    setNewTicketDialog(false);
   };
 
   const columns = useMemo<ColumnDef<SupportTicket>[]>(() => [
@@ -199,9 +251,9 @@ export default function SupportPage() {
   ];
 
   // Stats
-  const openCount = MOCK_TICKETS.filter((t) => t.status === 'OPEN').length;
-  const inProgressCount = MOCK_TICKETS.filter((t) => t.status === 'IN_PROGRESS').length;
-  const urgentCount = MOCK_TICKETS.filter((t) => t.priority === 'URGENT' && t.status !== 'RESOLVED' && t.status !== 'CLOSED').length;
+  const openCount = tickets.filter((t) => t.status === 'OPEN').length;
+  const inProgressCount = tickets.filter((t) => t.status === 'IN_PROGRESS').length;
+  const urgentCount = tickets.filter((t) => t.priority === 'URGENT' && t.status !== 'RESOLVED' && t.status !== 'CLOSED').length;
 
   return (
     <div className="space-y-6">
@@ -211,7 +263,7 @@ export default function SupportPage() {
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Support' }]}
         actions={
           canManage ? (
-            <Button>
+            <Button onClick={() => setNewTicketDialog(true)}>
               <Plus className="h-4 w-4" /> New Ticket
             </Button>
           ) : undefined
@@ -260,7 +312,7 @@ export default function SupportPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-surface-500 uppercase">Total Tickets</p>
-              <p className="text-2xl font-bold text-surface-900">{MOCK_TICKETS.length}</p>
+              <p className="text-2xl font-bold text-surface-900">{tickets.length}</p>
             </div>
           </div>
         </Card>
@@ -331,14 +383,73 @@ export default function SupportPage() {
             </div>
             <Select
               label="Assign to"
-              value=""
-              onChange={() => {}}
+              value={assignAgent}
+              onChange={(e) => setAssignAgent(e.target.value)}
               options={[
                 { value: 'sita', label: 'Sita Support' },
                 { value: 'ram', label: 'Ram Sales' },
                 { value: 'gita', label: 'Gita Manager' },
               ]}
               placeholder="Select an agent…"
+            />
+          </div>
+        </Dialog>
+      )}
+
+      {/* New Ticket Dialog */}
+      {newTicketDialog && (
+        <Dialog
+          open={newTicketDialog}
+          onClose={() => setNewTicketDialog(false)}
+          title="New support ticket"
+          description="Create a ticket to track a customer issue."
+          primaryAction={{
+            label: 'Create Ticket',
+            onClick: handleCreateTicket,
+          }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Subject *"
+              value={newTicket.subject}
+              onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
+              placeholder="Short summary of the issue"
+            />
+            <Input
+              label="Customer name *"
+              value={newTicket.customerName}
+              onChange={(e) => setNewTicket({ ...newTicket, customerName: e.target.value })}
+              placeholder="e.g. KTM Fresh Mart"
+            />
+            <Input
+              label="Customer email"
+              type="email"
+              value={newTicket.customerEmail}
+              onChange={(e) => setNewTicket({ ...newTicket, customerEmail: e.target.value })}
+              placeholder="customer@email.com"
+            />
+            <Select
+              label="Category"
+              value={newTicket.category}
+              onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
+              options={[
+                { value: 'General Inquiry', label: 'General Inquiry' },
+                { value: 'Order Issue', label: 'Order Issue' },
+                { value: 'Product Quality', label: 'Product Quality' },
+                { value: 'Refund', label: 'Refund' },
+                { value: 'Account', label: 'Account' },
+              ]}
+            />
+            <Select
+              label="Priority"
+              value={newTicket.priority}
+              onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value as TicketPriority })}
+              options={[
+                { value: 'LOW', label: 'Low' },
+                { value: 'MEDIUM', label: 'Medium' },
+                { value: 'HIGH', label: 'High' },
+                { value: 'URGENT', label: 'Urgent' },
+              ]}
             />
           </div>
         </Dialog>

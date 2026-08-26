@@ -54,26 +54,61 @@ export default function MediaPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [uploadDialog, setUploadDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<MediaItem | null>(null);
+  const [mediaList, setMediaList] = useState<MediaItem[]>(MOCK_MEDIA);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const canUpload = user && canAct(user.role, 'media:upload');
   const canDelete = user && canAct(user.role, 'media:delete');
 
-  const filteredMedia = MOCK_MEDIA.filter((m) => {
+  const filteredMedia = mediaList.filter((m) => {
     if (typeFilter && m.type !== typeFilter) return false;
     return true;
   });
 
   const handleUpload = () => {
+    if (pendingFiles.length === 0) {
+      addToast({ type: 'error', title: 'No files selected', description: 'Choose at least one file to upload.' });
+      return;
+    }
+    const now = new Date().toISOString();
+    const added: MediaItem[] = pendingFiles.map((f, i) => ({
+      id: 'MED-' + String(Date.now()).slice(-5) + i,
+      name: f.name,
+      type: f.type.startsWith('image/') ? 'IMAGE' : f.type.startsWith('video/') ? 'VIDEO' : 'DOCUMENT',
+      url: '#',
+      thumbnailUrl: '#',
+      size: (f.size / (1024 * 1024)).toFixed(1) + ' MB',
+      uploadedBy: user?.name ?? user?.email ?? 'You',
+      usedIn: [],
+      createdAt: now,
+    }));
+    setMediaList((prev) => [...added, ...prev]);
     addToast({
       type: 'success',
-      title: 'Files uploaded',
-      description: 'Your files have been uploaded to the media library.',
+      title: `${added.length} file${added.length > 1 ? 's' : ''} uploaded`,
+      description: 'Your files have been added to the media library.',
     });
+    setPendingFiles([]);
     setUploadDialog(false);
+  };
+
+  const handleDownload = (media: MediaItem) => {
+    // Media URLs are placeholders in this demo build — generate a stub file
+    // client-side so the button always produces a real download.
+    const blob = new Blob([`Aamako Agro media library export\n\nFile: ${media.name}\nType: ${media.type}\nSize: ${media.size}\nUploaded by: ${media.uploadedBy}\n`], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = media.name + '.txt';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+    addToast({ type: 'success', title: 'Download started', description: media.name });
   };
 
   const handleDelete = () => {
     if (!deleteDialog) return;
+    setMediaList((prev) => prev.filter((m) => m.id !== deleteDialog.id));
     addToast({
       type: 'success',
       title: 'File deleted',
@@ -108,24 +143,24 @@ export default function MediaPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Total Files</p>
-          <p className="mt-1 text-2xl font-semibold text-surface-900">{MOCK_MEDIA.length}</p>
+          <p className="mt-1 text-2xl font-semibold text-surface-900">{mediaList.length}</p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Images</p>
           <p className="mt-1 text-2xl font-semibold text-surface-900">
-            {MOCK_MEDIA.filter((m) => m.type === 'IMAGE').length}
+            {mediaList.filter((m) => m.type === 'IMAGE').length}
           </p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Videos</p>
           <p className="mt-1 text-2xl font-semibold text-surface-900">
-            {MOCK_MEDIA.filter((m) => m.type === 'VIDEO').length}
+            {mediaList.filter((m) => m.type === 'VIDEO').length}
           </p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Documents</p>
           <p className="mt-1 text-2xl font-semibold text-surface-900">
-            {MOCK_MEDIA.filter((m) => m.type === 'DOCUMENT').length}
+            {mediaList.filter((m) => m.type === 'DOCUMENT').length}
           </p>
         </Card>
       </div>
@@ -174,7 +209,13 @@ export default function MediaPage() {
 
                 {/* Actions on hover */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                  <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="bg-white/90 shadow-sm"
+                    title="Download"
+                    onClick={() => handleDownload(media)}
+                  >
                     <Download className="h-3.5 w-3.5" />
                   </Button>
                   {canDelete && (
@@ -201,11 +242,19 @@ export default function MediaPage() {
             onClick: handleUpload,
           }}
         >
-          <div className="border-2 border-dashed border-surface-300 rounded-xl p-8 text-center hover:border-brand-400 transition-colors cursor-pointer">
+          <label className="border-2 border-dashed border-surface-300 rounded-xl p-8 text-center hover:border-brand-400 transition-colors cursor-pointer block">
             <Upload className="h-10 w-10 text-surface-400 mx-auto mb-3" />
-            <p className="text-sm font-medium text-surface-700">Click to upload or drag and drop</p>
+            <p className="text-sm font-medium text-surface-700">
+              {pendingFiles.length > 0 ? `${pendingFiles.length} file${pendingFiles.length > 1 ? 's' : ''} selected` : 'Click to upload or drag and drop'}
+            </p>
             <p className="text-xs text-surface-500 mt-1">PNG, JPG, GIF, MP4, PDF up to 50MB</p>
-          </div>
+            <input
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => setPendingFiles(Array.from(e.target.files ?? []))}
+            />
+          </label>
         </Dialog>
       )}
 

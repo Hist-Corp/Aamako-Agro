@@ -10,8 +10,10 @@ import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Tabs } from '@/components/ui/tabs';
 import { Card, CardHeader } from '@/components/ui/card';
+import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { Truck, ArrowRight, ArrowLeft, Package, MapPin } from 'lucide-react';
@@ -91,7 +93,61 @@ export default function DistributionPage() {
 
   const canManage = user && canAct(user.role, 'distribution:manage');
 
-  const filteredDistributions = MOCK_DISTRIBUTIONS.filter((d) => {
+  // Live records so status actions and new transfers update the table.
+  const [records, setRecords] = useState<DistributionRecord[]>(MOCK_DISTRIBUTIONS);
+  const [transferDialog, setTransferDialog] = useState(false);
+  const [isCreatingTransfer, setIsCreatingTransfer] = useState(false);
+  const [newTransfer, setNewTransfer] = useState({ productName: '', fromWarehouse: '', toWarehouse: '', quantity: '' });
+
+  const setStatus = (id: string, status: DistributionRecord['status']) => {
+    setRecords((prev) =>
+      prev.map((d) =>
+        d.id === id
+          ? { ...d, status, ...(status === 'COMPLETED' ? { completedAt: new Date().toISOString() } : {}) }
+          : d,
+      ),
+    );
+    const rec = records.find((d) => d.id === id);
+    addToast({
+      type: 'success',
+      title: status === 'IN_TRANSIT' ? 'Transfer started' : 'Transfer completed',
+      description: `${rec?.productName ?? id} is now ${status === 'IN_TRANSIT' ? 'in transit' : 'completed'}.`,
+    });
+  };
+
+  const handleCreateTransfer = () => {
+    if (!newTransfer.productName.trim() || !newTransfer.fromWarehouse.trim() || !newTransfer.toWarehouse.trim() || !parseInt(newTransfer.quantity, 10)) {
+      addToast({ type: 'error', title: 'Missing fields', description: 'Product, warehouses and quantity are required.' });
+      return;
+    }
+    setIsCreatingTransfer(true);
+    try {
+      setRecords((prev) => [
+        {
+          id: 'DIST-' + String(Date.now()).slice(-6),
+          productName: newTransfer.productName.trim(),
+          fromWarehouse: newTransfer.fromWarehouse,
+          toWarehouse: newTransfer.toWarehouse,
+          quantity: parseInt(newTransfer.quantity, 10),
+          status: 'PENDING',
+          initiatedBy: user?.name ?? user?.email ?? 'You',
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+      addToast({
+        type: 'success',
+        title: 'Transfer created',
+        description: `${newTransfer.quantity} × ${newTransfer.productName} scheduled from ${newTransfer.fromWarehouse}.`,
+      });
+      setNewTransfer({ productName: '', fromWarehouse: '', toWarehouse: '', quantity: '' });
+      setTransferDialog(false);
+    } finally {
+      setIsCreatingTransfer(false);
+    }
+  };
+
+  const filteredDistributions = records.filter((d) => {
     if (statusFilter && d.status !== statusFilter) return false;
     return true;
   });
@@ -165,10 +221,10 @@ export default function DistributionPage() {
               return (
                 <div className="flex items-center gap-1" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                   {dist.status === 'PENDING' && (
-                    <Button variant="secondary" size="sm">Start Transit</Button>
+                    <Button variant="secondary" size="sm" onClick={() => setStatus(dist.id, 'IN_TRANSIT')}>Start Transit</Button>
                   )}
                   {dist.status === 'IN_TRANSIT' && (
-                    <Button variant="primary" size="sm">Mark Complete</Button>
+                    <Button variant="primary" size="sm" onClick={() => setStatus(dist.id, 'COMPLETED')}>Mark Complete</Button>
                   )}
                 </div>
               );
@@ -176,7 +232,7 @@ export default function DistributionPage() {
           },
         ]
       : []),
-  ], [canManage]);
+  ], [canManage, records]);
 
   const tabs = [
     { id: '', label: 'All' },
@@ -194,7 +250,7 @@ export default function DistributionPage() {
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Distribution' }]}
         actions={
           canManage ? (
-            <Button>
+            <Button onClick={() => setTransferDialog(true)}>
               <Truck className="h-4 w-4" /> New Transfer
             </Button>
           ) : undefined
@@ -206,25 +262,25 @@ export default function DistributionPage() {
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Pending</p>
           <p className="mt-1 text-2xl font-semibold text-amber-600">
-            {MOCK_DISTRIBUTIONS.filter((d) => d.status === 'PENDING').length}
+            {records.filter((d) => d.status === 'PENDING').length}
           </p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">In Transit</p>
           <p className="mt-1 text-2xl font-semibold text-blue-600">
-            {MOCK_DISTRIBUTIONS.filter((d) => d.status === 'IN_TRANSIT').length}
+            {records.filter((d) => d.status === 'IN_TRANSIT').length}
           </p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Completed (30d)</p>
           <p className="mt-1 text-2xl font-semibold text-green-600">
-            {MOCK_DISTRIBUTIONS.filter((d) => d.status === 'COMPLETED').length}
+            {records.filter((d) => d.status === 'COMPLETED').length}
           </p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Total Items Transferred</p>
           <p className="mt-1 text-2xl font-semibold text-surface-900 tabular-nums">
-            {formatNumber(MOCK_DISTRIBUTIONS.filter((d) => d.status === 'COMPLETED').reduce((acc, d) => acc + d.quantity, 0))}
+            {formatNumber(records.filter((d) => d.status === 'COMPLETED').reduce((acc, d) => acc + d.quantity, 0))}
           </p>
         </Card>
       </div>
@@ -244,6 +300,62 @@ export default function DistributionPage() {
           />
         }
       />
+
+      {/* New Transfer Dialog */}
+      {transferDialog && (
+        <Dialog
+          open={transferDialog}
+          onClose={() => setTransferDialog(false)}
+          title="New stock transfer"
+          description="Schedule a transfer of stock between warehouses."
+          primaryAction={{
+            label: 'Create Transfer',
+            onClick: handleCreateTransfer,
+            isLoading: isCreatingTransfer,
+          }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Product"
+              value={newTransfer.productName}
+              onChange={(e) => setNewTransfer({ ...newTransfer, productName: e.target.value })}
+              placeholder="e.g. Basmati Rice (5kg)"
+            />
+            <Select
+              label="From warehouse"
+              value={newTransfer.fromWarehouse}
+              onChange={(e) => setNewTransfer({ ...newTransfer, fromWarehouse: e.target.value })}
+              options={[
+                { value: 'Main Warehouse - Kathmandu', label: 'Main Warehouse - Kathmandu' },
+                { value: 'Secondary Warehouse - Pokhara', label: 'Secondary Warehouse - Pokhara' },
+                { value: 'Distribution Hub - Chitwan', label: 'Distribution Hub - Chitwan' },
+                { value: 'Cold Storage - Kathmandu', label: 'Cold Storage - Kathmandu' },
+              ]}
+              placeholder="Select source…"
+            />
+            <Select
+              label="To warehouse"
+              value={newTransfer.toWarehouse}
+              onChange={(e) => setNewTransfer({ ...newTransfer, toWarehouse: e.target.value })}
+              options={[
+                { value: 'Main Warehouse - Kathmandu', label: 'Main Warehouse - Kathmandu' },
+                { value: 'Secondary Warehouse - Pokhara', label: 'Secondary Warehouse - Pokhara' },
+                { value: 'Distribution Hub - Chitwan', label: 'Distribution Hub - Chitwan' },
+                { value: 'Cold Storage - Kathmandu', label: 'Cold Storage - Kathmandu' },
+              ]}
+              placeholder="Select destination…"
+            />
+            <Input
+              label="Quantity (units)"
+              type="number"
+              min="1"
+              value={newTransfer.quantity}
+              onChange={(e) => setNewTransfer({ ...newTransfer, quantity: e.target.value })}
+              placeholder="e.g. 50"
+            />
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }

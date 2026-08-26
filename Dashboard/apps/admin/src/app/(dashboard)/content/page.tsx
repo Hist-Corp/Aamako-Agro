@@ -71,11 +71,16 @@ export default function ContentPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [approveDialog, setApproveDialog] = useState<{ item: ContentItem; action: 'APPROVED' | 'PUBLISHED' } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [items, setItems] = useState<ContentItem[]>(MOCK_CONTENT);
+  const [editDialog, setEditDialog] = useState<ContentItem | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [newContentDialog, setNewContentDialog] = useState(false);
+  const [newContent, setNewContent] = useState({ title: '', type: 'PAGE' as ContentItem['type'] });
 
   const canEdit = user && canAct(user.role, 'content:edit');
   const canApprove = user && canAct(user.role, 'content:approve');
 
-  const filteredContent = MOCK_CONTENT.filter((item) => {
+  const filteredContent = items.filter((item) => {
     if (statusFilter && item.status !== statusFilter) return false;
     if (typeFilter && item.type !== typeFilter) return false;
     return true;
@@ -86,6 +91,19 @@ export default function ContentPage() {
     setIsProcessing(true);
     // Mock API call
     await new Promise((r) => setTimeout(r, 500));
+    setItems((prev) =>
+      prev.map((c) =>
+        c.id === approveDialog.item.id
+          ? {
+              ...c,
+              status: approveDialog.action,
+              lastEditedBy: user?.name ?? user?.email ?? 'You',
+              updatedAt: new Date().toISOString(),
+              ...(approveDialog.action === 'PUBLISHED' ? { publishedAt: new Date().toISOString() } : {}),
+            }
+          : c,
+      ),
+    );
     addToast({
       type: 'success',
       title: `Content ${approveDialog.action === 'APPROVED' ? 'approved' : 'published'}`,
@@ -96,11 +114,51 @@ export default function ContentPage() {
   };
 
   const handleSubmitForReview = (item: ContentItem) => {
+    setItems((prev) =>
+      prev.map((c) => (c.id === item.id ? { ...c, status: 'REVIEW', lastEditedBy: user?.name ?? user?.email ?? 'You', updatedAt: new Date().toISOString() } : c)),
+    );
     addToast({
       type: 'success',
       title: 'Submitted for review',
       description: `${item.title} has been sent for review.`,
     });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editDialog) return;
+    if (!editTitle.trim()) {
+      addToast({ type: 'error', title: 'Title required', description: 'Content title cannot be empty.' });
+      return;
+    }
+    setItems((prev) =>
+      prev.map((c) => (c.id === editDialog.id ? { ...c, title: editTitle.trim(), lastEditedBy: user?.name ?? user?.email ?? 'You', updatedAt: new Date().toISOString() } : c)),
+    );
+    addToast({ type: 'success', title: 'Content updated', description: editTitle.trim() });
+    setEditDialog(null);
+  };
+
+  const handleCreateContent = () => {
+    if (!newContent.title.trim()) {
+      addToast({ type: 'error', title: 'Title required', description: 'Give the content piece a title.' });
+      return;
+    }
+    const now = new Date().toISOString();
+    setItems((prev) => [
+      {
+        id: 'CNT-' + String(Date.now()).slice(-3),
+        title: newContent.title.trim(),
+        type: newContent.type,
+        status: 'DRAFT',
+        author: user?.name ?? user?.email ?? 'You',
+        lastEditedBy: user?.name ?? user?.email ?? 'You',
+        createdAt: now,
+        updatedAt: now,
+      },
+      ...prev,
+    ]);
+    addToast({ type: 'success', title: 'Content created', description: `"${newContent.title}" saved as a draft.` });
+    setNewContent({ title: '', type: 'PAGE' as ContentItem['type'] });
+    setNewContentDialog(false);
   };
 
   const columns = useMemo<ColumnDef<ContentItem>[]>(() => [
@@ -157,7 +215,7 @@ export default function ContentPage() {
         return (
           <div className="flex items-center gap-1" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             {canEdit && (
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => { setEditDialog(item); setEditTitle(item.title); }}>
                 <Edit className="h-3.5 w-3.5" /> Edit
               </Button>
             )}
@@ -204,10 +262,10 @@ export default function ContentPage() {
 
   // Workflow summary
   const workflowCounts = {
-    DRAFT: MOCK_CONTENT.filter((c) => c.status === 'DRAFT').length,
-    REVIEW: MOCK_CONTENT.filter((c) => c.status === 'REVIEW').length,
-    APPROVED: MOCK_CONTENT.filter((c) => c.status === 'APPROVED').length,
-    PUBLISHED: MOCK_CONTENT.filter((c) => c.status === 'PUBLISHED').length,
+    DRAFT: items.filter((c) => c.status === 'DRAFT').length,
+    REVIEW: items.filter((c) => c.status === 'REVIEW').length,
+    APPROVED: items.filter((c) => c.status === 'APPROVED').length,
+    PUBLISHED: items.filter((c) => c.status === 'PUBLISHED').length,
   };
 
   return (
@@ -218,7 +276,7 @@ export default function ContentPage() {
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Content' }]}
         actions={
           canEdit ? (
-            <Button>
+            <Button onClick={() => setNewContentDialog(true)}>
               <Plus className="h-4 w-4" /> New Content
             </Button>
           ) : undefined
@@ -290,6 +348,65 @@ export default function ContentPage() {
             <p><span className="font-medium">Title:</span> {approveDialog.item.title}</p>
             <p><span className="font-medium">Type:</span> {approveDialog.item.type}</p>
             <p><span className="font-medium">Author:</span> {approveDialog.item.author}</p>
+          </div>
+        </Dialog>
+      )}
+
+      {/* Edit Content Dialog */}
+      {editDialog && (
+        <Dialog
+          open={!!editDialog}
+          onClose={() => setEditDialog(null)}
+          title="Edit content"
+          description="Update the content title and save your changes."
+          primaryAction={{
+            label: 'Save Changes',
+            onClick: handleSaveEdit,
+          }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder={editDialog.title}
+            />
+          </div>
+        </Dialog>
+      )}
+
+      {/* New Content Dialog */}
+      {newContentDialog && (
+        <Dialog
+          open={newContentDialog}
+          onClose={() => setNewContentDialog(false)}
+          title="New content"
+          description="Create a new content piece. It starts as a draft you can submit for review."
+          primaryAction={{
+            label: 'Create Draft',
+            onClick: handleCreateContent,
+          }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Title *"
+              value={newContent.title}
+              onChange={(e) => setNewContent({ ...newContent, title: e.target.value })}
+              placeholder="e.g. Homepage Hero Banner"
+            />
+            <Select
+              label="Type"
+              value={newContent.type}
+              onChange={(e) => setNewContent({ ...newContent, type: e.target.value as ContentItem['type'] })}
+              options={[
+                { value: 'HOMEPAGE', label: 'Homepage' },
+                { value: 'PRODUCT', label: 'Product' },
+                { value: 'PAGE', label: 'Page' },
+                { value: 'BANNER', label: 'Banner' },
+                { value: 'FAQ', label: 'FAQ' },
+                { value: 'ANNOUNCEMENT', label: 'Announcement' },
+              ]}
+            />
           </div>
         </Dialog>
       )}

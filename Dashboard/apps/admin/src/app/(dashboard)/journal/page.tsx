@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs } from '@/components/ui/tabs';
 import { Dialog } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { Newspaper, Plus, Edit, Eye, Send, CheckCircle2 } from 'lucide-react';
@@ -55,11 +57,16 @@ export default function JournalPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [publishDialog, setPublishDialog] = useState<JournalPost | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [posts, setPosts] = useState<JournalPost[]>(MOCK_POSTS);
+  const [editDialog, setEditDialog] = useState<JournalPost | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', excerpt: '' });
+  const [newArticleDialog, setNewArticleDialog] = useState(false);
+  const [newArticle, setNewArticle] = useState({ title: '', category: 'Farming', excerpt: '' });
 
   const canEdit = user && canAct(user.role, 'journal:edit');
   const canPublish = user && canAct(user.role, 'journal:publish');
 
-  const filteredPosts = MOCK_POSTS.filter((p) => {
+  const filteredPosts = posts.filter((p) => {
     if (statusFilter && p.status !== statusFilter) return false;
     return true;
   });
@@ -68,6 +75,13 @@ export default function JournalPage() {
     if (!publishDialog) return;
     setIsPublishing(true);
     await new Promise((r) => setTimeout(r, 500));
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === publishDialog.id
+          ? { ...p, status: 'PUBLISHED', publishedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+          : p,
+      ),
+    );
     addToast({
       type: 'success',
       title: 'Article published',
@@ -75,6 +89,44 @@ export default function JournalPage() {
     });
     setPublishDialog(null);
     setIsPublishing(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editDialog) return;
+    if (!editForm.title.trim()) {
+      addToast({ type: 'error', title: 'Title required', description: 'Article title cannot be empty.' });
+      return;
+    }
+    setPosts((prev) =>
+      prev.map((p) => (p.id === editDialog.id ? { ...p, title: editForm.title.trim(), excerpt: editForm.excerpt.trim() || p.excerpt, updatedAt: new Date().toISOString() } : p)),
+    );
+    addToast({ type: 'success', title: 'Article updated', description: editForm.title.trim() });
+    setEditDialog(null);
+  };
+
+  const handleCreateArticle = () => {
+    if (!newArticle.title.trim()) {
+      addToast({ type: 'error', title: 'Title required', description: 'Give the article a title.' });
+      return;
+    }
+    const now = new Date().toISOString();
+    setPosts((prev) => [
+      {
+        id: 'JRN-' + String(Date.now()).slice(-3),
+        title: newArticle.title.trim(),
+        excerpt: newArticle.excerpt.trim(),
+        category: newArticle.category,
+        status: 'DRAFT' as JournalStatus,
+        author: user?.name ?? user?.email ?? 'You',
+        views: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+      ...prev,
+    ]);
+    addToast({ type: 'success', title: 'Article created', description: `"${newArticle.title}" saved as a draft.` });
+    setNewArticle({ title: '', category: 'Farming', excerpt: '' });
+    setNewArticleDialog(false);
   };
 
   const columns = useMemo<ColumnDef<JournalPost>[]>(() => [
@@ -127,7 +179,7 @@ export default function JournalPage() {
         return (
           <div className="flex items-center gap-1" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             {canEdit && (
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => { setEditDialog(post); setEditForm({ title: post.title, excerpt: post.excerpt }); }}>
                 <Edit className="h-3.5 w-3.5" /> Edit
               </Button>
             )}
@@ -157,7 +209,7 @@ export default function JournalPage() {
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Journal' }]}
         actions={
           canEdit ? (
-            <Button>
+            <Button onClick={() => setNewArticleDialog(true)}>
               <Plus className="h-4 w-4" /> New Article
             </Button>
           ) : undefined
@@ -197,6 +249,82 @@ export default function JournalPage() {
             <p><span className="font-medium">Title:</span> {publishDialog.title}</p>
             <p><span className="font-medium">Category:</span> {publishDialog.category}</p>
             <p><span className="font-medium">Author:</span> {publishDialog.author}</p>
+          </div>
+        </Dialog>
+      )}
+
+      {/* Edit Article Dialog */}
+      {editDialog && (
+        <Dialog
+          open={!!editDialog}
+          onClose={() => setEditDialog(null)}
+          title="Edit article"
+          description="Update the article title and excerpt."
+          primaryAction={{
+            label: 'Save Changes',
+            onClick: handleSaveEdit,
+          }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Title"
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+            />
+            <div>
+              <label className="text-sm font-medium text-surface-700">Excerpt</label>
+              <textarea
+                value={editForm.excerpt}
+                onChange={(e) => setEditForm({ ...editForm, excerpt: e.target.value })}
+                rows={3}
+                className="mt-1 w-full rounded-lg border border-surface-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
+              />
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {/* New Article Dialog */}
+      {newArticleDialog && (
+        <Dialog
+          open={newArticleDialog}
+          onClose={() => setNewArticleDialog(false)}
+          title="New article"
+          description="Create a blog article. It starts as a draft you can submit for review."
+          primaryAction={{
+            label: 'Create Draft',
+            onClick: handleCreateArticle,
+          }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Title *"
+              value={newArticle.title}
+              onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
+              placeholder="e.g. Harvest Stories from the Terai"
+            />
+            <Select
+              label="Category"
+              value={newArticle.category}
+              onChange={(e) => setNewArticle({ ...newArticle, category: e.target.value })}
+              options={[
+                { value: 'Farming', label: 'Farming' },
+                { value: 'Products', label: 'Products' },
+                { value: 'Sustainability', label: 'Sustainability' },
+                { value: 'Behind the Scenes', label: 'Behind the Scenes' },
+                { value: 'Recipes', label: 'Recipes' },
+              ]}
+            />
+            <div>
+              <label className="text-sm font-medium text-surface-700">Excerpt</label>
+              <textarea
+                value={newArticle.excerpt}
+                onChange={(e) => setNewArticle({ ...newArticle, excerpt: e.target.value })}
+                rows={3}
+                placeholder="Short teaser shown in listings…"
+                className="mt-1 w-full rounded-lg border border-surface-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
+              />
+            </div>
           </div>
         </Dialog>
       )}
