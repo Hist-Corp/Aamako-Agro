@@ -60,7 +60,56 @@ Aamako-Agro is an enterprise-grade web application serving both retail customers
 
 ## Getting Started
 
-### Backend Setup
+### Prerequisites
+
+- **Node.js ≥ 18** — required on macOS, Linux and Windows ([nodejs.org](https://nodejs.org))
+- **A Supabase (PostgreSQL) connection string** for the backend
+- Docker *(optional)* — only if you want a local PostgreSQL via `docker compose up -d`
+
+> Everything runs identically on **macOS**, **Linux** and **Windows** (PowerShell or CMD).
+> Where shell syntax differs, both variants are shown.
+
+### Quick Start (all three apps at once)
+
+From the repository **root**:
+
+```bash
+# 1. Install dependencies for every app
+npm run setup
+
+# 2. Configure the backend environment
+cp Backend/.env.example Backend/.env          # macOS / Linux
+copy Backend\.env.example Backend\.env        # Windows (CMD)
+#    → open Backend/.env and paste your DATABASE_URL
+
+# 3. Create database tables + seed the default admin account
+npm run db:setup
+
+# 4. Start Backend + Dashboard + Storefront together
+npm run dev
+```
+
+Press `Ctrl+C` once to stop all three services.
+
+| App | URL |
+|-----|-----|
+| 🛍️ Storefront | http://localhost:8080 |
+| 🔐 Dashboard | http://localhost:3001 |
+| ⚙️ API + Swagger | http://localhost:3000/api/docs |
+
+The dashboard reads its API address from `Dashboard/apps/admin/.env.local`
+(`NEXT_PUBLIC_API_URL=http://localhost:3000/api`). Create that file if it does
+not exist, then restart the dashboard.
+
+### Running Apps Individually
+
+```bash
+npm run dev:backend     # NestJS API      → http://localhost:3000
+npm run dev:dashboard   # Admin dashboard → http://localhost:3001
+npm run dev:frontend    # Static site     → http://localhost:8080
+```
+
+### Backend-only Setup (manual)
 
 1. **Install dependencies**:
    ```bash
@@ -70,45 +119,33 @@ Aamako-Agro is an enterprise-grade web application serving both retail customers
 
 2. **Configure environment**:
    ```bash
-   cp .env.example .env
-   # Add your Supabase connection string:
-   # DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres"
+   cp .env.example .env       # macOS / Linux
+   copy .env.example .env     # Windows (CMD)
    ```
+   Add your Supabase connection string:
+   `DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres"`
 
 3. **Initialize database**:
    ```bash
    npm run db:push
-   npm run seed  # Creates default admin account and sample data
+   npm run seed   # Creates default admin account and sample data
    ```
 
-4. **Start development server**:
+4. **Start the development server**:
    ```bash
-   npm run start:dev  # Runs at http://localhost:3000/api/docs
+   npm run start:dev   # Swagger UI at http://localhost:3000/api/docs
    ```
 
-### Frontend Setup
+### Dashboard-only Setup (manual)
 
-1. **No build step required** — serve static files directly:
-   ```bash
-   cd Frontend
-   python3 -m http.server 4000
-   # Or use the provided Node.js server script
-   ```
+The dashboard uses a **pnpm workspace**, so install with pnpm (no global install needed):
 
-2. Access the site at `http://localhost:4000`
+```bash
+cd Dashboard
+npx --yes pnpm@9 install     # any OS — downloads pnpm temporarily
+npm run dev                  # Development server on port 3001
+```
 
-### Dashboard Setup
-
-1. **Install dependencies**:
-   ```bash
-   cd Dashboard
-   npm install
-   ```
-
-2. **Start development server**:
-   ```bash
-   npm run dev  # Development server with API proxy to backend
-   ```
 
 ## API Endpoints
 

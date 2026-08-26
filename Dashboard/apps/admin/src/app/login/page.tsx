@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/config/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Leaf, Shield, Users, BarChart3, Package, Star, MessageSquare, Settings } from 'lucide-react';
+import { Leaf, Shield, Users, BarChart3, Package, Star, MessageSquare, Settings, Eye, EyeOff } from 'lucide-react';
 
 const ROLES = [
   { value: 'SUPER_ADMIN', label: 'Super Admin', description: 'Full system access', icon: Settings, color: 'bg-purple-500', email: 'superadmin@aamako.com' },
@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState('SUPER_ADMIN');
   const [totpCode, setTotpCode] = useState('');
   const [showTotp, setShowTotp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -143,14 +144,25 @@ export default function LoginPage() {
               autoComplete="email"
             />
 
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
+            <div className="relative">
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-9 flex h-6 w-6 items-center justify-center rounded-md text-surface-400 transition-colors hover:text-surface-600"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
 
             {showTotp && (
               <Input
