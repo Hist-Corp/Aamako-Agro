@@ -46,7 +46,7 @@ export class CatalogController {
 
   // ---------- Admin writes ----------
   @ApiBearerAuth()
-  @Roles(Role.STAFF_ADMIN, Role.STAFF_MANAGER)
+  @Roles(Role.STAFF_ADMIN, Role.STAFF_MANAGER, Role.CONTENT_MANAGER)
   @Post('admin/products')
   create(@Body() dto: CreateProductDto) {
     return this.catalog.create(dto);
@@ -64,7 +64,7 @@ export class CatalogController {
     return this.catalog.remove(id);
   }
 
-  @Roles(Role.STAFF_ADMIN, Role.STAFF_MANAGER)
+  @Roles(Role.STAFF_ADMIN, Role.STAFF_MANAGER, Role.CONTENT_MANAGER)
   @Post('admin/products/:id/variants')
   addVariant(@Param('id') id: string, @Body() dto: CreateVariantDto) {
     return this.catalog.addVariant(id, dto);

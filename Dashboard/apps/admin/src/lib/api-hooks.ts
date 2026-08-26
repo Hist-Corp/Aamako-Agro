@@ -315,8 +315,9 @@ export function useUpdateProduct() {
 export function useToggleProductStatus() {
   const qc = useQueryClient();
   return useMutation({
+    // Backend expects `isPublished: boolean` on PATCH /admin/products/:id
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiClient.patch(`/admin/products/${id}`, { status }),
+      apiClient.patch(`/admin/products/${id}`, { isPublished: status === 'ACTIVE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.products }),
   });
 }

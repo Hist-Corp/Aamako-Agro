@@ -186,8 +186,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   ],
   CONTENT_MANAGER: [
     'dashboard:view',
-    // Products (content only)
-    'products:view', 'products:content-fields',
+    // Products (content only) — can add products and publish them to the storefront
+    'products:view', 'products:content-fields', 'products:create', 'products:publish',
     // Content
     'content:view', 'content:edit',
     'journal:view', 'journal:edit', 'journal:publish',
