@@ -52,7 +52,7 @@ export class CatalogController {
     return this.catalog.create(dto);
   }
 
-  @Roles(Role.STAFF_ADMIN, Role.STAFF_MANAGER)
+  @Roles(Role.STAFF_ADMIN, Role.STAFF_MANAGER, Role.CONTENT_MANAGER)
   @Patch('admin/products/:id')
   update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.catalog.update(id, dto);

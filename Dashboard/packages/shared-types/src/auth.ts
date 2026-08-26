@@ -172,8 +172,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   ],
   INVENTORY_MANAGER: [
     'dashboard:view',
-    // Products (view/stock only)
-    'products:view', 'products:stock-fields',
+    // Products (view/stock only; can add new products to inventory)
+    'products:view', 'products:stock-fields', 'products:create',
     // Inventory & Warehouses
     'inventory:view', 'inventory:adjust', 'inventory:create',
     'warehouses:view', 'warehouses:manage',

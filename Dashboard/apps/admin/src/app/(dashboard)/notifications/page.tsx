@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/config/auth-context';
 import { relativeTime } from '@/lib/utils';
+import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead, type AdminNotification } from '@/lib/api-hooks';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -71,38 +72,48 @@ export default function NotificationsPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
   const [filter, setFilter] = useState('all');
+  const { data: notifications = [], isLoading } = useNotifications();
+  const markReadMutation = useMarkNotificationRead();
+  const markAllReadMutation = useMarkAllNotificationsRead();
 
-  const filteredNotifications = MOCK_NOTIFICATIONS.filter((n) => {
+  const filteredNotifications = notifications.filter((n) => {
     if (filter === 'unread') return !n.read;
     if (filter === 'read') return n.read;
     return true;
   });
 
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const markAsRead = (id: string) => {
-    addToast({
-      type: 'success',
-      title: 'Notification marked as read',
+    markReadMutation.mutate(id, {
+      onSuccess: () =>
+        addToast({ type: 'success', title: 'Notification marked as read' }),
+      onError: (err: any) =>
+        addToast({ type: 'error', title: 'Failed to update notification', description: err.message }),
     });
   };
 
   const markAllAsRead = () => {
-    addToast({
-      type: 'success',
-      title: 'All notifications marked as read',
+    markAllReadMutation.mutate(undefined, {
+      onSuccess: () =>
+        addToast({ type: 'success', title: 'All notifications marked as read' }),
+      onError: (err: any) =>
+        addToast({ type: 'error', title: 'Failed to update notifications', description: err.message }),
     });
   };
 
   const clearAll = () => {
-    addToast({
-      type: 'success',
-      title: 'All notifications cleared',
+    // Mark everything read — the backend keeps an audit-friendly record
+    // rather than deleting notifications.
+    markAllReadMutation.mutate(undefined, {
+      onSuccess: () => addToast({ type: 'success', title: 'All notifications cleared' }),
+      onError: (err: any) =>
+        addToast({ type: 'error', title: 'Failed to clear notifications', description: err.message }),
     });
   };
 
   const tabs = [
-    { id: 'all', label: 'All', count: MOCK_NOTIFICATIONS.length },
+    { id: 'all', label: 'All', count: notifications.length },
     { id: 'unread', label: 'Unread', count: unreadCount },
     { id: 'read', label: 'Read' },
   ];

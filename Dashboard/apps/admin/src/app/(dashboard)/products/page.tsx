@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useProducts, useToggleProductStatus } from '@/lib/api-hooks';
+import { useProducts, useToggleProductStatus, useCreateProduct } from '@/lib/api-hooks';
 import { useAuth } from '@/config/auth-context';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import { canAct } from '@/config/rbac';
@@ -28,6 +28,51 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [toggleDialog, setToggleDialog] = useState<Product | null>(null);
   const [isToggling, setIsToggling] = useState(false);
+
+  // ---- Add product (inventory -> content manager flow) ----
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [form, setForm] = useState({ name: '', description: '', sku: '', unit: 'UNIT_50G', priceRupees: '' });
+  const [isCreating, setIsCreating] = useState(false);
+  const createMutation = useCreateProduct();
+
+  const slugify = (s: string) =>
+    s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  const canCreate = user && (canAct(user.role, 'products:create') || canAct(user.role, 'products:publish'));
+
+  const handleCreate = async () => {
+    if (!form.name.trim() || !form.sku.trim() || !form.priceRupees) {
+      addToast({ type: 'error', title: 'Missing fields', description: 'Name, SKU and price are required.' });
+      return;
+    }
+    setIsCreating(true);
+    try {
+      await createMutation.mutateAsync({
+        name: form.name.trim(),
+        slug: slugify(form.name),
+        description: form.description.trim() || undefined,
+        variants: [
+          {
+            sku: form.sku.trim(),
+            name: form.unit.replace(/_/g, ' ').toLowerCase(),
+            unit: form.unit,
+            basePriceCents: Math.round(parseFloat(form.priceRupees) * 100),
+          },
+        ],
+      });
+      addToast({
+        type: 'success',
+        title: 'Product added to inventory',
+        description: 'Content managers have been notified to publish it to the website.',
+      });
+      setForm({ name: '', description: '', sku: '', unit: 'UNIT_50G', priceRupees: '' });
+      setShowAddDialog(false);
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Failed to create product', description: err.message });
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const canPublish = user && canAct(user.role, 'products:publish');
   const toggleMutation = useToggleProductStatus();
@@ -173,8 +218,8 @@ export default function ProductsPage() {
         description="Manage your product catalog"
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Products' }]}
         actions={
-          canPublish ? (
-            <Button>
+          canCreate ? (
+            <Button onClick={() => setShowAddDialog(true)}>
               <Plus className="h-4 w-4" /> Add Product
             </Button>
           ) : undefined
@@ -193,10 +238,84 @@ export default function ProductsPage() {
             icon={Package}
             title="No products yet"
             description="Add your first product to get started. Products appear in the customer storefront after publishing."
-            action={canPublish ? { label: 'Add Product', onClick: () => {} } : undefined}
+            action={canCreate ? { label: 'Add Product', onClick: () => setShowAddDialog(true) } : undefined}
           />
         }
       />
+
+      {showAddDialog && (
+        <Dialog
+          open={showAddDialog}
+          onClose={() => setShowAddDialog(false)}
+          title="Add product to inventory"
+          description="The product is created as a draft. Content managers are notified automatically so they can publish it to the website."
+          primaryAction={{
+            label: 'Create Product',
+            onClick: handleCreate,
+            isLoading: isCreating,
+          }}
+        >
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-surface-600">Product name *</label>
+              <input
+                className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Freeze-Dried Mango"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-surface-600">Description</label>
+              <textarea
+                className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                rows={2}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Short customer-facing description"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-surface-600">SKU *</label>
+                <input
+                  className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  value={form.sku}
+                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                  placeholder="AKA-MNG-050"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-surface-600">Unit</label>
+                <select
+                  className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                >
+                  <option value="UNIT_30G">30g pouch</option>
+                  <option value="UNIT_50G">50g pouch</option>
+                  <option value="UNIT_100G">100g jar</option>
+                  <option value="UNIT_250G">250g jar</option>
+                  <option value="CASE_12X30G">Case 12×30g</option>
+                  <option value="CASE_12X50G">Case 12×50g</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-surface-600">Price (Rs) *</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                value={form.priceRupees}
+                onChange={(e) => setForm({ ...form, priceRupees: e.target.value })}
+                placeholder="450"
+              />
+            </div>
+          </div>
+        </Dialog>
+      )}
 
       {toggleDialog && (
         <Dialog

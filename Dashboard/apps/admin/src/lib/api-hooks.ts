@@ -297,7 +297,8 @@ export function useProduct(id: string) {
 export function useCreateProduct() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<Product>) => apiClient.post<Product>('/admin/products', data),
+    // Backend DTO shape (name/slug/variants[{sku,name,unit,basePriceCents}])
+    mutationFn: (data: unknown) => apiClient.post<any>('/admin/products', data),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.products }),
   });
 }
@@ -575,3 +576,61 @@ export function useCreateStaff() {
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users }),
   });
 }
+
+// ─── Notifications ──────────────────────────────────────────────────
+export interface AdminNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  actionUrl?: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+const MOCK_APP_NOTIFICATIONS: AdminNotification[] = [
+  { id: 'N001', type: 'ORDER', title: 'New order received', message: 'Order #ORD-2847 from KTM Fresh Mart — Rs. 12,400', read: false, createdAt: new Date(Date.now() - 300000).toISOString() },
+  { id: 'N002', type: 'INVENTORY', title: 'Low stock alert', message: 'Red Lentils (1kg) has only 15 units remaining', read: false, createdAt: new Date(Date.now() - 900000).toISOString() },
+];
+
+export function useNotifications() {
+  return useQuery({
+    queryKey: ['admin', 'notifications'],
+    queryFn: () =>
+      withFallback<AdminNotification[]>(
+        async () => {
+          const res = await apiClient.get<any[]>('/notifications');
+          // Backend shape: { id, userId, type, title, message, actionUrl, isRead, createdAt }
+          return res.map((n) => ({
+            id: n.id,
+            type: n.type ?? 'SYSTEM',
+            title: n.title,
+            message: n.message,
+            actionUrl: n.actionUrl ?? undefined,
+            read: !!n.isRead,
+            createdAt: n.createdAt,
+          }));
+        },
+        MOCK_APP_NOTIFICATIONS,
+      ),
+    refetchInterval: 15000,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/notifications/${id}/read`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] }),
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.patch('/notifications/read-all'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] }),
+  });
+}
+
+// ─── Notifications ──────────────────────────────────────────────────

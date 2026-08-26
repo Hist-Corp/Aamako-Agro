@@ -141,4 +141,40 @@
       return request('POST', '/wholesale/private-label-leads', payload);
     },
   };
+
+  /**
+   * Sign-in gate for cart actions. Shows a popup telling the user to sign
+   * in first; the "Sign in" button links to the storefront signin page.
+   * Returns true when the user IS signed in (action may proceed).
+   */
+  window.AamakoRequireSignIn = function () {
+    var user = localStorage.getItem('aamako_user');
+    var tokens = localStorage.getItem('aamako_tokens');
+    if ((user && user !== 'null') || (tokens && tokens !== 'null')) return true;
+
+    // Remove any existing gate before showing a new one
+    var existing = document.getElementById('signinGateOverlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'signin-gate-overlay';
+    overlay.id = 'signinGateOverlay';
+    overlay.innerHTML =
+      '<div class="signin-gate-modal" role="dialog" aria-modal="true" aria-labelledby="signinGateTitle">' +
+      '<button class="signin-gate-close" aria-label="Close">&times;</button>' +
+      '<div class="signin-gate-icon">🔒</div>' +
+      '<h3 class="signin-gate-title" id="signinGateTitle">Sign in required</h3>' +
+      '<p class="signin-gate-text">To add items to the cart you should be signed in. Sign in to your Aama ko Agro account and start filling your basket.</p>' +
+      '<div class="signin-gate-actions">' +
+      '<a href="signin.html" class="signin-gate-signin">Sign in</a>' +
+      '<button class="signin-gate-cancel">Maybe later</button>' +
+      '</div></div>';
+
+    function close() { overlay.remove(); }
+    overlay.querySelector('.signin-gate-close').addEventListener('click', close);
+    overlay.querySelector('.signin-gate-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    document.body.appendChild(overlay);
+    return false;
+  };
 })();

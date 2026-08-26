@@ -43,11 +43,11 @@
 
     <div>
       <div class="prod-badge">Best seller</div>
-      <h1 class="page-title" style="font-size:clamp(1.8rem,3.4vw,2.6rem); margin-top:8px;">Freeze-Dried Mango</h1>
-      <p class="section-desc" style="margin-top:10px;">Ripe mango, sliced and freeze-dried within hours of harvest. Crisp, intensely sweet, nothing added.</p>
-      <div class="pdp-price">Rs 450 <span class="was">Rs 550</span></div>
-      <div class="spec-row"><span>Pack size</span><span>50g pouch</span></div>
-      <div class="spec-row"><span>Availability</span><span>In stock</span></div>
+      <h1 class="page-title" id="pdpTitle" style="font-size:clamp(1.8rem,3.4vw,2.6rem); margin-top:8px;">Freeze-Dried Mango</h1>
+      <p class="section-desc" id="pdpDesc" style="margin-top:10px;">Ripe mango, sliced and freeze-dried within hours of harvest. Crisp, intensely sweet, nothing added.</p>
+      <div class="pdp-price" id="pdpPrice">Rs 450</div>
+      <div class="spec-row"><span>Pack size</span><span id="pdpPack">50g pouch</span></div>
+      <div class="spec-row"><span>Availability</span><span id="pdpAvailability">In stock</span></div>
       <div class="spec-row"><span>Shelf life</span><span>[N] months, unopened</span></div>
       <div class="qty-row">
         <div class="qty-stepper"><button aria-label="Decrease quantity">−</button><span>1</span><button aria-label="Increase quantity">+</button></div>
@@ -103,17 +103,61 @@
   var main=document.querySelector(".pdp-gallery-main");
   document.querySelectorAll(".pdp-thumbs .photo").forEach(function(thumb){thumb.style.cursor="pointer";thumb.addEventListener("click",function(){document.querySelectorAll(".pdp-thumbs .photo").forEach(function(t){t.style.outline="none";t.classList.remove("active");});thumb.classList.add("active");var img=thumb.querySelector("img");if(img&&main){var mainImg=main.querySelector("img");if(mainImg)mainImg.src=img.src.replace("w=200","w=800");}});});
   if(typeof gsap!=='undefined'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){gsap.from('.pdp-gallery-main',{opacity:0,x:-20,duration:0.6,ease:'power3.out',delay:0.1});gsap.from('.pdp-thumbs .photo',{opacity:0,y:12,duration:0.4,ease:'power3.out',stagger:0.06,delay:0.3});}
-  var cart=JSON.parse(localStorage.getItem('aka-cart')||'[]'),overlay=document.getElementById('cartOverlay'),cartDrawer=document.getElementById('cartDrawer'),cartClose=document.getElementById('cartClose'),cartToggle=document.getElementById('cartToggle'),cartBadge=document.getElementById('cartBadge'),cartItems=document.getElementById('cartItems'),cartTotal=document.getElementById('cartTotal'),cartSubtotal=document.getElementById('cartSubtotal'),cartCountLabel=document.getElementById('cartCountLabel');
+  var LOW_STOCK_THRESHOLD=20;
+  function fmt(n){return 'Rs '+Number(n).toLocaleString('en-IN');}
+  // ---- Cart (shape: {variantId,name,meta,unitPrice,qty}) ----
+  var cart=JSON.parse(localStorage.getItem('aka-cart')||'[]');
+  function saveCart(){localStorage.setItem('aka-cart',JSON.stringify(cart));}
+  function unitPriceOf(i){return (i.unitPrice!=null?i.unitPrice:i.price)||0;}
+  var overlay=document.getElementById('cartOverlay'),cartDrawer=document.getElementById('cartDrawer'),cartClose=document.getElementById('cartClose'),cartToggle=document.getElementById('cartToggle'),cartBadge=document.getElementById('cartBadge'),cartItems=document.getElementById('cartItems'),cartTotal=document.getElementById('cartTotal'),cartSubtotal=document.getElementById('cartSubtotal'),cartCountLabel=document.getElementById('cartCountLabel');
   function openCart(){overlay.classList.add('is-open');cartDrawer.classList.add('is-open');document.body.style.overflow='hidden';}
   function closeCart(){overlay.classList.remove('is-open');cartDrawer.classList.remove('is-open');document.body.style.overflow='';}
-  function updateBadge(){var count=cart.reduce(function(s,i){return s+i.qty;},0);var total=cart.reduce(function(s,i){return s+i.price*i.qty;},0);if(count>0){cartBadge.textContent=count;cartBadge.style.display='inline-flex';cartBadge.classList.remove('bounce');void cartBadge.offsetWidth;cartBadge.classList.add('bounce');}else{cartBadge.style.display='none';}cartTotal.textContent='Rs '+total;if(cartSubtotal)cartSubtotal.textContent='Rs '+total;if(cartCountLabel)cartCountLabel.textContent=count>0?'('+count+' item'+(count>1?'s':'')+')':'';renderCartItems();}
-  function renderCartItems(){if(cart.length===0){cartItems.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you\'ll love.</div></div>';return;}cartItems.innerHTML=cart.map(function(item,i){return '<div class="cart-item"><div class="cart-item-photo"><div class="photo" style="height:100%;background:var(--sage);"></div></div><div class="cart-item-info"><div class="cart-item-name">'+item.name+'</div><div class="cart-item-meta">'+item.meta+'</div><div class="cart-item-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div></div><div class="cart-item-right"><div class="cart-item-price">Rs '+(item.price*item.qty)+'</div><button class="cart-item-remove" data-idx="'+i+'" aria-label="Remove">×</button></div></div>';}).join('');cartItems.querySelectorAll('.cart-item-remove').forEach(function(b){b.addEventListener('click',function(){cart.splice(parseInt(b.dataset.idx),1);localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});cartItems.querySelectorAll('.cart-item-qty button').forEach(function(b){b.addEventListener('click',function(){var idx=parseInt(b.dataset.idx);if(b.dataset.action==='inc')cart[idx].qty++;else{cart[idx].qty--;if(cart[idx].qty<=0)cart.splice(idx,1);}localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});}
+  function updateBadge(){var count=cart.reduce(function(s,i){return s+i.qty;},0);var total=cart.reduce(function(s,i){return s+unitPriceOf(i)*i.qty;},0);if(count>0){cartBadge.textContent=count;cartBadge.style.display='inline-flex';cartBadge.classList.remove('bounce');void cartBadge.offsetWidth;cartBadge.classList.add('bounce');}else{cartBadge.style.display='none';}if(cartTotal)cartTotal.textContent=fmt(total);if(cartSubtotal)cartSubtotal.textContent=fmt(total);if(cartCountLabel)cartCountLabel.textContent=count>0?'('+count+' item'+(count>1?'s':'')+')':'';renderCartItems();}
+  function renderCartItems(){if(cart.length===0){cartItems.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you\'ll love.</div></div>';return;}cartItems.innerHTML=cart.map(function(item,i){return '<div class="cart-item"><div class="cart-item-photo"><div class="photo" style="height:100%;background:var(--sage);"></div></div><div class="cart-item-info"><div class="cart-item-name">'+item.name+'</div><div class="cart-item-meta">'+item.meta+'</div><div class="cart-item-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div></div><div class="cart-item-right"><div class="cart-item-price">'+fmt(unitPriceOf(item)*item.qty)+'</div><button class="cart-item-remove" data-idx="'+i+'" aria-label="Remove">×</button></div></div>';}).join('');cartItems.querySelectorAll('.cart-item-remove').forEach(function(b){b.addEventListener('click',function(){cart.splice(parseInt(b.dataset.idx),1);localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});cartItems.querySelectorAll('.cart-item-qty button').forEach(function(b){b.addEventListener('click',function(){var idx=parseInt(b.dataset.idx);if(b.dataset.action==='inc')cart[idx].qty++;else{cart[idx].qty--;if(cart[idx].qty<=0)cart.splice(idx,1);}localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});}
   if(cartToggle)cartToggle.addEventListener('click',function(e){e.preventDefault();openCart();});if(cartClose)cartClose.addEventListener('click',closeCart);if(overlay)overlay.addEventListener('click',closeCart);
+  // ---- Live product data from the backend (price + stock are the source of truth) ----
+  var currentVariant=null;
+  function applyProduct(p){
+    var v=(p.variants&&p.variants[0])||null;
+    if(!v)return;
+    currentVariant=v;
+    var price=v.basePriceCents/100;
+    var t=document.getElementById('pdpTitle');if(t)t.textContent=p.name;
+    var d=document.getElementById('pdpDesc');if(d&&p.description)d.textContent=p.description;
+    var pk=document.getElementById('pdpPack');if(pk)pk.textContent=v.name;
+    var pr=document.getElementById('pdpPrice');if(pr)pr.innerHTML=fmt(price);
+    var skuEl=document.querySelector('.qty-row span[style]');if(skuEl)skuEl.textContent='SKU: '+v.sku;
+    var inv=v.inventory;
+    var stock=(inv&&typeof inv.stockOnHand==='number')?inv.stockOnHand:null;
+    var av=document.getElementById('pdpAvailability');
+    if(av){
+      if(stock===null){av.textContent='In stock';av.style.color='';}
+      else if(stock===0){av.textContent='Out of stock';av.style.color='#b3261e';}
+      else if(stock<=LOW_STOCK_THRESHOLD){av.textContent='Low stock - only '+stock+' left';av.style.color='#9a6700';}
+      else{av.textContent='In stock ('+stock+' available)';av.style.color='';}
+    }
+    document.title=p.name+' - Aama ko Agro';
+  }
+  if(window.AamakoAPI){
+    var slug=new URLSearchParams(window.location.search).get('slug');
+    var load=slug?window.AamakoAPI.getProduct(slug):window.AamakoAPI.listProducts(1).then(function(r){return r.items&&r.items[0];});
+    load.then(applyProduct).catch(function(){/* keep static fallback */});
+  }
   var addBtn=document.querySelector('.pdp-cta .btn-primary');
-  if(addBtn){addBtn.addEventListener('click',function(e){e.preventDefault();var name='Freeze-Dried Mango',meta='50g pouch · 100% fruit',price=0;var pEl=document.querySelector('.pdp-price');if(pEl)price=parseInt(pEl.textContent.replace(/[^0-9]/g,''))||0;var ex=cart.find(function(i){return i.name===name;});if(ex){ex.qty++;}else{cart.push({name:name,meta:meta,price:price,qty:1});}localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();addBtn.textContent='Added ✓';setTimeout(function(){addBtn.textContent='Add to cart';},1200);});}
+  if(addBtn){addBtn.addEventListener('click',function(e){e.preventDefault();
+    if(window.AamakoRequireSignIn&&!window.AamakoRequireSignIn())return;
+    if(!currentVariant){alert('Still loading product details - try again in a moment.');return;}
+    var name=(document.getElementById('pdpTitle')||{}).textContent||'Product';
+    var meta=(document.getElementById('pdpPack')||{}).textContent||'';
+    var variantId=currentVariant.id;
+    var unitPrice=currentVariant.basePriceCents/100;
+    var ex=cart.find(function(i){return i.variantId===variantId;});
+    if(ex){ex.qty++;}else{cart.push({variantId:variantId,name:name,meta:meta,unitPrice:unitPrice,qty:1});}
+    saveCart();updateBadge();addBtn.textContent='Added ✓';setTimeout(function(){addBtn.textContent='Add to cart';},1200);});}
   updateBadge();
 })();
 </script>
+<script src="js/api.js"></script>
 
 </body>
 </html>

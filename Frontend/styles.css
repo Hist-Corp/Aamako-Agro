@@ -1087,3 +1087,38 @@ footer{border-top:1px solid var(--line); margin-top:var(--space-8); padding:var(
   .at-icon{font-size:20px;}
   .at-label{font-size:13px;}
 }
+
+/* ---- Sign-in gate popup (add-to-cart requires an account) ---- */
+.signin-gate-overlay{
+  position:fixed; inset:0; z-index:10000; background:rgba(20,24,18,.55);
+  backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center;
+  padding:var(--space-4); animation:sgFade .18s ease;
+}
+.signin-gate-modal{
+  background:#fff; border-radius:var(--radius-lg,16px); max-width:400px; width:100%;
+  padding:var(--space-6) var(--space-5); text-align:center; position:relative;
+  box-shadow:0 24px 60px rgba(0,0,0,.25);
+  animation:sgPop .2s ease;
+}
+.signin-gate-close{
+  position:absolute; top:10px; right:14px; background:none; border:none;
+  font-size:22px; line-height:1; color:var(--ink-soft); cursor:pointer; padding:4px;
+}
+.signin-gate-close:hover{color:var(--ink);}
+.signin-gate-icon{font-size:36px; margin-bottom:var(--space-3);}
+.signin-gate-title{font-family:var(--font-display,'Playfair Display',serif); font-size:1.35rem; margin-bottom:var(--space-2);}
+.signin-gate-text{font-size:14px; color:var(--ink-soft); margin-bottom:var(--space-5); line-height:1.55;}
+.signin-gate-actions{display:flex; flex-direction:column; gap:var(--space-2); align-items:center;}
+.signin-gate-signin{
+  display:inline-flex; align-items:center; justify-content:center; width:100%;
+  padding:12px 24px; border-radius:999px; background:var(--ink,#1c2018); color:#fff;
+  font-size:14px; font-weight:600; text-decoration:none; transition:opacity .15s ease;
+}
+.signin-gate-signin:hover{opacity:.88; color:#fff;}
+.signin-gate-cancel{
+  background:none; border:none; font-size:13px; color:var(--ink-soft);
+  cursor:pointer; text-decoration:underline; padding:6px;
+}
+@keyframes sgFade{from{opacity:0}to{opacity:1}}
+@keyframes sgPop{from{transform:scale(.94); opacity:0}to{transform:scale(1); opacity:1}}
+

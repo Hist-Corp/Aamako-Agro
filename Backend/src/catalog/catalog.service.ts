@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   CreateProductDto,
   CreateVariantDto,
@@ -9,7 +10,10 @@ import {
 
 @Injectable()
 export class CatalogService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async list(q: ListProductsQueryDto) {
     const where = {
@@ -52,17 +56,32 @@ export class CatalogService {
     return product;
   }
 
-  create(dto: CreateProductDto) {
+  async create(dto: CreateProductDto) {
     const { variants, ...product } = dto;
-    return this.prisma.product.create({
+    const created = await this.prisma.product.create({
       data: {
         ...product,
         variants: variants
-          ? { create: variants.map((v) => ({ ...v })) }
+          ? {
+              create: variants.map((v) => ({
+                ...v,
+                inventory: { create: {} },
+              })),
+            }
           : undefined,
       },
-      include: { variants: true },
+      include: { variants: { include: { inventory: true } } },
     });
+
+    // Notify content managers so they can add the product to the website.
+    await this.notifications.notifyRole('CONTENT_MANAGER', {
+      type: 'PRODUCT',
+      title: 'New product added to inventory',
+      message: `"${created.name}" was added to the inventory and is waiting to be published to the website.`,
+      actionUrl: '/products',
+    }).catch(() => undefined);
+
+    return created;
   }
 
   async update(id: string, dto: UpdateProductDto) {
@@ -78,14 +97,22 @@ export class CatalogService {
     });
   }
 
-  addVariant(productId: string, dto: CreateVariantDto) {
-    return this.prisma.productVariant.create({
+  async addVariant(productId: string, dto: CreateVariantDto) {
+    const product = await this.ensure(productId);
+    const variant = await this.prisma.productVariant.create({
       data: {
         ...dto,
         productId,
         inventory: { create: {} },
       },
     });
+    await this.notifications.notifyRole('CONTENT_MANAGER', {
+      type: 'PRODUCT',
+      title: 'New variant added to inventory',
+      message: `"${variant.name}" (${dto.sku}) was added to "${product.name}". Review and publish it to the website.`,
+      actionUrl: '/products',
+    }).catch(() => undefined);
+    return variant;
   }
 
   listCategories() {
@@ -98,5 +125,6 @@ export class CatalogService {
   private async ensure(id: string) {
     const p = await this.prisma.product.findUnique({ where: { id } });
     if (!p) throw new NotFoundException('Product not found');
+    return p;
   }
 }

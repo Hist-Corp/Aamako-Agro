@@ -22,17 +22,18 @@
 <section><div class="wrap">
   <div id="cartContent"><div class="cart-page-grid">
     <div>
-      <table class="cart-table"><thead><tr><th style="width:90px;">Product</th><th>Details</th><th>Price</th><th>Qty</th><th>Total</th><th></th></tr></thead><tbody id="cartTableBody"></tbody></table>
+      <table class="cart-table"><thead><tr><th style="width:36px;"></th><th style="width:90px;">Product</th><th>Details</th><th>Price</th><th>Qty</th><th>Total</th><th></th></tr></thead><tbody id="cartTableBody"></tbody></table>
       <div style="margin-top:var(--space-5);"><a href="shop.html" class="link-arrow" style="font-size:13px;">Continue shopping</a></div>
     </div>
     <div class="order-summary">
       <h3>Order summary</h3>
-      <div class="summary-row"><span>Subtotal</span><span id="sumSubtotal">Rs 0</span></div>
+      <div class="summary-row"><span>Subtotal (selected)</span><span id="sumSubtotal">Rs 0</span></div>
       <div class="summary-row"><span>Shipping</span><span id="sumShipping">[PLACEHOLDER]</span></div>
       <div class="summary-row"><span>Tax</span><span id="sumTax">[PLACEHOLDER]</span></div>
       <div class="summary-row total"><span>Total</span><span class="summary-val" id="sumTotal">Rs 0</span></div>
       <div class="promo-row"><input type="text" placeholder="Promo code" aria-label="Promo code"><button>Apply</button></div>
       <button class="checkout-btn">Proceed to checkout</button>
+      <div id="checkoutHint" style="font-size:12px;color:#9a6700;margin-top:6px;display:none;">Select at least one item to checkout.</div>
       <div class="secure-note">🔒 Secure checkout · SSL encrypted</div>
     </div>
   </div></div>
@@ -46,15 +47,30 @@
   if(btn&&drawer){btn.addEventListener("click",function(){var o=drawer.classList.toggle("is-open");btn.classList.toggle("is-open",o);btn.setAttribute("aria-expanded",o?"true":"false");document.body.style.overflow=o?"hidden":"";document.body.classList.toggle('drawer-open',o);var hdr=document.querySelector('header');if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}else drawer.style.removeProperty('--drawer-top');});drawer.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){drawer.classList.remove("is-open");btn.classList.remove("is-open");document.body.style.overflow="";document.body.classList.remove('drawer-open');});});}
   (function(){var header=document.querySelector('header');if(!header)return;var lastY=0;window.addEventListener('scroll',function(){var y=window.pageYOffset||document.documentElement.scrollTop;if(y>80&&y>lastY&&!drawer.classList.contains("is-open")){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}if(y<=80){header.classList.remove('is-hidden','is-scrolled');}lastY=y;});})();
   var cart=JSON.parse(localStorage.getItem('aka-cart')||'[]'),tbody=document.getElementById('cartTableBody'),emptyEl=document.getElementById('cartEmpty'),contentEl=document.getElementById('cartContent');
+  // Default every item to selected on first load of this page.
+  cart.forEach(function(i){if(i._sel===undefined)i._sel=true;});
+  localStorage.setItem('aka-cart',JSON.stringify(cart));
+  function unitPriceOf(i){return (i.unitPrice!=null?i.unitPrice:i.price)||0;}
+  function fmt(n){return 'Rs '+Number(n).toLocaleString('en-IN');}
+  function saveCart(){localStorage.setItem('aka-cart',JSON.stringify(cart));}
+  function selectedItems(){return cart.filter(function(i){return i._sel;});}
+  function updateSummary(){
+    var sel=selectedItems();
+    var subtotal=sel.reduce(function(s,i){return s+unitPriceOf(i)*i.qty;},0);
+    document.getElementById('sumSubtotal').textContent=fmt(subtotal);
+    document.getElementById('sumTotal').textContent=fmt(subtotal);
+    var btn=document.querySelector('.checkout-btn'),hint=document.getElementById('checkoutHint');
+    if(btn){btn.disabled=sel.length===0;btn.style.opacity=sel.length===0?'0.5':'';btn.style.cursor=sel.length===0?'not-allowed':'';}
+    if(hint)hint.style.display=sel.length===0?'':'none';
+  }
   function render(){
-    if(cart.length===0){contentEl.style.display='none';emptyEl.style.display='';return;}
+    if(cart.length===0){contentEl.style.display='none';emptyEl.style.display='';updateSummary();return;}
     contentEl.style.display='';emptyEl.style.display='none';
-    tbody.innerHTML=cart.map(function(item,i){return '<tr><td><div class="ct-photo"><div class="photo" style="height:72px;background:var(--sage);border-radius:var(--radius-sm);"></div></div></td><td><div class="ct-name">'+item.name+'</div><div class="ct-meta">'+item.meta+'</div></td><td class="ct-price">Rs '+item.price+'</td><td><div class="ct-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div></td><td class="ct-price">Rs '+(item.price*item.qty)+'</td><td><button class="ct-remove" data-idx="'+i+'">Remove</button></td></tr>';}).join('');
-    var subtotal=cart.reduce(function(s,i){return s+i.price*i.qty;},0);
-    document.getElementById('sumSubtotal').textContent='Rs '+subtotal;
-    document.getElementById('sumTotal').textContent='Rs '+subtotal;
-    tbody.querySelectorAll('button[data-action]').forEach(function(b){b.addEventListener('click',function(){var idx=parseInt(b.dataset.idx);if(b.dataset.action==='inc')cart[idx].qty++;else if(b.dataset.action==='dec'){cart[idx].qty--;if(cart[idx].qty<=0)cart.splice(idx,1);}localStorage.setItem('aka-cart',JSON.stringify(cart));render();});});
-    tbody.querySelectorAll('.ct-remove').forEach(function(b){b.addEventListener('click',function(){cart.splice(parseInt(b.dataset.idx),1);localStorage.setItem('aka-cart',JSON.stringify(cart));render();});});
+    tbody.innerHTML=cart.map(function(item,i){return '<tr><td><input type="checkbox" class="ct-select" data-idx="'+i+'" '+(item._sel?'checked':'')+' aria-label="Select '+item.name+' for checkout"></td><td><div class="ct-photo"><div class="photo" style="height:72px;background:var(--sage);border-radius:var(--radius-sm);"></div></div></td><td><div class="ct-name">'+item.name+'</div><div class="ct-meta">'+item.meta+'</div></td><td class="ct-price">'+fmt(unitPriceOf(item))+'</td><td><div class="ct-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div></td><td class="ct-price">'+fmt(unitPriceOf(item)*item.qty)+'</td><td><button class="ct-remove" data-idx="'+i+'">Remove</button></td></tr>';}).join('');
+    tbody.querySelectorAll('input.ct-select').forEach(function(cb){cb.addEventListener('change',function(){cart[parseInt(cb.dataset.idx)]._sel=cb.checked;saveCart();updateSummary();});});
+    tbody.querySelectorAll('button[data-action]').forEach(function(b){b.addEventListener('click',function(){var idx=parseInt(b.dataset.idx);if(b.dataset.action==='inc')cart[idx].qty++;else if(b.dataset.action==='dec'){cart[idx].qty--;if(cart[idx].qty<=0)cart.splice(idx,1);}saveCart();render();});});
+    tbody.querySelectorAll('.ct-remove').forEach(function(b){b.addEventListener('click',function(){cart.splice(parseInt(b.dataset.idx),1);saveCart();render();});});
+    updateSummary();
   }
   render();
 })();
@@ -66,10 +82,20 @@
     // any local prices here are display-only and never trusted by the API.
     document.querySelector('.checkout-btn').addEventListener('click', async function () {
       try {
-        var local = JSON.parse(localStorage.getItem('aka-cart') || '[]');
+        var local = JSON.parse(localStorage.getItem('aka-cart') || '[]')
+          .filter(function (i) { return i._sel !== false; });
+        if (local.length === 0) {
+          alert('Please select at least one item to checkout.');
+          return;
+        }
         for (var i = 0; i < local.length; i++) {
           await window.AamakoAPI.addToCart(local[i].variantId || local[i].id, local[i].qty || local[i].quantity || 1);
         }
+        // Remove ONLY the selected items from the local cart after ordering.
+        var remaining = JSON.parse(localStorage.getItem('aka-cart') || '[]')
+          .filter(function (i) { return i._sel === false; });
+        if (remaining.length > 0) localStorage.setItem('aka-cart', JSON.stringify(remaining));
+        else localStorage.removeItem('aka-cart');
         var user = JSON.parse(localStorage.getItem('aamako_user') || 'null');
         var order = await window.AamakoAPI.checkout({
           contactName: user ? (user.firstName || 'Customer') : 'Guest',
@@ -77,7 +103,6 @@
           shippingAddress: prompt('Shipping address:') || ''
         });
         alert('Order placed! Number: ' + order.orderNumber);
-        localStorage.removeItem('aka-cart');
         window.location.href = 'index.html';
       } catch (err) {
         alert(err.message || 'Checkout failed');
