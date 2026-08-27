@@ -16,6 +16,7 @@ import { WholesaleModule } from './wholesale/wholesale.module';
 import { ContentModule } from './content/content.module';
 import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { MediaModule } from './media/media.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     ContentModule,
     AdminModule,
     NotificationsModule,
+    MediaModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

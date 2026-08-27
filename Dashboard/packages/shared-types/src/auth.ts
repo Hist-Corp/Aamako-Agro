@@ -196,9 +196,9 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'products:view', 'products:content-fields', 'products:create', 'products:publish',
     // Content — Content Manager may fully edit all existing pages and create
     // new pages, publishing directly without waiting for approval.
-    'content:view', 'content:edit', 'content:publish', 'content:approve',
+    'content:view', 'content:create', 'content:edit', 'content:publish', 'content:approve',
     'journal:view', 'journal:edit', 'journal:publish',
-    'media:view', 'media:upload', 'media:delete',
+    'media:view', 'media:upload', 'media:edit', 'media:publish', 'media:delete',
     // Reviews
     'reviews:view', 'reviews:moderate',
     // Profile

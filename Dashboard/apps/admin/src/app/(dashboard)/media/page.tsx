@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/config/auth-context';
-import { formatDateTime } from '@/lib/utils';
+import { relativeTime } from '@/lib/utils';
 import { canAct } from '@/config/rbac';
+import { apiClient, ApiError } from '@/lib/api-client';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,269 +14,467 @@ import { Select } from '@/components/ui/select';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import { Image, Upload, Trash2, Download, FileImage, FileVideo, File } from 'lucide-react';
+import {
+  FileImage,
+  FileVideo,
+  File,
+  Upload,
+  Trash2,
+  Pencil,
+  Globe,
+  RotateCcw,
+  PackagePlus,
+  Image as ImageIcon,
+} from 'lucide-react';
 
 interface MediaItem {
   id: string;
   name: string;
   type: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
   url: string;
-  thumbnailUrl: string;
-  size: string;
-  dimensions?: string;
-  uploadedBy: string;
-  usedIn: string[];
+  altText: string | null;
+  category: string;
+  size: string | null;
+  dimensions: string | null;
+  isPublished: boolean;
+  uploadedById: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
-const MOCK_MEDIA: MediaItem[] = [
-  { id: 'MED-001', name: 'hero-banner-2026.jpg', type: 'IMAGE', url: '#', thumbnailUrl: '#', size: '2.4 MB', dimensions: '1920x1080', uploadedBy: 'Hari Editor', usedIn: ['Homepage'], createdAt: new Date(Date.now() - 86400000).toISOString() },
-  { id: 'MED-002', name: 'basmati-rice-product.jpg', type: 'IMAGE', url: '#', thumbnailUrl: '#', size: '1.8 MB', dimensions: '800x800', uploadedBy: 'Hari Editor', usedIn: ['Products'], createdAt: new Date(Date.now() - 172800000).toISOString() },
-  { id: 'MED-003', name: 'farm-process-video.mp4', type: 'VIDEO', url: '#', thumbnailUrl: '#', size: '45.2 MB', uploadedBy: 'Hari Editor', usedIn: ['About Us'], createdAt: new Date(Date.now() - 259200000).toISOString() },
-  { id: 'MED-004', name: 'turmeric-powder.jpg', type: 'IMAGE', url: '#', thumbnailUrl: '#', size: '1.2 MB', dimensions: '800x800', uploadedBy: 'Hari Editor', usedIn: ['Products'], createdAt: new Date(Date.now() - 345600000).toISOString() },
-  { id: 'MED-005', name: 'wholesale-catalog.pdf', type: 'DOCUMENT', url: '#', thumbnailUrl: '#', size: '3.5 MB', uploadedBy: 'Super Admin', usedIn: ['Wholesale Page'], createdAt: new Date(Date.now() - 432000000).toISOString() },
-  { id: 'MED-006', name: 'team-photo.jpg', type: 'IMAGE', url: '#', thumbnailUrl: '#', size: '2.1 MB', dimensions: '1200x800', uploadedBy: 'Hari Editor', usedIn: ['About Us'], createdAt: new Date(Date.now() - 518400000).toISOString() },
-];
+interface AdminProduct {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  isPublished: boolean;
+}
 
-const TYPE_ICONS: Record<string, typeof Image> = {
+const TYPE_ICONS: Record<string, typeof ImageIcon> = {
   IMAGE: FileImage,
   VIDEO: FileVideo,
   DOCUMENT: File,
 };
 
-/** Screen: Media Library
- *  Can view: SUPER_ADMIN, ADMIN, CONTENT_MANAGER
- *  Can upload: CONTENT_MANAGER
- *  Can delete: SUPER_ADMIN, ADMIN
- */
+const CATEGORY_PRESETS = ['Product', 'Homepage', 'Banner', 'Journal', 'Team', 'Wholesale', 'General'];
+
+/** Screen: Media Library — real API-backed.
+ *  Content Manager has full rights: add (by URL), edit/replace/customize
+ *  (name, alt text, category, URL), publish/unpublish, and instantly apply
+ *  any image to a product's image without a long product-editing flow. */
 export default function MediaPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('');
-  const [uploadDialog, setUploadDialog] = useState(false);
-  const [deleteDialog, setDeleteDialog] = useState<MediaItem | null>(null);
-  const [mediaList, setMediaList] = useState<MediaItem[]>(MOCK_MEDIA);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState('');
 
-  const canUpload = user && canAct(user.role, 'media:upload');
-  const canDelete = user && canAct(user.role, 'media:delete');
+  const canEdit = !!user && canAct(user.role, 'media:edit');
+  const canPublish = !!user && canAct(user.role, 'media:publish');
+  const canUpload = !!user && canAct(user.role, 'media:upload');
+  const canDelete = !!user && canAct(user.role, 'media:delete');
 
-  const filteredMedia = mediaList.filter((m) => {
-    if (typeFilter && m.type !== typeFilter) return false;
-    return true;
-  });
-
-  const handleUpload = () => {
-    if (pendingFiles.length === 0) {
-      addToast({ type: 'error', title: 'No files selected', description: 'Choose at least one file to upload.' });
-      return;
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await apiClient.get<MediaItem[]>('/admin/media');
+      setMedia(data);
+      const cats = await apiClient.get<string[]>('/admin/media/categories');
+      setCategories(cats);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Could not load media',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsLoading(false);
     }
-    const now = new Date().toISOString();
-    const added: MediaItem[] = pendingFiles.map((f, i) => ({
-      id: 'MED-' + String(Date.now()).slice(-5) + i,
-      name: f.name,
-      type: f.type.startsWith('image/') ? 'IMAGE' : f.type.startsWith('video/') ? 'VIDEO' : 'DOCUMENT',
-      url: '#',
-      thumbnailUrl: '#',
-      size: (f.size / (1024 * 1024)).toFixed(1) + ' MB',
-      uploadedBy: user?.name ?? user?.email ?? 'You',
-      usedIn: [],
-      createdAt: now,
-    }));
-    setMediaList((prev) => [...added, ...prev]);
-    addToast({
-      type: 'success',
-      title: `${added.length} file${added.length > 1 ? 's' : ''} uploaded`,
-      description: 'Your files have been added to the media library.',
-    });
-    setPendingFiles([]);
-    setUploadDialog(false);
-  };
+  }, [addToast]);
 
-  const handleDownload = (media: MediaItem) => {
-    // Media URLs are placeholders in this demo build — generate a stub file
-    // client-side so the button always produces a real download.
-    const blob = new Blob([`Aamako Agro media library export\n\nFile: ${media.name}\nType: ${media.type}\nSize: ${media.size}\nUploaded by: ${media.uploadedBy}\n`], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = media.name + '.txt';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(link.href);
-    addToast({ type: 'success', title: 'Download started', description: media.name });
-  };
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  const handleDelete = () => {
-    if (!deleteDialog) return;
-    setMediaList((prev) => prev.filter((m) => m.id !== deleteDialog.id));
-    addToast({
-      type: 'success',
-      title: 'File deleted',
-      description: `${deleteDialog.name} has been removed.`,
-    });
-    setDeleteDialog(null);
-  };
+  const filtered = useMemo(
+    () =>
+      media.filter((m) => {
+        if (typeFilter && m.type !== typeFilter) return false;
+        if (categoryFilter && m.category !== categoryFilter) return false;
+        return true;
+      }),
+    [media, typeFilter, categoryFilter],
+  );
 
-  const typeTabs = [
+  const categoryCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    media.forEach((m) => { map[m.category] = (map[m.category] ?? 0) + 1; });
+    return map;
+  }, [media]);
+
+  const typeOptions = [
     { value: '', label: 'All Files' },
     { value: 'IMAGE', label: 'Images' },
     { value: 'VIDEO', label: 'Videos' },
     { value: 'DOCUMENT', label: 'Documents' },
   ];
 
+  const categoryChips = useMemo(
+    () => ['', ...Array.from(new Set(['General', ...categories])).sort()],
+    [categories],
+  );
+
+  // ── Upload (add by URL) dialog ──
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadForm, setUploadForm] = useState({ name: '', url: '', category: 'Product', altText: '' });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleUpload = async () => {
+    if (!uploadForm.name.trim() || !uploadForm.url.trim()) {
+      addToast({ type: 'error', title: 'Name and URL required', description: 'Provide an image name and https:// URL.' });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await apiClient.post('/admin/media', {
+        name: uploadForm.name.trim(),
+        url: uploadForm.url.trim(),
+        category: uploadForm.category,
+        altText: uploadForm.altText.trim(),
+      });
+      addToast({ type: 'success', title: 'Image added', description: 'Published to the media library.' });
+      setUploadOpen(false);
+      setUploadForm({ name: '', url: '', category: 'Product', altText: '' });
+      await load();
+    } catch (err) {
+      addToast({ type: 'error', title: 'Upload failed', description: err instanceof ApiError ? err.message : 'Unexpected error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ── Edit / customize dialog ──
+  const [editTarget, setEditTarget] = useState<MediaItem | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', url: '', category: 'General', altText: '' });
+
+  const openEdit = (item: MediaItem) => {
+    setEditTarget(item);
+    setEditForm({
+      name: item.name,
+      url: item.url,
+      category: item.category,
+      altText: item.altText ?? '',
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTarget) return;
+    setIsSaving(true);
+    try {
+      await apiClient.patch(`/admin/media/${editTarget.id}`, {
+        name: editForm.name.trim(),
+        url: editForm.url.trim(),
+        category: editForm.category,
+        altText: editForm.altText.trim(),
+      });
+      addToast({ type: 'success', title: 'Image updated', description: editForm.name?.trim() || editTarget.name });
+      setEditTarget(null);
+      await load();
+    } catch (err) {
+      addToast({ type: 'error', title: 'Update failed', description: err instanceof ApiError ? err.message : 'Unexpected error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ── Publish / unpublish ──
+  const handleTogglePublish = async (item: MediaItem) => {
+    setIsSaving(true);
+    try {
+      await apiClient.post(`/admin/media/${item.id}/${item.isPublished ? 'unpublish' : 'publish'}`);
+      addToast({
+        type: 'success',
+        title: item.isPublished ? 'Image unpublished' : 'Image published',
+        description: item.name,
+      });
+      await load();
+    } catch (err) {
+      addToast({ type: 'error', title: 'Action failed', description: err instanceof ApiError ? err.message : 'Unexpected error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ── Delete ──
+  const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsSaving(true);
+    try {
+      await apiClient.delete(`/admin/media/${deleteTarget.id}`);
+      addToast({ type: 'success', title: 'Image deleted', description: deleteTarget.name });
+      setDeleteTarget(null);
+      await load();
+    } catch (err) {
+      addToast({ type: 'error', title: 'Delete failed', description: err instanceof ApiError ? err.message : 'Unexpected error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ── Use for a product (one-step image swap) ──
+  const [productPicker, setProductPicker] = useState<MediaItem | null>(null);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [pickProductId, setPickProductId] = useState('');
+
+  const openProductPicker = async (item: MediaItem) => {
+    setProductPicker(item);
+    setPickProductId('');
+    try {
+      const list = await apiClient.get<AdminProduct[]>('/admin/products');
+      setProducts(list);
+    } catch (err) {
+      addToast({ type: 'error', title: 'Could not load products', description: err instanceof ApiError ? err.message : 'Unexpected error' });
+    }
+  };
+
+  const handleApplyToProduct = async () => {
+    if (!productPicker || !pickProductId) {
+      addToast({ type: 'error', title: 'Select a product', description: 'Choose which product to update.' });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await apiClient.patch(`/admin/products/${pickProductId}`, { imageUrl: productPicker.url });
+      addToast({ type: 'success', title: 'Product image updated', description: 'The product now uses this media image.' });
+      setProductPicker(null);
+    } catch (err) {
+      addToast({ type: 'error', title: 'Apply failed', description: err instanceof ApiError ? err.message : 'Unexpected error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const chip = (active: boolean) =>
+    'rounded-full px-3 py-1 text-xs font-medium transition-colors ' +
+    (active ? 'bg-brand-600 text-white' : 'bg-surface-100 text-surface-600 hover:bg-surface-200');
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Media Library"
-        description="Manage images, videos, and documents"
+        description="Add, categorize, edit, replace and publish images — then drop any image onto a product in one step."
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Media' }]}
         actions={
           canUpload ? (
-            <Button onClick={() => setUploadDialog(true)}>
-              <Upload className="h-4 w-4" /> Upload Files
+            <Button onClick={() => setUploadOpen(true)}>
+              <Upload className="h-4 w-4" /> Add Image
             </Button>
           ) : undefined
         }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <p className="text-xs font-medium text-surface-500 uppercase">Total Files</p>
-          <p className="mt-1 text-2xl font-semibold text-surface-900">{mediaList.length}</p>
-        </Card>
-        <Card>
-          <p className="text-xs font-medium text-surface-500 uppercase">Images</p>
-          <p className="mt-1 text-2xl font-semibold text-surface-900">
-            {mediaList.filter((m) => m.type === 'IMAGE').length}
-          </p>
-        </Card>
-        <Card>
-          <p className="text-xs font-medium text-surface-500 uppercase">Videos</p>
-          <p className="mt-1 text-2xl font-semibold text-surface-900">
-            {mediaList.filter((m) => m.type === 'VIDEO').length}
-          </p>
-        </Card>
-        <Card>
-          <p className="text-xs font-medium text-surface-500 uppercase">Documents</p>
-          <p className="mt-1 text-2xl font-semibold text-surface-900">
-            {mediaList.filter((m) => m.type === 'DOCUMENT').length}
-          </p>
-        </Card>
+      {/* Category chips */}
+      <div className="flex flex-wrap items-center gap-2">
+        {categoryChips.map((c) => (
+          <button
+            key={c || 'all'}
+            className={chip(categoryFilter === c)}
+            onClick={() => setCategoryFilter(c)}
+          >
+            {c || 'All'} {c ? `(${categoryCounts[c] ?? 0})` : `(${media.length})`}
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center gap-3">
-        <Select
-          options={typeTabs}
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="w-48"
-        />
+        <Select options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-48" />
       </div>
 
-      {/* Media Grid */}
-      {filteredMedia.length === 0 ? (
+      {/* Media grid */}
+      {isLoading ? (
+        <div className="py-16 text-center text-sm text-surface-500">Loading media…</div>
+      ) : filtered.length === 0 ? (
         <EmptyState
-          icon={Image}
+          icon={ImageIcon}
           title="No media files"
-          description="Upload images, videos, and documents to use across your content."
-          action={canUpload ? { label: 'Upload Files', onClick: () => setUploadDialog(true) } : undefined}
+          description="Add an image by URL to start building your library — then use it anywhere."
+          action={canUpload ? { label: 'Add Image', onClick: () => setUploadOpen(true) } : undefined}
         />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {filteredMedia.map((media) => {
-            const Icon = TYPE_ICONS[media.type] || File;
-            return (
-              <Card key={media.id} className="group relative overflow-hidden">
-                {/* Thumbnail placeholder */}
-                <div className="aspect-square bg-surface-100 flex items-center justify-center">
-                  <Icon className="h-12 w-12 text-surface-300" />
-                </div>
+          {filtered.map((item) => (
+            <Card key={item.id} className="group relative overflow-hidden">
+              <div className="aspect-square bg-surface-100 flex items-center justify-center overflow-hidden">
+                {item.type === 'IMAGE' ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.url} alt={item.altText ?? item.name} className="h-full w-full object-cover" />
+                ) : (
+                  (() => {
+                    const Icon = TYPE_ICONS[item.type] ?? File;
+                    return <Icon className="h-12 w-12 text-surface-300" />;
+                  })()
+                )}
+                {!item.isPublished && (
+                  <span className="absolute top-2 left-2 rounded-full bg-surface-900/80 px-2 py-0.5 text-2xs text-white">
+                    UNPUBLISHED
+                  </span>
+                )}
+              </div>
 
-                {/* Info overlay */}
-                <div className="p-3">
-                  <p className="text-sm font-medium text-surface-900 truncate">{media.name}</p>
-                  <p className="text-2xs text-surface-500">{media.size}</p>
-                  {media.dimensions && (
-                    <p className="text-2xs text-surface-400">{media.dimensions}</p>
-                  )}
-                  <div className="flex items-center gap-1 mt-2">
-                    {media.usedIn.map((use) => (
-                      <Badge key={use} variant="neutral" className="text-2xs">{use}</Badge>
-                    ))}
-                  </div>
-                </div>
+              <div className="p-3">
+                <p className="text-sm font-medium text-surface-900 truncate">{item.name}</p>
+                <p className="text-2xs text-surface-500">{item.size ?? item.type}</p>
+                <Badge variant="neutral" className="mt-1.5 text-2xs">{item.category}</Badge>
+                <p className="mt-1 text-2xs text-surface-400">{relativeTime(item.createdAt)}</p>
+              </div>
 
-                {/* Actions on hover */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="bg-white/90 shadow-sm"
-                    title="Download"
-                    onClick={() => handleDownload(media)}
-                  >
-                    <Download className="h-3.5 w-3.5" />
+              {/* Actions */}
+              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {item.type === 'IMAGE' && canEdit && (
+                  <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Use for a product (replace product image)" onClick={() => openProductPicker(item)}>
+                    <PackagePlus className="h-3.5 w-3.5 text-brand-600" />
                   </Button>
-                  {canDelete && (
-                    <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" onClick={() => setDeleteDialog(media)}>
-                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
+                )}
+                {canEdit && (
+                  <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Edit / customize image" onClick={() => openEdit(item)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {canPublish && (
+                  <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title={item.isPublished ? 'Unpublish image' : 'Publish image'} onClick={() => handleTogglePublish(item)}>
+                    {item.isPublished ? <RotateCcw className="h-3.5 w-3.5 text-amber-600" /> : <Globe className="h-3.5 w-3.5 text-green-600" />}
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Delete image" onClick={() => setDeleteTarget(item)}>
+                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                  </Button>
+                )}
+              </div>
+            </Card>
+          ))}
         </div>
       )}
-
-      {/* Upload Dialog */}
-      {uploadDialog && (
+{/* Add image (by URL) dialog */}
+      {uploadOpen && (
         <Dialog
-          open={uploadDialog}
-          onClose={() => setUploadDialog(false)}
-          title="Upload Files"
-          description="Upload images, videos, and documents to the media library"
-          primaryAction={{
-            label: 'Upload',
-            onClick: handleUpload,
-          }}
+          open
+          maxWidth="md"
+          onClose={() => setUploadOpen(false)}
+          title="Add image"
+          description="Paste an image URL to add it to the library. It is published immediately and categorized for easy reuse."
+          primaryAction={{ label: 'Add Image', onClick: handleUpload, isLoading: isSaving }}
         >
-          <label className="border-2 border-dashed border-surface-300 rounded-xl p-8 text-center hover:border-brand-400 transition-colors cursor-pointer block">
-            <Upload className="h-10 w-10 text-surface-400 mx-auto mb-3" />
-            <p className="text-sm font-medium text-surface-700">
-              {pendingFiles.length > 0 ? `${pendingFiles.length} file${pendingFiles.length > 1 ? 's' : ''} selected` : 'Click to upload or drag and drop'}
-            </p>
-            <p className="text-xs text-surface-500 mt-1">PNG, JPG, GIF, MP4, PDF up to 50MB</p>
-            <input
-              type="file"
-              multiple
-              className="hidden"
-              onChange={(e) => setPendingFiles(Array.from(e.target.files ?? []))}
+          <div className="space-y-4">
+            <Input
+              label="File name *"
+              value={uploadForm.name}
+              onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
+              placeholder="e.g. basmati-rice.jpg"
             />
-          </label>
+            <Input
+              label="Image URL *"
+              value={uploadForm.url}
+              onChange={(e) => setUploadForm({ ...uploadForm, url: e.target.value })}
+              placeholder="https://example.com/image.jpg"
+            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Select
+                label="Category"
+                value={uploadForm.category}
+                onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value })}
+                options={CATEGORY_PRESETS.map((c) => ({ value: c, label: c }))}
+              />
+              <Input
+                label="Alt text"
+                value={uploadForm.altText}
+                onChange={(e) => setUploadForm({ ...uploadForm, altText: e.target.value })}
+                placeholder="Accessible description"
+              />
+            </div>
+          </div>
         </Dialog>
       )}
 
-      {/* Delete Dialog */}
-      {deleteDialog && (
+      {/* Edit / customize image dialog */}
+      {editTarget && (
         <Dialog
-          open={!!deleteDialog}
-          onClose={() => setDeleteDialog(null)}
-          title="Delete file?"
-          description="This will permanently remove the file from the media library."
-          primaryAction={{
-            label: 'Delete',
-            onClick: handleDelete,
-          }}
+          open
+          maxWidth="md"
+          onClose={() => setEditTarget(null)}
+          title="Edit image"
+          description="Change the name, replace the image URL, or update its category and alt text."
+          primaryAction={{ label: 'Save Changes', onClick: handleSaveEdit, isLoading: isSaving }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="File name"
+              value={editForm.name}
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            />
+            <Input
+              label="Image URL (replace to change the image)"
+              value={editForm.url}
+              onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
+            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Select
+                label="Category"
+                value={editForm.category}
+                onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                options={CATEGORY_PRESETS.map((c) => ({ value: c, label: c }))}
+              />
+              <Input
+                label="Alt text"
+                value={editForm.altText}
+                onChange={(e) => setEditForm({ ...editForm, altText: e.target.value })}
+              />
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {/* Use for a product dialog — one-step image replacement */}
+      {productPicker && (
+        <Dialog
+          open
+          maxWidth="md"
+          onClose={() => setProductPicker(null)}
+          title="Replace a product image"
+          description="Pick a product — its image will be set to this media image immediately. No product editing required."
+          primaryAction={{ label: 'Apply Image', onClick: handleApplyToProduct, isLoading: isSaving }}
+        >
+          <div className="rounded-lg bg-surface-50 p-3 text-sm mb-4">
+            <p className="font-medium">Using image:</p>
+            <p className="text-surface-500 truncate">{productPicker.name}</p>
+          </div>
+          <Select
+            label="Product"
+            value={pickProductId}
+            onChange={(e) => setPickProductId(e.target.value)}
+            options={[
+              { value: '', label: 'Select a product…' },
+              ...products.map((p) => ({ value: p.id, label: `${p.name}${p.isPublished ? '' : ' (unpublished)'}` })),
+            ]}
+          />
+        </Dialog>
+      )}
+
+      {/* Delete dialog */}
+      {deleteTarget && (
+        <Dialog
+          open
+          onClose={() => setDeleteTarget(null)}
+          title="Delete image?"
+          description="This permanently removes the file from the media library."
+          primaryAction={{ label: 'Delete', onClick: handleDelete, isLoading: isSaving }}
         >
           <div className="rounded-lg bg-surface-50 p-3 text-sm">
-            <p><span className="font-medium">File:</span> {deleteDialog.name}</p>
-            <p><span className="font-medium">Size:</span> {deleteDialog.size}</p>
-            {deleteDialog.usedIn.length > 0 && (
-              <p className="text-amber-600 mt-2">⚠️ This file is used in: {deleteDialog.usedIn.join(', ')}</p>
-            )}
+            <p><span className="font-medium">File:</span> {deleteTarget.name}</p>
+            <p><span className="font-medium">Category:</span> {deleteTarget.category}</p>
           </div>
         </Dialog>
       )}

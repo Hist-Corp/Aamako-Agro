@@ -1,411 +1,518 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useAuth } from '@/config/auth-context';
-import { formatDateTime, relativeTime } from '@/lib/utils';
+import { relativeTime } from '@/lib/utils';
 import { canAct } from '@/config/rbac';
+import { apiClient, ApiError } from '@/lib/api-client';
 import { PageHeader } from '@/components/layout/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Tabs } from '@/components/ui/tabs';
-import { Card, CardHeader } from '@/components/ui/card';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { useToast } from '@/components/ui/toast';
-import { FileText, Plus, Edit, Eye, CheckCircle2, Send, Clock } from 'lucide-react';
+import { FileText, Globe, Pencil, Plus, RotateCcw } from 'lucide-react';
 
-type ContentStatus = 'DRAFT' | 'REVIEW' | 'APPROVED' | 'PUBLISHED';
-
-interface ContentItem {
+/** A CMS page as returned by GET /content/manage (includes unpublished). */
+interface CmsItem {
   id: string;
+  key: string;
   title: string;
-  type: 'HOMEPAGE' | 'PRODUCT' | 'PAGE' | 'BANNER' | 'FAQ' | 'ANNOUNCEMENT';
-  status: ContentStatus;
-  author: string;
-  lastEditedBy: string;
+  shortDescription: string | null;
+  longDescription: string | null;
+  category: string | null;
+  body: string;
+  isPublished: boolean;
   createdAt: string;
   updatedAt: string;
-  publishedAt?: string;
 }
 
-const MOCK_CONTENT: ContentItem[] = [
-  { id: 'CNT-001', title: 'Homepage Hero Banner', type: 'HOMEPAGE', status: 'PUBLISHED', author: 'Hari Editor', lastEditedBy: 'Hari Editor', createdAt: new Date(Date.now() - 864000000).toISOString(), updatedAt: new Date(Date.now() - 86400000).toISOString(), publishedAt: new Date(Date.now() - 86400000).toISOString() },
-  { id: 'CNT-002', title: 'About Us - Our Story', type: 'PAGE', status: 'DRAFT', author: 'Hari Editor', lastEditedBy: 'Hari Editor', createdAt: new Date(Date.now() - 172800000).toISOString(), updatedAt: new Date(Date.now() - 3600000).toISOString() },
-  { id: 'CNT-003', title: 'Basmati Rice Product Description', type: 'PRODUCT', status: 'REVIEW', author: 'Hari Editor', lastEditedBy: 'Hari Editor', createdAt: new Date(Date.now() - 259200000).toISOString(), updatedAt: new Date(Date.now() - 7200000).toISOString() },
-  { id: 'CNT-004', title: 'Summer Sale Banner', type: 'BANNER', status: 'APPROVED', author: 'Hari Editor', lastEditedBy: 'Super Admin', createdAt: new Date(Date.now() - 345600000).toISOString(), updatedAt: new Date(Date.now() - 172800000).toISOString() },
-  { id: 'CNT-005', title: 'Frequently Asked Questions', type: 'FAQ', status: 'PUBLISHED', author: 'Hari Editor', lastEditedBy: 'Hari Editor', createdAt: new Date(Date.now() - 518400000).toISOString(), updatedAt: new Date(Date.now() - 259200000).toISOString(), publishedAt: new Date(Date.now() - 259200000).toISOString() },
-  { id: 'CNT-006', title: 'New Product Launch Announcement', type: 'ANNOUNCEMENT', status: 'DRAFT', author: 'Hari Editor', lastEditedBy: 'Hari Editor', createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date(Date.now() - 3600000).toISOString() },
-  { id: 'CNT-007', title: 'Wholesale Partnership Page', type: 'PAGE', status: 'REVIEW', author: 'Hari Editor', lastEditedBy: 'Hari Editor', createdAt: new Date(Date.now() - 432000000).toISOString(), updatedAt: new Date(Date.now() - 172800000).toISOString() },
-  { id: 'CNT-008', title: 'Our Process - Farm to Table', type: 'PAGE', status: 'PUBLISHED', author: 'Hari Editor', lastEditedBy: 'Super Admin', createdAt: new Date(Date.now() - 604800000).toISOString(), updatedAt: new Date(Date.now() - 345600000).toISOString(), publishedAt: new Date(Date.now() - 345600000).toISOString() },
+const TYPE_BY_PREFIX: Record<string, string> = {
+  home: 'Homepage',
+  product: 'Product',
+  page: 'Page',
+  banner: 'Banner',
+  faq: 'FAQ',
+  announcement: 'Announcement',
+  journal: 'Journal',
+};
+const TYPE_OPTIONS = [
+  { value: 'PAGE', label: 'Page' },
+  { value: 'HOMEPAGE', label: 'Homepage' },
+  { value: 'PRODUCT', label: 'Product' },
+  { value: 'BANNER', label: 'Banner' },
+  { value: 'FAQ', label: 'FAQ' },
+  { value: 'ANNOUNCEMENT', label: 'Announcement' },
 ];
-
-const STATUS_VARIANT: Record<ContentStatus, string> = {
-  DRAFT: 'neutral',
-  REVIEW: 'warning',
-  APPROVED: 'info',
-  PUBLISHED: 'success',
+const PREFIX_BY_TYPE: Record<string, string> = {
+  PAGE: 'page',
+  HOMEPAGE: 'home',
+  PRODUCT: 'product',
+  BANNER: 'banner',
+  FAQ: 'faq',
+  ANNOUNCEMENT: 'announcement',
 };
 
-const TYPE_ICONS: Record<string, typeof FileText> = {
-  HOMEPAGE: FileText,
-  PRODUCT: FileText,
-  PAGE: FileText,
-  BANNER: FileText,
-  FAQ: FileText,
-  ANNOUNCEMENT: FileText,
-};
+function slugify(s: string): string {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
+}
+function typeFromKey(key: string): string {
+  return TYPE_BY_PREFIX[key.split('.')[0]] ?? 'Page';
+}
 
-/** Screen: Content Management
- *  Can view: SUPER_ADMIN, ADMIN, CONTENT_MANAGER
- *  Can edit: CONTENT_MANAGER
- *  Can approve/publish: SUPER_ADMIN, ADMIN
- */
+interface FormState {
+  title: string;
+  shortDescription: string;
+  longDescription: string;
+  body: string;
+}
+const EMPTY_FORM: FormState = { title: '', shortDescription: '', longDescription: '', body: '' };
+
+/** Screen: Content Management — backed by the live content API.
+ *  CONTENT_MANAGER has full rights here: edit every existing page, create
+ *  new pages and publish directly (writes land live with an APPROVED
+ *  ContentRevision snapshot kept as an audit trail). */
 export default function ContentPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const [items, setItems] = useState<CmsItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [approveDialog, setApproveDialog] = useState<{ item: ContentItem; action: 'APPROVED' | 'PUBLISHED' } | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [items, setItems] = useState<ContentItem[]>(MOCK_CONTENT);
-  const [editDialog, setEditDialog] = useState<ContentItem | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [newContentDialog, setNewContentDialog] = useState(false);
-  const [newContent, setNewContent] = useState({ title: '', type: 'PAGE' as ContentItem['type'] });
 
-  const canEdit = user && canAct(user.role, 'content:edit');
-  const canApprove = user && canAct(user.role, 'content:approve');
+  const canEdit = !!user && canAct(user.role, 'content:edit');
+  const canCreate = !!user && canAct(user.role, 'content:create');
+  const canPublish = !!user && canAct(user.role, 'content:publish');
 
-  const filteredContent = items.filter((item) => {
-    if (statusFilter && item.status !== statusFilter) return false;
-    if (typeFilter && item.type !== typeFilter) return false;
-    return true;
-  });
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await apiClient.get<CmsItem[]>('/content/manage');
+      setItems(data);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Could not load content',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addToast]);
 
-  const handleApprove = async () => {
-    if (!approveDialog) return;
-    setIsProcessing(true);
-    // Mock API call
-    await new Promise((r) => setTimeout(r, 500));
-    setItems((prev) =>
-      prev.map((c) =>
-        c.id === approveDialog.item.id
-          ? {
-              ...c,
-              status: approveDialog.action,
-              lastEditedBy: user?.name ?? user?.email ?? 'You',
-              updatedAt: new Date().toISOString(),
-              ...(approveDialog.action === 'PUBLISHED' ? { publishedAt: new Date().toISOString() } : {}),
-            }
-          : c,
-      ),
-    );
-    addToast({
-      type: 'success',
-      title: `Content ${approveDialog.action === 'APPROVED' ? 'approved' : 'published'}`,
-      description: approveDialog.item.title,
-    });
-    setApproveDialog(null);
-    setIsProcessing(false);
-  };
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  const handleSubmitForReview = (item: ContentItem) => {
-    setItems((prev) =>
-      prev.map((c) => (c.id === item.id ? { ...c, status: 'REVIEW', lastEditedBy: user?.name ?? user?.email ?? 'You', updatedAt: new Date().toISOString() } : c)),
-    );
-    addToast({
-      type: 'success',
-      title: 'Submitted for review',
-      description: `${item.title} has been sent for review.`,
+  // ── Edit dialog ──
+  const [editTarget, setEditTarget] = useState<CmsItem | null>(null);
+  const [editForm, setEditForm] = useState<FormState>(EMPTY_FORM);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const openEdit = (item: CmsItem) => {
+    setEditTarget(item);
+    setEditForm({
+      title: item.title,
+      shortDescription: item.shortDescription ?? '',
+      longDescription: item.longDescription ?? '',
+      body: item.body ?? '',
     });
   };
 
-  const handleSaveEdit = () => {
-    if (!editDialog) return;
-    if (!editTitle.trim()) {
+  const handleSaveEdit = async () => {
+    if (!editTarget) return;
+    if (!editForm.title.trim()) {
       addToast({ type: 'error', title: 'Title required', description: 'Content title cannot be empty.' });
       return;
     }
-    setItems((prev) =>
-      prev.map((c) => (c.id === editDialog.id ? { ...c, title: editTitle.trim(), lastEditedBy: user?.name ?? user?.email ?? 'You', updatedAt: new Date().toISOString() } : c)),
-    );
-    addToast({ type: 'success', title: 'Content updated', description: editTitle.trim() });
-    setEditDialog(null);
+    setIsSaving(true);
+    try {
+      await apiClient.put(`/content/${encodeURIComponent(editTarget.key)}`, {
+        title: editForm.title.trim(),
+        shortDescription: editForm.shortDescription,
+        longDescription: editForm.longDescription,
+        body: editForm.body,
+      });
+      addToast({ type: 'success', title: 'Content updated & published', description: editTarget.key });
+      setEditTarget(null);
+      await load();
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Save failed',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleCreateContent = () => {
-    if (!newContent.title.trim()) {
-      addToast({ type: 'error', title: 'Title required', description: 'Give the content piece a title.' });
+  // ── New page dialog ──
+  const [newDialog, setNewDialog] = useState(false);
+  const [newType, setNewType] = useState('PAGE');
+  const [newTitle, setNewTitle] = useState('');
+  const [newKey, setNewKey] = useState('');
+  const [keyTouched, setKeyTouched] = useState(false);
+  const [newForm, setNewForm] = useState<FormState>(EMPTY_FORM);
+
+  // Auto-suggest the URL key from title + type until edited manually.
+  useEffect(() => {
+    if (!keyTouched) setNewKey(`${PREFIX_BY_TYPE[newType] ?? 'page'}.${slugify(newTitle)}`);
+  }, [newTitle, newType, keyTouched]);
+
+  const openNewDialog = () => {
+    setNewType('PAGE');
+    setNewTitle('');
+    setNewKey('');
+    setKeyTouched(false);
+    setNewForm(EMPTY_FORM);
+    setNewDialog(true);
+  };
+
+  const handleCreate = async () => {
+    if (!newTitle.trim()) {
+      addToast({ type: 'error', title: 'Title required', description: 'Give the page a title.' });
       return;
     }
-    const now = new Date().toISOString();
-    setItems((prev) => [
+    const key = newKey.trim();
+    if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/.test(key)) {
+      addToast({
+        type: 'error',
+        title: 'Invalid URL key',
+        description: 'Use kebab-case segments separated by dots, e.g. "about.story".',
+      });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await apiClient.post('/content', {
+        key,
+        title: newTitle.trim(),
+        shortDescription: newForm.shortDescription,
+        longDescription: newForm.longDescription,
+        body: newForm.body,
+      });
+      addToast({ type: 'success', title: 'Page created & published', description: key });
+      setNewDialog(false);
+      await load();
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Create failed',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ── Publish / unpublish ──
+  const [publishTarget, setPublishTarget] = useState<{ item: CmsItem; publish: boolean } | null>(null);
+
+  const handleTogglePublish = async () => {
+    if (!publishTarget) return;
+    setIsSaving(true);
+    try {
+      await apiClient.post(
+        `/content/${encodeURIComponent(publishTarget.item.key)}/${publishTarget.publish ? 'publish' : 'unpublish'}`,
+      );
+      addToast({
+        type: 'success',
+        title: publishTarget.publish ? 'Page published' : 'Page unpublished',
+        description: publishTarget.item.key,
+      });
+      setPublishTarget(null);
+      await load();
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Action failed',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const filtered = useMemo(
+    () =>
+      items.filter((i) => {
+        if (statusFilter === 'PUBLISHED' && !i.isPublished) return false;
+        if (statusFilter === 'UNPUBLISHED' && i.isPublished) return false;
+        if (typeFilter && typeFromKey(i.key) !== typeFilter) return false;
+        return true;
+      }),
+    [items, statusFilter, typeFilter],
+  );
+
+  const typeOptions = useMemo(
+    () => [{ value: '', label: 'All Types' }, ...Array.from(new Set(items.map((i) => typeFromKey(i.key)))).sort().map((t) => ({ value: t, label: t }))],
+    [items],
+  );
+
+  const columns = useMemo<ColumnDef<CmsItem>[]>(
+    () => [
       {
-        id: 'CNT-' + String(Date.now()).slice(-3),
-        title: newContent.title.trim(),
-        type: newContent.type,
-        status: 'DRAFT',
-        author: user?.name ?? user?.email ?? 'You',
-        lastEditedBy: user?.name ?? user?.email ?? 'You',
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...prev,
-    ]);
-    addToast({ type: 'success', title: 'Content created', description: `"${newContent.title}" saved as a draft.` });
-    setNewContent({ title: '', type: 'PAGE' as ContentItem['type'] });
-    setNewContentDialog(false);
-  };
-
-  const columns = useMemo<ColumnDef<ContentItem>[]>(() => [
-    {
-      accessorKey: 'title',
-      header: 'Content',
-      cell: ({ row }) => {
-        const Icon = TYPE_ICONS[row.original.type] || FileText;
-        return (
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-100">
-              <Icon className="h-4 w-4 text-surface-500" />
-            </div>
-            <div>
-              <p className="font-medium text-surface-900">{row.original.title}</p>
-              <p className="text-2xs text-surface-400">{row.original.type.replace(/_/g, ' ')}</p>
-            </div>
+        accessorKey: 'title',
+        header: 'Page',
+        cell: ({ row }) => (
+          <div className="max-w-md">
+            <p className="font-medium text-surface-900">{row.original.title}</p>
+            <p className="font-mono text-xs text-surface-500">{row.original.key}</p>
           </div>
-        );
+        ),
       },
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => (
-        <Badge variant={(STATUS_VARIANT[row.original.status] ?? 'neutral') as any} dot>
-          {row.original.status}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: 'author',
-      header: 'Author',
-      cell: ({ row }) => (
-        <span className="text-sm text-surface-600">{row.original.author}</span>
-      ),
-    },
-    {
-      accessorKey: 'updatedAt',
-      header: 'Last Updated',
-      cell: ({ row }) => (
-        <div>
-          <p className="text-sm tabular-nums">{relativeTime(row.original.updatedAt)}</p>
-          <p className="text-2xs text-surface-400">by {row.original.lastEditedBy}</p>
-        </div>
-      ),
-    },
-    {
-      id: 'actions',
-      header: '',
-      size: 200,
-      cell: ({ row }) => {
-        const item = row.original;
-        return (
-          <div className="flex items-center gap-1" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-            {canEdit && (
-              <Button variant="ghost" size="sm" onClick={() => { setEditDialog(item); setEditTitle(item.title); }}>
-                <Edit className="h-3.5 w-3.5" /> Edit
-              </Button>
-            )}
-            {canEdit && item.status === 'DRAFT' && (
-              <Button variant="secondary" size="sm" onClick={() => handleSubmitForReview(item)}>
-                <Send className="h-3.5 w-3.5" /> Submit
-              </Button>
-            )}
-            {canApprove && item.status === 'REVIEW' && (
-              <>
-                <Button variant="primary" size="sm" onClick={() => setApproveDialog({ item, action: 'APPROVED' })}>
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Approve
+      {
+        id: 'type',
+        header: 'Type',
+        cell: ({ row }) => <Badge variant="neutral">{typeFromKey(row.original.key)}</Badge>,
+      },
+      {
+        id: 'status',
+        header: 'Status',
+        cell: ({ row }) => (
+          <Badge variant={row.original.isPublished ? 'success' : 'neutral'} dot>
+            {row.original.isPublished ? 'PUBLISHED' : 'UNPUBLISHED'}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: 'updatedAt',
+        header: 'Updated',
+        cell: ({ row }) => <span className="text-xs text-surface-500">{relativeTime(row.original.updatedAt)}</span>,
+      },
+      {
+        id: 'actions',
+        header: '',
+        size: 230,
+        cell: ({ row }) => {
+          const item = row.original;
+          return (
+            <div className="flex items-center gap-1" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              {canEdit && (
+                <Button variant="ghost" size="sm" onClick={() => openEdit(item)}>
+                  <Pencil className="h-3.5 w-3.5" /> Edit
                 </Button>
-              </>
-            )}
-            {canApprove && item.status === 'APPROVED' && (
-              <Button variant="primary" size="sm" onClick={() => setApproveDialog({ item, action: 'PUBLISHED' })}>
-                <Send className="h-3.5 w-3.5" /> Publish
-              </Button>
-            )}
-          </div>
-        );
+              )}
+              {canPublish && (
+                <Button variant="ghost" size="sm" onClick={() => setPublishTarget({ item, publish: !item.isPublished })}>
+                  {item.isPublished ? (
+                    <><RotateCcw className="h-3.5 w-3.5" /> Unpublish</>
+                  ) : (
+                    <><Globe className="h-3.5 w-3.5" /> Publish</>
+                  )}
+                </Button>
+              )}
+            </div>
+          );
+        },
       },
-    },
-  ], [canEdit, canApprove]);
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canEdit, canPublish],
+  );
 
-  const statusTabs = [
-    { id: '', label: 'All' },
-    { id: 'DRAFT', label: 'Drafts' },
-    { id: 'REVIEW', label: 'In Review' },
-    { id: 'APPROVED', label: 'Approved' },
-    { id: 'PUBLISHED', label: 'Published' },
-  ];
+  const publishedCount = items.filter((i) => i.isPublished).length;
 
-  const typeTabs = [
-    { id: '', label: 'All Types' },
-    { id: 'HOMEPAGE', label: 'Homepage' },
-    { id: 'PRODUCT', label: 'Products' },
-    { id: 'PAGE', label: 'Pages' },
-    { id: 'BANNER', label: 'Banners' },
-    { id: 'FAQ', label: 'FAQs' },
-    { id: 'ANNOUNCEMENT', label: 'Announcements' },
-  ];
-
-  // Workflow summary
-  const workflowCounts = {
-    DRAFT: items.filter((c) => c.status === 'DRAFT').length,
-    REVIEW: items.filter((c) => c.status === 'REVIEW').length,
-    APPROVED: items.filter((c) => c.status === 'APPROVED').length,
-    PUBLISHED: items.filter((c) => c.status === 'PUBLISHED').length,
-  };
+  const summaryCard = 'bg-white rounded-lg border border-surface-200 p-5 cursor-pointer hover:bg-surface-50 transition-colors text-left';
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Content Management"
-        description="Manage website content with draft → review → publish workflow"
+        description="Edit every page, write rich long-form descriptions and create new pages — your changes publish immediately."
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Content' }]}
         actions={
-          canEdit ? (
-            <Button onClick={() => setNewContentDialog(true)}>
-              <Plus className="h-4 w-4" /> New Content
+          canCreate ? (
+            <Button onClick={openNewDialog}>
+              <Plus className="h-4 w-4" /> New Page
             </Button>
           ) : undefined
         }
       />
 
-      {/* Workflow Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {(['DRAFT', 'REVIEW', 'APPROVED', 'PUBLISHED'] as ContentStatus[]).map((status) => (
-          <button
-            key={status}
-            className="bg-white rounded-lg border border-surface-200 p-5 cursor-pointer hover:bg-surface-50 transition-colors text-left"
-            onClick={() => setStatusFilter(status)}
-          >
-            <div className="flex items-center gap-3">
-              <Badge variant={(STATUS_VARIANT[status] ?? 'neutral') as any}>
-                {status === 'DRAFT' && <Edit className="h-3 w-3 mr-1" />}
-                {status === 'REVIEW' && <Clock className="h-3 w-3 mr-1" />}
-                {status === 'APPROVED' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                {status === 'PUBLISHED' && <Send className="h-3 w-3 mr-1" />}
-                {status}
-              </Badge>
-              <span className="text-2xl font-bold text-surface-900">{workflowCounts[status]}</span>
-            </div>
-          </button>
-        ))}
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-4">
+        <button className={summaryCard} onClick={() => setStatusFilter('')}>
+          <div className="flex items-center gap-3">
+            <Badge variant="neutral">All</Badge>
+            <span className="text-2xl font-bold text-surface-900">{items.length}</span>
+          </div>
+        </button>
+        <button className={summaryCard} onClick={() => setStatusFilter('PUBLISHED')}>
+          <div className="flex items-center gap-3">
+            <Badge variant="success" dot>PUBLISHED</Badge>
+            <span className="text-2xl font-bold text-surface-900">{publishedCount}</span>
+          </div>
+        </button>
+        <button className={summaryCard} onClick={() => setStatusFilter('UNPUBLISHED')}>
+          <div className="flex items-center gap-3">
+            <Badge variant="warning" dot>UNPUBLISHED</Badge>
+            <span className="text-2xl font-bold text-surface-900">{items.length - publishedCount}</span>
+          </div>
+        </button>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3">
-        <Select
-          options={typeTabs.map((t) => ({ value: t.id, label: t.label }))}
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="w-48"
-        />
+        <Select options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-48" />
       </div>
 
-      <Tabs tabs={statusTabs} activeTab={statusFilter} onChange={setStatusFilter} />
+      <Tabs
+        tabs={[{ id: '', label: 'All' }, { id: 'PUBLISHED', label: 'Published' }, { id: 'UNPUBLISHED', label: 'Unpublished' }]}
+        activeTab={statusFilter}
+        onChange={setStatusFilter}
+      />
 
       <DataTable
         columns={columns}
-        data={filteredContent}
-        isLoading={false}
-        searchPlaceholder="Search content…"
+        data={filtered}
+        isLoading={isLoading}
+        searchPlaceholder="Search pages…"
         emptyState={
           <EmptyState
             icon={FileText}
-            title="No content found"
-            description="Create your first content piece to get started with the CMS."
+            title="No pages found"
+            description="Create your first page — it goes live on the website immediately."
           />
         }
       />
 
-      {/* Approve/Publish Dialog */}
-      {approveDialog && (
+      {/* Publish / Unpublish dialog */}
+      {publishTarget && (
         <Dialog
-          open={!!approveDialog}
-          onClose={() => setApproveDialog(null)}
-          title={`${approveDialog.action === 'APPROVED' ? 'Approve' : 'Publish'} content?`}
-          description={`This will ${approveDialog.action === 'APPROVED' ? 'mark the content as approved and ready for publishing' : 'make the content live on the website'}.`}
+          open
+          onClose={() => setPublishTarget(null)}
+          title={publishTarget.publish ? 'Publish page?' : 'Unpublish page?'}
+          description={
+            publishTarget.publish
+              ? 'This makes the page live on the website.'
+              : 'This hides the page from the website. You can republish it any time.'
+          }
           primaryAction={{
-            label: approveDialog.action === 'APPROVED' ? 'Approve Content' : 'Publish Now',
-            onClick: handleApprove,
-            isLoading: isProcessing,
+            label: publishTarget.publish ? 'Publish Now' : 'Unpublish',
+            onClick: handleTogglePublish,
+            isLoading: isSaving,
           }}
         >
           <div className="rounded-lg bg-surface-50 p-3 text-sm">
-            <p><span className="font-medium">Title:</span> {approveDialog.item.title}</p>
-            <p><span className="font-medium">Type:</span> {approveDialog.item.type}</p>
-            <p><span className="font-medium">Author:</span> {approveDialog.item.author}</p>
+            <p><span className="font-medium">Title:</span> {publishTarget.item.title}</p>
+            <p><span className="font-medium">Key:</span> <span className="font-mono">{publishTarget.item.key}</span></p>
           </div>
         </Dialog>
       )}
 
-      {/* Edit Content Dialog */}
-      {editDialog && (
+      {/* Edit page dialog */}
+      {editTarget && (
         <Dialog
-          open={!!editDialog}
-          onClose={() => setEditDialog(null)}
-          title="Edit content"
-          description="Update the content title and save your changes."
-          primaryAction={{
-            label: 'Save Changes',
-            onClick: handleSaveEdit,
-          }}
+          open
+          maxWidth="lg"
+          onClose={() => setEditTarget(null)}
+          title="Edit page"
+          description="Changes are published to the website immediately when you save."
+          primaryAction={{ label: 'Save & Publish', onClick: handleSaveEdit, isLoading: isSaving }}
         >
           <div className="space-y-4">
-            <Input
-              label="Title"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              placeholder={editDialog.title}
-            />
-          </div>
-        </Dialog>
-      )}
-
-      {/* New Content Dialog */}
-      {newContentDialog && (
-        <Dialog
-          open={newContentDialog}
-          onClose={() => setNewContentDialog(false)}
-          title="New content"
-          description="Create a new content piece. It starts as a draft you can submit for review."
-          primaryAction={{
-            label: 'Create Draft',
-            onClick: handleCreateContent,
-          }}
-        >
-          <div className="space-y-4">
+            <p className="font-mono text-xs text-surface-500">{editTarget.key}</p>
             <Input
               label="Title *"
-              value={newContent.title}
-              onChange={(e) => setNewContent({ ...newContent, title: e.target.value })}
-              placeholder="e.g. Homepage Hero Banner"
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
             />
-            <Select
-              label="Type"
-              value={newContent.type}
-              onChange={(e) => setNewContent({ ...newContent, type: e.target.value as ContentItem['type'] })}
-              options={[
-                { value: 'HOMEPAGE', label: 'Homepage' },
-                { value: 'PRODUCT', label: 'Product' },
-                { value: 'PAGE', label: 'Page' },
-                { value: 'BANNER', label: 'Banner' },
-                { value: 'FAQ', label: 'FAQ' },
-                { value: 'ANNOUNCEMENT', label: 'Announcement' },
-              ]}
+            <div>
+              <label className="text-sm font-medium text-surface-700">Short description</label>
+              <textarea
+                value={editForm.shortDescription}
+                onChange={(e) => setEditForm({ ...editForm, shortDescription: e.target.value })}
+                rows={2}
+                maxLength={500}
+                placeholder="One-line summary shown in listings and cards…"
+                className="mt-1 w-full rounded-lg border border-surface-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
+              />
+            </div>
+            <RichTextEditor
+              label="Long description"
+              value={editForm.longDescription}
+              onChange={(html) => setEditForm({ ...editForm, longDescription: html })}
+              placeholder="Full rich-text description…"
+              hint="Formatting supported: bold/italic, font family & size, headings, lists, alignment, links and image placement."
+            />
+            <RichTextEditor
+              label="Custom section (body)"
+              value={editForm.body}
+              onChange={(html) => setEditForm({ ...editForm, body: html })}
+              placeholder="Custom page section content…"
+              minHeight={200}
+            />
+          </div>
+        </Dialog>
+      )}
+
+      {/* New page dialog */}
+      {newDialog && (
+        <Dialog
+          open
+          maxWidth="lg"
+          onClose={() => setNewDialog(false)}
+          title="New page"
+          description="The page is created and published to the website immediately."
+          primaryAction={{ label: 'Create & Publish', onClick: handleCreate, isLoading: isSaving }}
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Select
+                label="Type"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                options={TYPE_OPTIONS}
+              />
+              <Input
+                label="URL key *"
+                value={newKey}
+                onChange={(e) => {
+                  setKeyTouched(true);
+                  setNewKey(e.target.value);
+                }}
+                placeholder="page.my-new-page"
+                hint="Kebab-case segments separated by dots, e.g. about.story"
+              />
+            </div>
+            <Input
+              label="Title *"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="e.g. Meet the Team"
+            />
+            <div>
+              <label className="text-sm font-medium text-surface-700">Short description</label>
+              <textarea
+                value={newForm.shortDescription}
+                onChange={(e) => setNewForm({ ...newForm, shortDescription: e.target.value })}
+                rows={2}
+                maxLength={500}
+                placeholder="One-line summary shown in listings and cards…"
+                className="mt-1 w-full rounded-lg border border-surface-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
+              />
+            </div>
+            <RichTextEditor
+              label="Long description"
+              value={newForm.longDescription}
+              onChange={(html) => setNewForm({ ...newForm, longDescription: html })}
+              placeholder="Full rich-text description…"
+              hint="Formatting supported: bold/italic, font family & size, headings, lists, alignment, links and image placement."
+            />
+            <RichTextEditor
+              label="Custom section (body)"
+              value={newForm.body}
+              onChange={(html) => setNewForm({ ...newForm, body: html })}
+              placeholder="Custom page section content…"
+              minHeight={200}
             />
           </div>
         </Dialog>

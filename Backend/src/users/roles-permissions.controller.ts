@@ -64,10 +64,11 @@ export const BACKEND_ROLE_PERMISSIONS: Record<Role, string[]> = {
   [Role.CONTENT_MANAGER]: [
     'dashboard:view',
     'products:view', 'products:content-fields', 'products:create', 'products:publish',
-    // Full content-management rights
-    'content:view', 'content:edit', 'content:publish', 'content:approve',
+    // Full content-management rights: edit all existing pages, create new
+    // pages, publish and approve directly.
+    'content:view', 'content:create', 'content:edit', 'content:publish', 'content:approve',
     'journal:view', 'journal:edit', 'journal:publish',
-    'media:view', 'media:upload', 'media:delete',
+    'media:view', 'media:upload', 'media:edit', 'media:publish', 'media:delete',
     'reviews:view', 'reviews:moderate',
     'profile:view', 'profile:edit',
   ],

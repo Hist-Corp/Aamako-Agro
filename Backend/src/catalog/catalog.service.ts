@@ -126,6 +126,14 @@ export class CatalogService {
     });
   }
 
+  /** Lightweight admin listing for pickers (id, name, imageUrl). */
+  adminList() {
+    return this.prisma.product.findMany({
+      select: { id: true, name: true, imageUrl: true, isPublished: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   private async ensure(id: string) {
     const p = await this.prisma.product.findUnique({ where: { id } });
     if (!p) throw new NotFoundException('Product not found');

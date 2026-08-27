@@ -38,6 +38,14 @@ export class CatalogController {
     return this.catalog.listCategories();
   }
 
+  /** Admin picker — ALL products (incl. unpublished) for media/task pickers. */
+  @ApiBearerAuth()
+  @Roles(Role.STAFF_ADMIN, Role.STAFF_MANAGER, Role.CONTENT_MANAGER)
+  @Get('admin/products')
+  adminList() {
+    return this.catalog.adminList();
+  }
+
   @Public()
   @Get('products/:idOrSlug')
   detail(@Param('idOrSlug') idOrSlug: string) {

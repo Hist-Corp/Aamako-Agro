@@ -30,14 +30,17 @@ enum RevisionStatus {
 
 /// The LIVE (approved) version of a piece of website content.
 model ContentItem {
-  id          String   @id @default(uuid())
-  key         String   @unique // e.g. "home.hero", "about.story"
-  title       String
-  body        String
-  isPublished Boolean  @default(true)
-  updatedById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default(uuid())
+  key              String   @unique // e.g. "home.hero", "about.story", "journal.farming.rice"
+  title            String
+  shortDescription String? // short teaser / summary (journal listings, cards)
+  longDescription  String? // rich (HTML) long-form description
+  category         String? // journal category, e.g. "Farming"
+  body             String
+  isPublished      Boolean  @default(true)
+  updatedById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   revisions ContentRevision[]
 
@@ -47,20 +50,42 @@ model ContentItem {
 /// A proposed change. Created by CONTENT_MANAGER, applied to the live item
 /// only after a STAFF_MANAGER (or higher) approves it.
 model ContentRevision {
-  id            String         @id @default(uuid())
-  contentItemId String
-  contentItem   ContentItem    @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
-  proposedTitle String
-  proposedBody  String
-  status        RevisionStatus @default(PENDING)
-  submittedById String
-  reviewedById  String?
-  reviewNote    String?
-  reviewedAt    DateTime?
-  createdAt     DateTime       @default(now())
+  id                        String         @id @default(uuid())
+  contentItemId             String
+  contentItem               ContentItem    @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  proposedTitle             String
+  proposedShortDescription  String?
+  proposedLongDescription   String?
+  proposedBody              String
+  status                    RevisionStatus @default(PENDING)
+  submittedById             String
+  reviewedById              String?
+  reviewNote                String?
+  reviewedAt                DateTime?
+  createdAt                 DateTime       @default(now())
 
   @@index([status])
   @@map("content_revisions")
+}
+/// A media file (image/video/document) in the site's media library.
+/// Images can be categorized and published/unpublished; a published image
+/// can be dropped onto a product's image in one step.
+model MediaAsset {
+  id           String   @id @default(uuid())
+  name         String
+  type         String   @default("IMAGE") // IMAGE | VIDEO | DOCUMENT
+  url          String
+  altText      String? // accessibility / SEO text
+  category     String   @default("General") // e.g. Product, Homepage, Journal, Banner, Team
+  size         String?
+  dimensions   String?
+  isPublished  Boolean  @default(true)
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+  @@map("media_assets")
 }
 /// In-app notifications for staff workflows.
 model Notification {
