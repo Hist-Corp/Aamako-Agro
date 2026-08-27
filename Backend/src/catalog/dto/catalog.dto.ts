@@ -1,13 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
+  Matches,
   Min,
   MinLength,
+  ArrayMinSize,
 } from 'class-validator';
 import { Unit } from '@prisma/client';
 
@@ -21,13 +24,30 @@ export class CreateVariantDto {
 export class CreateProductDto {
   @ApiProperty() @IsString() @MinLength(2) name!: string;
   @ApiProperty() @IsString() @MinLength(2) slug!: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() imageUrl?: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() categoryId?: string;
+
+  /** Comprehensive data entry — a detailed description is required. */
+  @ApiProperty({ description: 'Detailed customer-facing description (min 30 chars)' })
+  @IsString()
+  @MinLength(30)
+  description!: string;
+
+  /** High-resolution product image (https://). Required. */
+  @ApiProperty({ description: 'High-resolution product image URL (https)' })
+  @IsString()
+  @Matches(/^https:\/\/.+/i, {
+    message: 'imageUrl must be a secure https:// URL',
+  })
+  imageUrl!: string;
+
+  @ApiProperty() @IsString() categoryId!: string;
   @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() isPublished?: boolean;
-  @ApiPropertyOptional({ type: [CreateVariantDto] })
-  @IsOptional()
-  variants?: CreateVariantDto[];
+
+  /** At least one sellable variant must be provided. */
+  @ApiProperty({ type: [CreateVariantDto], minItems: 1 })
+  @IsArray()
+  @ArrayMinSize(1)
+  @Type(() => CreateVariantDto)
+  variants!: CreateVariantDto[];
 }
 
 export class UpdateProductDto {

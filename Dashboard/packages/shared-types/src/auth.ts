@@ -90,8 +90,9 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   ADMIN: [
     'dashboard:view',
     // Users & Roles
+    // NOTE: 'roles:view' intentionally NOT granted — Roles & Permissions is
+    // restricted exclusively to Superadmin and Manager roles.
     'users:view', 'users:create', 'users:edit',
-    'roles:view',
     // Staff
     'staff:view', 'staff:manage',
     // Products
@@ -129,6 +130,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   ],
   MANAGER: [
     'dashboard:view',
+    // Roles & Permissions — Manager can inspect every role's assigned perms
+    'roles:view',
     // Staff
     'staff:view',
     // Products
@@ -161,6 +164,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'customers:view', 'customers:edit',
     // Orders & Sales
     'orders:view',
+    // Payment status updates + refunds are Sales responsibilities
+    'orders:payment-status', 'orders:refund',
     'sales:view',
     'wholesale:view',
     'quotes:view', 'quotes:respond',
@@ -174,6 +179,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'dashboard:view',
     // Products (view/stock only; can add new products to inventory)
     'products:view', 'products:stock-fields', 'products:create',
+    // Order status updates for products already handled by inventory ops
+    'orders:view', 'orders:advance',
     // Inventory & Warehouses
     'inventory:view', 'inventory:adjust', 'inventory:create',
     'warehouses:view', 'warehouses:manage',
@@ -188,10 +195,11 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'dashboard:view',
     // Products (content only) — can add products and publish them to the storefront
     'products:view', 'products:content-fields', 'products:create', 'products:publish',
-    // Content
-    'content:view', 'content:edit',
+    // Content — Content Manager may fully edit all existing pages and create
+    // new pages, publishing directly without waiting for approval.
+    'content:view', 'content:edit', 'content:publish', 'content:approve',
     'journal:view', 'journal:edit', 'journal:publish',
-    'media:view', 'media:upload',
+    'media:view', 'media:upload', 'media:delete',
     // Reviews
     'reviews:view', 'reviews:moderate',
     // Profile
@@ -216,9 +224,9 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   // roles stays in the backend's rank check).
   STAFF_ADMIN: [
     'dashboard:view',
-    // Users & Roles (admin manages users below admin; roles view-only)
+    // Users & Roles (admin manages users below admin). NOTE: no 'roles:view'
+    // — Roles & Permissions is exclusive to Superadmin and Manager roles.
     'users:view', 'users:create', 'users:edit', 'users:delete',
-    'roles:view',
     // Staff
     'staff:view', 'staff:manage',
     // Products
@@ -259,6 +267,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   // manager but cannot add users or assign roles — that is admin-only.
   STAFF_MANAGER: [
     'dashboard:view',
+    // Roles & Permissions — Manager can view each role's assigned permissions
+    'roles:view',
     // Users (view only — no create/edit/delete, no role assignment)
     'users:view',
     // Staff (view)
@@ -290,6 +300,7 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
 
   // STAFF_SALES: manages users below sales (customers/content), sales &
   // wholesale, quotes, customers, products (view). No staff/settings/roles.
+  // Sales also updates order PAYMENT statuses and processes refunds.
   STAFF_SALES: [
     'dashboard:view',
     // Users (manage below sales only)
@@ -300,6 +311,7 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'customers:view', 'customers:edit',
     // Orders & Sales
     'orders:view',
+    'orders:payment-status', 'orders:refund',
     'sales:view',
     'wholesale:view',
     'quotes:view', 'quotes:respond',

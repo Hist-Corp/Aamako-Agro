@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/config/auth-context';
+import { canAct } from '@/config/rbac';
 import { ROLE_PERMISSIONS, type Role } from '@aamako/shared-types';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardHeader } from '@/components/ui/card';
@@ -54,7 +56,16 @@ const PERMISSION_GROUPS = [
  */
 export default function RolesPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+
+  // The Roles & Permissions section is restricted exclusively to Superadmin
+  // and Manager roles — enforced here for direct URL access too.
+  const canView = user && canAct(user.role, 'roles:view');
+  React.useEffect(() => {
+    if (user && !canView) router.replace('/dashboard');
+  }, [user, canView, router]);
+  if (user && !canView) return null;
 
   const roles = Object.keys(ROLE_PERMISSIONS) as Role[];
 

@@ -31,7 +31,18 @@ export default function ProductsPage() {
 
   // ---- Add product (inventory -> content manager flow) ----
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', sku: '', unit: 'UNIT_50G', priceRupees: '' });
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    imageUrl: '',
+    categoryId: '',
+    sku: '',
+    variantName: '',
+    unit: 'UNIT_50G',
+    priceRupees: '',
+  });
+  const [imageStatus, setImageStatus] = useState<{ ok: boolean; message: string } | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const createMutation = useCreateProduct();
 
@@ -40,9 +51,84 @@ export default function ProductsPage() {
 
   const canCreate = user && (canAct(user.role, 'products:create') || canAct(user.role, 'products:publish'));
 
+  // Load categories for the Add Product form (matches the product schema).
+  React.useEffect(() => {
+    let cancelled = false;
+    import('@/lib/api-client')
+      .then(({ apiClient }) => apiClient.get<any[]>('/categories'))
+      .then((cats) => {
+        if (!cancelled) setCategories(cats.map((c) => ({ id: c.id, name: c.name })));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Deep link: /products?add=1 opens the Add Product flow (used by the
+  // dedicated Inventory Manager entry point).
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('add') === '1') setShowAddDialog(true);
+  }, []);
+
+  // Validate the product image: must load AND be high-resolution.
+  const validateImage = (url: string) => {
+    if (!url) {
+      setImageStatus(null);
+      return;
+    }
+    if (!/^https:\/\/.+/i.test(url)) {
+      setImageStatus({ ok: false, message: 'Image URL must be a secure https:// link.' });
+      return;
+    }
+    const img = new window.Image();
+    img.onload = () => {
+      if (img.naturalWidth >= 1000) {
+        setImageStatus({ ok: true, message: `High-resolution image detected (${img.naturalWidth}×${img.naturalHeight}px).` });
+      } else {
+        setImageStatus({ ok: false, message: `Image is only ${img.naturalWidth}×${img.naturalHeight}px — at least 1000px wide is required.` });
+      }
+    };
+    img.onerror = () => setImageStatus({ ok: false, message: 'Image could not be loaded — check the URL.' });
+    img.src = url;
+  };
+
   const handleCreate = async () => {
-    if (!form.name.trim() || !form.sku.trim() || !form.priceRupees) {
-      addToast({ type: 'error', title: 'Missing fields', description: 'Name, SKU and price are required.' });
+    if (!form.name.trim() || form.name.trim().length < 2) {
+      addToast({ type: 'error', title: 'Missing fields', description: 'Product name is required.' });
+      return;
+    }
+    if (form.description.trim().length < 30) {
+      addToast({
+        type: 'error',
+        title: 'Description too short',
+        description: 'Provide a detailed description (at least 30 characters).',
+      });
+      return;
+    }
+    if (!form.imageUrl.trim()) {
+      addToast({
+        type: 'error',
+        title: 'Product image required',
+        description: 'Upload or link a high-resolution product image (https://, ≥1000px wide).',
+      });
+      return;
+    }
+    if (imageStatus && !imageStatus.ok) {
+      addToast({ type: 'error', title: 'Invalid product image', description: imageStatus.message });
+      return;
+    }
+    if (!form.categoryId) {
+      addToast({ type: 'error', title: 'Category required', description: 'Select the product category.' });
+      return;
+    }
+    if (!form.sku.trim() || !form.priceRupees || parseFloat(form.priceRupees) <= 0) {
+      addToast({
+        type: 'error',
+        title: 'Variant incomplete',
+        description: 'SKU and a price greater than 0 are required for the first variant.',
+      });
       return;
     }
     setIsCreating(true);
@@ -50,11 +136,13 @@ export default function ProductsPage() {
       await createMutation.mutateAsync({
         name: form.name.trim(),
         slug: slugify(form.name),
-        description: form.description.trim() || undefined,
+        description: form.description.trim(),
+        imageUrl: form.imageUrl.trim(),
+        categoryId: form.categoryId,
         variants: [
           {
             sku: form.sku.trim(),
-            name: form.unit.replace(/_/g, ' ').toLowerCase(),
+            name: form.variantName.trim() || form.unit.replace(/_/g, ' ').toLowerCase(),
             unit: form.unit,
             basePriceCents: Math.round(parseFloat(form.priceRupees) * 100),
           },
@@ -65,7 +153,8 @@ export default function ProductsPage() {
         title: 'Product added to inventory',
         description: 'Content managers have been notified to publish it to the website.',
       });
-      setForm({ name: '', description: '', sku: '', unit: 'UNIT_50G', priceRupees: '' });
+      setForm({ name: '', description: '', imageUrl: '', categoryId: '', sku: '', variantName: '', unit: 'UNIT_50G', priceRupees: '' });
+      setImageStatus(null);
       setShowAddDialog(false);
     } catch (err: any) {
       addToast({ type: 'error', title: 'Failed to create product', description: err.message });
@@ -247,16 +336,19 @@ export default function ProductsPage() {
         <Dialog
           open={showAddDialog}
           onClose={() => setShowAddDialog(false)}
+          maxWidth="lg"
           title="Add product to inventory"
-          description="The product is created as a draft. Content managers are notified automatically so they can publish it to the website."
+          description="Complete all product details. The product is created as a draft and content managers are notified automatically so they can publish it to the website."
           primaryAction={{
             label: 'Create Product',
             onClick: handleCreate,
             isLoading: isCreating,
           }}
         >
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* ── Basic details ── */}
             <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-surface-500 mb-2">Basic details</p>
               <label className="text-xs font-medium text-surface-600">Product name *</label>
               <input
                 className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -264,18 +356,86 @@ export default function ProductsPage() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="e.g. Freeze-Dried Mango"
               />
+              <p className="mt-1 text-2xs text-surface-400">
+                URL slug: <span className="font-mono">{slugify(form.name || '…') || '—'}</span>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-surface-600">Category *</label>
+                <select
+                  className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  value={form.categoryId}
+                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                >
+                  <option value="">Select a category…</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                {categories.length === 0 && (
+                  <p className="mt-1 text-2xs text-amber-600">
+                    Categories could not be loaded — you can still create the product without one.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-medium text-surface-600">First variant label</label>
+                <input
+                  className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  value={form.variantName}
+                  onChange={(e) => setForm({ ...form, variantName: e.target.value })}
+                  placeholder="e.g. 50g pouch"
+                />
+              </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-surface-600">Description</label>
+              <label className="text-xs font-medium text-surface-600">Description * (min. 30 characters)</label>
               <textarea
                 className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                rows={2}
+                rows={3}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Short customer-facing description"
+                placeholder="Detailed customer-facing description: origin, taste profile, packaging, shelf life…"
               />
+              <p className={`mt-1 text-2xs ${form.description.trim().length >= 30 ? 'text-green-600' : 'text-surface-400'}`}>
+                {form.description.trim().length}/30 characters
+              </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* ── Media ── */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-surface-500 mb-2">Media</p>
+              <label className="text-xs font-medium text-surface-600">High-resolution product image (https://, ≥1000px wide) *</label>
+              <input
+                type="url"
+                className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                value={form.imageUrl}
+                onChange={(e) => {
+                  setForm({ ...form, imageUrl: e.target.value });
+                  validateImage(e.target.value);
+                }}
+                placeholder="https://cdn.aamako.com/products/mango-hero.jpg"
+              />
+              {imageStatus && (
+                <p className={`mt-1 text-2xs ${imageStatus.ok ? 'text-green-600' : 'text-red-600'}`}>
+                  {imageStatus.message}
+                </p>
+              )}
+              {imageStatus?.ok && (
+                <img
+                  src={form.imageUrl}
+                  alt="Product preview"
+                  className="mt-2 h-28 w-full max-w-[224px] object-cover rounded-lg border border-surface-200 bg-surface-100"
+                />
+              )}
+            </div>
+
+            {/* ── First variant / pricing ── */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-surface-500 mb-2">Variant & pricing</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium text-surface-600">SKU *</label>
                 <input
@@ -301,17 +461,24 @@ export default function ProductsPage() {
                 </select>
               </div>
             </div>
-            <div>
-              <label className="text-xs font-medium text-surface-600">Price (Rs) *</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                value={form.priceRupees}
-                onChange={(e) => setForm({ ...form, priceRupees: e.target.value })}
-                placeholder="450"
-              />
+              <div className="mt-3">
+                <label className="text-xs font-medium text-surface-600">Base price (Rs) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  value={form.priceRupees}
+                  onChange={(e) => setForm({ ...form, priceRupees: e.target.value })}
+                  placeholder="450"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+              <p className="text-xs text-blue-800">
+                Stock tracking is initialized at 0 for new products — adjust quantities from the Inventory page after creating the product.
+              </p>
             </div>
           </div>
         </Dialog>

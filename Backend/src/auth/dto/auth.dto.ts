@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -44,6 +45,16 @@ export class LoginDto {
   @IsString()
   @IsNotEmpty()
   password!: string;
+
+  /**
+   * Which surface the login originates from. Storefront logins are rejected
+   * for any account registered by the Admin Dashboard (staff accounts).
+   * Defaults to 'dashboard' so existing admin clients are unaffected.
+   */
+  @ApiPropertyOptional({ enum: ['storefront', 'dashboard'], default: 'dashboard' })
+  @IsOptional()
+  @IsIn(['storefront', 'dashboard'])
+  scope?: 'storefront' | 'dashboard';
 }
 
 export class RefreshDto {

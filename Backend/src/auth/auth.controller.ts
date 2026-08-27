@@ -51,7 +51,6 @@ export class AuthController {
   ) {
     return this.auth.login(dto, req.headers['user-agent'], req.ip);
   }
-
   @Public()
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('refresh')

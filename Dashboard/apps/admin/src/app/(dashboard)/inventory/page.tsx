@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useInventory, useAdjustInventory } from '@/lib/api-hooks';
 import { useAuth } from '@/config/auth-context';
@@ -16,7 +17,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { Tabs } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import { Warehouse, AlertTriangle, Settings } from 'lucide-react';
+import { Warehouse, AlertTriangle, Settings, Plus } from 'lucide-react';
 import { type InventoryItem, type AdjustmentReason } from '@aamako/shared-types';
 
 const REASON_OPTIONS: { value: AdjustmentReason; label: string }[] = [
@@ -37,12 +38,17 @@ const REASON_OPTIONS: { value: AdjustmentReason; label: string }[] = [
 export default function InventoryPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const router = useRouter();
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [adjustDialog, setAdjustDialog] = useState<InventoryItem | null>(null);
   const [adjustValue, setAdjustValue] = useState('');
   const [adjustReason, setAdjustReason] = useState<AdjustmentReason | ''>('');
   const [adjustNote, setAdjustNote] = useState('');
   const [isAdjusting, setIsAdjusting] = useState(false);
+
+  // Inventory Managers add new products to the inventory through the
+  // dedicated full-detail product entry flow on the Products screen.
+  const canCreateProducts = !!user && canAct(user.role, 'products:create');
 
   const canAdjust = user && canAct(user.role, 'inventory:adjust');
   const adjustMutation = useAdjustInventory();
@@ -177,13 +183,20 @@ export default function InventoryPage() {
         description="Stock levels across all warehouses"
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Inventory' }]}
         actions={
-          canAdjust ? (
-            <Button onClick={() => setLowStockOnly(!lowStockOnly)}>
-              {lowStockOnly ? 'Show All' : (
-                <><AlertTriangle className="h-4 w-4" /> Low Stock Only</>
-              )}
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap gap-2">
+            {canCreateProducts && (
+              <Button variant="secondary" onClick={() => router.push('/products?add=1')}>
+                <Plus className="h-4 w-4" /> Add New Product
+              </Button>
+            )}
+            {canAdjust && (
+              <Button onClick={() => setLowStockOnly(!lowStockOnly)}>
+                {lowStockOnly ? 'Show All' : (
+                  <><AlertTriangle className="h-4 w-4" /> Low Stock Only</>
+                )}
+              </Button>
+            )}
+          </div>
         }
       />
 

@@ -8,17 +8,32 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PricingEngineService } from '../pricing/pricing-engine.service';
 
-/** placed → confirmed → paid|payment_pending → fulfilled → delivered; plus cancelled/returned */
+/** placed → confirmed → paid|payment_pending → fulfilled → delivered; plus cancelled/returned/refunded */
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   PLACED: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
   CONFIRMED: [OrderStatus.PAID, OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED],
   PAYMENT_PENDING: [OrderStatus.PAID, OrderStatus.CANCELLED],
-  PAID: [OrderStatus.FULFILLED, OrderStatus.RETURNED],
-  FULFILLED: [OrderStatus.DELIVERED, OrderStatus.RETURNED],
-  DELIVERED: [OrderStatus.RETURNED],
+  PAID: [OrderStatus.FULFILLED, OrderStatus.RETURNED, OrderStatus.REFUNDED],
+  FULFILLED: [OrderStatus.DELIVERED, OrderStatus.RETURNED, OrderStatus.REFUNDED],
+  DELIVERED: [OrderStatus.RETURNED, OrderStatus.REFUNDED],
   CANCELLED: [],
   RETURNED: [],
+  REFUNDED: [],
 };
+
+/** Statuses owned by the payment workflow (Sales role). */
+const PAYMENT_STATUSES: OrderStatus[] = [
+  OrderStatus.CONFIRMED,
+  OrderStatus.PAID,
+  OrderStatus.PAYMENT_PENDING,
+];
+
+/** Statuses from which a refund may be issued. */
+const REFUNDABLE_STATUSES: OrderStatus[] = [
+  OrderStatus.PAID,
+  OrderStatus.FULFILLED,
+  OrderStatus.DELIVERED,
+];
 
 export interface CheckoutLine {
   variantId: string;
@@ -149,6 +164,49 @@ export class OrdersService {
     return this.prisma.order.update({
       where: { id: orderId },
       data: { status: next },
+    });
+  }
+
+  /**
+   * Update a payment-related status (Sales role responsibility).
+   * Only transitions between payment statuses are permitted here.
+   */
+  async updatePaymentStatus(orderId: string, next: OrderStatus) {
+    if (!PAYMENT_STATUSES.includes(next)) {
+      throw new BadRequestException(
+        `${next} is not a payment status. Use /refund for refunds.`,
+      );
+    }
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (!PAYMENT_STATUSES.includes(order.status)) {
+      throw new BadRequestException(
+        `Payment status cannot be changed while the order is ${order.status}`,
+      );
+    }
+    if (!TRANSITIONS[order.status].includes(next)) {
+      throw new BadRequestException(
+        `Invalid transition ${order.status} → ${next}`,
+      );
+    }
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: next },
+    });
+  }
+
+  /** Process a full refund — marks the order REFUNDED. Sales role responsibility. */
+  async refund(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (!REFUNDABLE_STATUSES.includes(order.status)) {
+      throw new BadRequestException(
+        `Orders in status ${order.status} are not refundable. Only paid, fulfilled or delivered orders can be refunded.`,
+      );
+    }
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: OrderStatus.REFUNDED },
     });
   }
 

@@ -9,6 +9,8 @@ import type {
   ActivityFeedItem,
   FulfillmentPipeline,
   Order,
+  OrderStatus,
+  PaymentStatus,
   OrderListParams,
   PaginatedResponse,
   Product,
@@ -265,6 +267,41 @@ export function useAdvanceOrder() {
   return useMutation({
     mutationFn: ({ id, to, reason }: { id: string; to: string; reason?: string }) =>
       apiClient.patch(`/admin/orders/${id}`, { status: to, reason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'orders'] });
+      qc.invalidateQueries({ queryKey: queryKeys.pipeline });
+    },
+  });
+}
+
+/** Sales role: update a payment-related order status.
+ *  Storefront payment labels are mapped onto the real backend statuses:
+ *  PENDING → PAYMENT_PENDING, PAID stays PAID. */
+export function useUpdatePaymentStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, paymentStatus }: { id: string; paymentStatus: PaymentStatus | string }) => {
+      const status =
+        paymentStatus === 'PENDING'
+          ? 'PAYMENT_PENDING'
+          : paymentStatus === 'FAILED'
+            ? 'PAYMENT_PENDING'
+            : paymentStatus;
+      return apiClient.patch(`/admin/orders/${id}/payment-status`, { status });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'orders'] });
+      qc.invalidateQueries({ queryKey: queryKeys.pipeline });
+    },
+  });
+}
+
+/** Sales role: process a full refund for a paid/fulfilled/delivered order. */
+export function useRefundOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) =>
+      apiClient.post(`/admin/orders/${id}/refund`, {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'orders'] });
       qc.invalidateQueries({ queryKey: queryKeys.pipeline });

@@ -2,8 +2,10 @@
 
 import React, { useState, useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useOrders } from '@/lib/api-hooks';
+import { useOrders, useUpdatePaymentStatus, useRefundOrder } from '@/lib/api-hooks';
 import { useAuth } from '@/config/auth-context';
+import { canAct } from '@/config/rbac';
+import { useToast } from '@/components/ui/toast';
 import { formatCurrency, formatDateTime, formatNumber, relativeTime } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
 import { DataTable } from '@/components/ui/data-table';
@@ -11,6 +13,8 @@ import { Badge, statusToBadgeVariant } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Tabs } from '@/components/ui/tabs';
 import { Card, CardHeader } from '@/components/ui/card';
+import { Dialog } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   LineChart,
@@ -38,8 +42,52 @@ const MOCK_SALES_DATA = Array.from({ length: 7 }, (_, i) => ({
  */
 export default function SalesPage() {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [channelFilter, setChannelFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  // ---- Payment management (Sales role) ----
+  const [refundOrder, setRefundOrder] = useState<Order | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const canManagePayments = !!user && canAct(user.role, 'orders:payment-status');
+  const canRefund = !!user && canAct(user.role, 'orders:refund');
+
+  const paymentStatusMutation = useUpdatePaymentStatus();
+  const refundMutation = useRefundOrder();
+
+  const handlePaymentStatusChange = async (order: Order, next: string) => {
+    setIsProcessingPayment(true);
+    try {
+      await paymentStatusMutation.mutateAsync({ id: order.id, paymentStatus: next });
+      addToast({
+        type: 'success',
+        title: `Payment updated for ${order.orderNumber}`,
+        description: `Marked as ${next.replace(/_/g, ' ')}.`,
+      });
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Failed to update payment status', description: err.message });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleRefund = async () => {
+    if (!refundOrder) return;
+    setIsProcessingPayment(true);
+    try {
+      await refundMutation.mutateAsync({ id: refundOrder.id });
+      addToast({
+        type: 'success',
+        title: `Refund processed for ${refundOrder.orderNumber}`,
+        description: `${formatCurrency(refundOrder.total)} refunded to ${refundOrder.customerName}.`,
+      });
+      setRefundOrder(null);
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Failed to process refund', description: err.message });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
 
   const { data: ordersData, isLoading } = useOrders({
     channel: (channelFilter as any) || undefined,
@@ -101,6 +149,22 @@ export default function SalesPage() {
       header: 'Payment',
       cell: ({ row }) => {
         const { variant, label } = statusToBadgeVariant(row.original.paymentStatus);
+        // Sales role: inline payment-status updates on every order row.
+        if (canManagePayments && row.original.paymentStatus !== 'REFUNDED') {
+          return (
+            <Select
+              options={[
+                { value: 'PENDING', label: 'Pending' },
+                { value: 'PAID', label: 'Paid' },
+                { value: 'PARTIALLY_REFUNDED', label: 'Partially Refunded' },
+              ]}
+              value={row.original.paymentStatus}
+              onChange={(e) => handlePaymentStatusChange(row.original, e.target.value)}
+              disabled={isProcessingPayment}
+              className="w-32 h-8 text-xs"
+            />
+          );
+        }
         return <Badge variant={variant}>{label}</Badge>;
       },
     },
@@ -111,7 +175,28 @@ export default function SalesPage() {
         <span className="text-xs text-surface-500">{formatDateTime(row.original.updatedAt)}</span>
       ),
     },
-  ], []);
+    ...(canRefund
+      ? [{
+          id: 'actions',
+          header: 'Actions',
+          cell: ({ row }: { row: any }) => {
+            const refundable =
+              ['PAID', 'FULFILLED', 'DELIVERED'].includes(row.original.status as string) &&
+              row.original.paymentStatus !== 'REFUNDED';
+            return refundable ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setRefundOrder(row.original)}
+                title="Process full refund"
+              >
+                Refund
+              </Button>
+            ) : null;
+          },
+        } as ColumnDef<Order>]
+      : []),
+  ], [canManagePayments, canRefund, isProcessingPayment]);
 
   const statusTabs = [
     { id: '', label: 'All' },
@@ -221,6 +306,27 @@ export default function SalesPage() {
           />
         </div>
       </div>
+
+      {/* Refund confirmation dialog (Sales role) */}
+      {refundOrder && (
+        <Dialog
+          open={!!refundOrder}
+          onClose={() => setRefundOrder(null)}
+          title="Process full refund?"
+          description={`This will refund ${formatCurrency(refundOrder.total)} to ${refundOrder.customerName} and mark the order as refunded.`}
+          primaryAction={{
+            label: 'Process Refund',
+            onClick: handleRefund,
+            isLoading: isProcessingPayment,
+          }}
+        >
+          <div className="rounded-lg bg-surface-50 p-3 text-sm">
+            <p><span className="font-medium">Order:</span> {refundOrder.orderNumber}</p>
+            <p><span className="font-medium">Customer:</span> {refundOrder.customerName}</p>
+            <p><span className="font-medium">Total:</span> {formatCurrency(refundOrder.total)}</p>
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }

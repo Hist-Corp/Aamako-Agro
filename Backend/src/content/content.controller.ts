@@ -28,8 +28,12 @@ const CONTENT_EDITORS = [
   Role.STAFF_ADMIN,
   Role.SUPER_ADMIN,
 ];
-/** Who may approve/reject (publish to live). */
+/** Who may approve/reject (publish to live).
+ *  The Content Manager has FULL content-management rights: they can edit all
+ *  existing pages, create new pages and publish/approve without waiting for
+ *  another manager. */
 const CONTENT_APPROVERS = [
+  Role.CONTENT_MANAGER,
   Role.STAFF_MANAGER,
   Role.STAFF_ADMIN,
   Role.SUPER_ADMIN,
@@ -86,7 +90,12 @@ export class ContentController {
     @Body() dto: UpsertContentDto,
     @CurrentUser() actor?: { id: string; role: Role },
   ) {
-    const canPublishDirectly = actor!.role !== Role.CONTENT_MANAGER;
+    const canPublishDirectly = ([
+      Role.CONTENT_MANAGER,
+      Role.STAFF_MANAGER,
+      Role.STAFF_ADMIN,
+      Role.SUPER_ADMIN,
+    ] as Role[]).includes(actor!.role);
 
     const item = await this.prisma.contentItem.upsert({
       where: { key },

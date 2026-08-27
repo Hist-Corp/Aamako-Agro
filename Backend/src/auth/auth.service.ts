@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -9,6 +10,12 @@ import * as bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+
+/** Roles allowed to sign in through the customer-facing storefront. */
+const STOREFRONT_ALLOWED_ROLES: Role[] = [
+  Role.RETAIL_CUSTOMER,
+  Role.WHOLESALE_CUSTOMER,
+];
 
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
 
@@ -52,6 +59,16 @@ export class AuthService {
     if (!(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Storefront restriction: accounts registered by the Admin Dashboard
+    // (staff/team roles) can never sign in on the customer storefront — even
+    // with valid credentials.
+    if (dto.scope === 'storefront' && !STOREFRONT_ALLOWED_ROLES.includes(user.role)) {
+      throw new ForbiddenException(
+        'This email is registered as an Admin Dashboard (staff) account and cannot be used to sign in to the storefront. Please use the staff dashboard instead.',
+      );
+    }
+
     return this.issueTokens(user.id, user.email, user.role, userAgent, ip);
   }
 

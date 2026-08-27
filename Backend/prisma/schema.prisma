@@ -316,6 +316,7 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   RETURNED
+  REFUNDED
 }
 
 enum PaymentTerms {

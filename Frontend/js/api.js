@@ -78,7 +78,7 @@
       return tokens.user;
     },
     login: async function (email, password) {
-      saveTokens(await request('POST', '/auth/login', { email: email, password: password }));
+      saveTokens(await request('POST', '/auth/login', { email: email, password: password, scope: 'storefront' }));
       // merge anonymous cart into user cart server-side is implicit via session reuse;
       // keep header so the server can find the anon cart on next checkout.
       return tokens.user;

@@ -83,22 +83,46 @@ export class OrdersController {
 export class AdminOrdersController {
   constructor(private orders: OrdersService, private live: LiveEventsService) {}
 
-  @Roles(Role.STAFF_SUPPORT, Role.STAFF_MANAGER, Role.STAFF_ADMIN)
+  /** Sales needs the full order list to manage payments & refunds. */
+  @Roles(Role.STAFF_SALES, Role.STAFF_SUPPORT, Role.STAFF_MANAGER, Role.STAFF_ADMIN)
   @Get()
   list() {
     return this.orders.listAll();
   }
 
-  @Roles(Role.STAFF_SUPPORT, Role.STAFF_MANAGER, Role.STAFF_ADMIN)
+  @Roles(Role.STAFF_SALES, Role.STAFF_SUPPORT, Role.STAFF_MANAGER, Role.STAFF_ADMIN)
   @Get(':id')
   detail(@Param('id') id: string) {
     return this.orders.detail(id);
   }
 
+  /**
+   * Fulfilment transitions (confirm → fulfil → deliver). The Inventory
+   * Manager-side fulfilment updates live here; payment workflows use the
+   * dedicated /payment-status endpoint below.
+   */
   @Roles(Role.STAFF_MANAGER, Role.STAFF_ADMIN)
   @Patch(':id/status')
   async transition(@Param('id') id: string, @Body() dto: TransitionDto) {
     const order = await this.orders.transition(id, dto.status);
+    this.live.emit('order:updated', { orderNumber: order.orderNumber, status: order.status });
+    return order;
+  }
+
+  /** Sales: update the payment status of an order. */
+  @Roles(Role.STAFF_SALES, Role.STAFF_MANAGER, Role.STAFF_ADMIN)
+  @Patch(':id/payment-status')
+  async paymentStatus(@Param('id') id: string, @Body() dto: TransitionDto) {
+    const order = await this.orders.updatePaymentStatus(id, dto.status);
+    this.live.emit('order:updated', { orderNumber: order.orderNumber, status: order.status });
+    return order;
+  }
+
+  /** Sales: process a full refund for a paid/fulfilled/delivered order. */
+  @Roles(Role.STAFF_SALES, Role.STAFF_MANAGER, Role.STAFF_ADMIN)
+  @Post(':id/refund')
+  async refund(@Param('id') id: string) {
+    const order = await this.orders.refund(id);
     this.live.emit('order:updated', { orderNumber: order.orderNumber, status: order.status });
     return order;
   }

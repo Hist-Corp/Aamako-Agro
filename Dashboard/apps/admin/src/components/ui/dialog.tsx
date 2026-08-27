@@ -76,6 +76,7 @@ export function Dialog({
       <div
         className={cn(
           'relative w-full mx-4 bg-white rounded-xl shadow-xl border border-surface-200 animate-slide-in-up',
+          'max-h-[92vh] flex flex-col',
           maxWidthClass
         )}
         role="dialog"
@@ -83,7 +84,7 @@ export function Dialog({
         aria-labelledby="dialog-title"
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 pb-4">
+        <div className="flex items-start justify-between p-6 pb-4 flex-shrink-0">
           <div>
             <h2 id="dialog-title" className="text-lg font-semibold text-surface-900">
               {title}
@@ -101,11 +102,11 @@ export function Dialog({
         </div>
 
         {/* Body */}
-        <div className="px-6 pb-6">{children}</div>
+        <div className="px-6 pb-6 overflow-y-auto min-h-0">{children}</div>
 
         {/* Footer */}
         {(destructiveAction || primaryAction) && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-surface-200 rounded-b-xl bg-surface-50">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-surface-200 rounded-b-xl bg-surface-50 flex-shrink-0">
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>

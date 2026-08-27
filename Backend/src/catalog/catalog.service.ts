@@ -57,18 +57,22 @@ export class CatalogService {
   }
 
   async create(dto: CreateProductDto) {
+    if (dto.categoryId) {
+      const category = await this.prisma.category.findUnique({
+        where: { id: dto.categoryId },
+      });
+      if (!category) throw new NotFoundException('Category not found');
+    }
     const { variants, ...product } = dto;
     const created = await this.prisma.product.create({
       data: {
         ...product,
-        variants: variants
-          ? {
-              create: variants.map((v) => ({
-                ...v,
-                inventory: { create: {} },
-              })),
-            }
-          : undefined,
+        variants: {
+          create: variants.map((v) => ({
+            ...v,
+            inventory: { create: {} },
+          })),
+        },
       },
       include: { variants: { include: { inventory: true } } },
     });
