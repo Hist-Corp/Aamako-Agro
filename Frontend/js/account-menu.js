@@ -6,7 +6,8 @@
  *   <script src="js/account-menu.js"></script>
  *
  * When signed in, replaces the header "Sign in" ghost button with an
- * Account ▾ dropdown (Dashboard / Profile / Orders / Sign out) and swaps
+ * icon-only profile avatar (initials) that opens an Account ▾ dropdown
+ * (name + email, Dashboard / Profile / Orders / Cart / Sign out) and swaps
  * the mobile drawer's sign-in link accordingly. When signed out, does
  * nothing — the static "Sign in" link stays.
  */
@@ -43,9 +44,8 @@
 
   var MENU_HTML =
     '<div class="acct-wrap" id="acctWrap">' +
-      '<button type="button" class="acct-trigger" id="acctTrigger" aria-haspopup="true" aria-expanded="false">' +
+      '<button type="button" class="acct-trigger" id="acctTrigger" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">' +
         '<span class="acct-avatar">{{INITIALS}}</span>' +
-        '<span class="acct-name-label">{{NAME}}</span>' +
         '<svg class="acct-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>' +
       '</button>' +
       '<div class="acct-menu" role="menu" aria-label="Account menu">' +
