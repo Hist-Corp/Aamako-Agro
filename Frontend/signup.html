@@ -445,6 +445,7 @@
 </script>
 
   <script src="js/api.js"></script>
+  <script src="js/account-menu.js"></script>
   <script src="js/password-toggle.js"></script>
   <script>
     // Wire signup form to the backend: retail accounts register directly;
@@ -463,6 +464,11 @@
         };
         try {
           await window.AamakoAPI.signup(payload);
+          // capture the new user for the storefront account area
+          var signupTokens = JSON.parse(localStorage.getItem('aamako_tokens') || 'null');
+          if (signupTokens && signupTokens.user) {
+            localStorage.setItem('aamako_user', JSON.stringify(signupTokens.user));
+          }
           // Wholesale intent → file an inquiry for staff approval flow
           var bName = document.getElementById('businessName');
           if (bName && bName.value) {
@@ -474,7 +480,7 @@
               message: 'Submitted via signup page'
             });
           }
-          window.location.href = 'shop.html';
+          window.location.href = 'account.html';
         } catch (err) {
           alert(err.message || 'Signup failed');
         }

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<link rel="icon" type="image/png" href="favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="favicon.png">
+<title>My Account — Aama ko Agro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="trust-strip"><span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span><span>MADE IN NEPAL</span><span>NO ADDED PRESERVATIVES</span></div>
+<header>
+  <nav class="wrap"><a href="index.html" class="logo"><img src="logo.png" alt="Aama ko Agro"></a><div class="nav-links"><a href="shop.html">Shop</a><a href="process.html">Why Freeze-Dried</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a></div><div class="nav-actions"><a href="signin.html" class="btn btn-ghost">Sign in</a><a href="shop.html" class="btn btn-primary">Shop now</a></div><button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button></nav>
+</header>
+<div class="mobile-drawer" id="mobileDrawer"><a href="index.html">Home</a><a href="shop.html">Shop</a><a href="process.html">Why Freeze-Dried</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a><a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a></div>
+
+<div class="page-header"><div class="wrap page-header-grid"><div><div class="eyebrow">Your account</div><h1 class="page-title">Namaste, <span class="greeting-name" id="greetName">there</span></h1><p class="page-sub" id="greetSub">Here's a snapshot of your activity at Aama ko Agro.</p></div></div></div>
+
+<section><div class="wrap">
+
+  <!-- Quick stats -->
+  <div class="dash-grid">
+    <div class="dash-card">
+      <div class="stat-num" id="statOrders">–</div>
+      <div class="stat-label">Total orders</div>
+    </div>
+    <div class="dash-card">
+      <div class="stat-num" id="statActive">–</div>
+      <div class="stat-label">In progress / delivered</div>
+    </div>
+    <div class="dash-card">
+      <div class="stat-num" id="statCart">–</div>
+      <div class="stat-label">Items in cart</div>
+    </div>
+  </div>
+
+  <!-- Recent orders + shortcuts -->
+  <div class="dash-panel-grid">
+    <div class="dash-panel">
+      <h3>Recent orders</h3>
+      <div id="recentOrders"></div>
+      <div style="margin-top:var(--space-4);"><a href="orders.html" class="link-arrow" style="font-size:13px;">View all order history →</a></div>
+    </div>
+
+    <div class="dash-panel">
+      <h4>Quick actions</h4>
+      <div class="dash-shortcuts">
+        <a href="profile.html" class="dash-tile">
+          <span class="dash-tile-icon">👤</span>
+          <span><span class="dash-tile-title">Profile &amp; security</span><br><span class="dash-tile-sub">Edit details, change password</span></span>
+        </a>
+        <a href="orders.html" class="dash-tile">
+          <span class="dash-tile-icon">📦</span>
+          <span><span class="dash-tile-title">Order history</span><br><span class="dash-tile-sub">Track and review purchases</span></span>
+        </a>
+        <a href="shop.html" class="dash-tile">
+          <span class="dash-tile-icon">🛍️</span>
+          <span><span class="dash-tile-title">Continue shopping</span><br><span class="dash-tile-sub">Browse the full catalogue</span></span>
+        </a>
+        <a href="cart.html" class="dash-tile">
+          <span class="dash-tile-icon">🧺</span>
+          <span><span class="dash-tile-title">Your cart</span><br><span class="dash-tile-sub">Review before checkout</span></span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div></section>
+
+<footer><div class="wrap"><div class="foot-grid"><div class="foot-col"><a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img src="logo-footer.png" alt="Aama ko Agro" style="height:72px;"></a><p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p></div><div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div><div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div><div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div><div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div></div><div class="foot-bottom"><span>© 2026 Aama ko Agro. All rights reserved.</span><span>DFTQC registration — [placeholder]</span></div></div></footer>
+
+<script>
+(function(){
+  var btn=document.getElementById("hamburgerBtn"),drawer=document.getElementById("mobileDrawer");
+  if(btn&&drawer){btn.addEventListener("click",function(){var o=drawer.classList.toggle("is-open");btn.classList.toggle("is-open",o);btn.setAttribute("aria-expanded",o?"true":"false");document.body.style.overflow=o?"hidden":"";document.body.classList.toggle('drawer-open',o);var hdr=document.querySelector('header');if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}else drawer.style.removeProperty('--drawer-top');});drawer.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){drawer.classList.remove("is-open");btn.classList.remove("is-open");document.body.style.overflow="";document.body.classList.remove('drawer-open');});});}
+  (function(){var header=document.querySelector('header');if(!header)return;var lastY=0;window.addEventListener('scroll',function(){var y=window.pageYOffset||document.documentElement.scrollTop;if(y>80&&y>lastY&&!drawer.classList.contains("is-open")){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}if(y<=80){header.classList.remove('is-hidden','is-scrolled');}lastY=y;});})();
+})();
+</script>
+
+<script src="js/api.js"></script>
+<script src="js/account-menu.js"></script>
+<script>
+(function () {
+  // ---- Auth gate: bounce to sign-in with return path when signed out ----
+  var user = JSON.parse(localStorage.getItem('aamako_user') || 'null');
+  if (!user || !localStorage.getItem('aamako_tokens')) {
+    window.location.replace('signin.html?next=' + encodeURIComponent('account.html'));
+    return;
+  }
+
+  var fmtNpr = function (cents) { return 'Rs ' + ((cents || 0) / 100).toLocaleString(); };
+  var fmtDate = function (iso) {
+    try { return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+    catch (_) { return ''; }
+  };
+
+  function paintGreeting(u) {
+    var name = [u.firstName, u.lastName].filter(Boolean).join(' ');
+    document.getElementById('greetName').textContent = (name || u.email.split('@')[0]);
+    document.getElementById('greetSub').textContent =
+      'Signed in as ' + u.email + (u.createdAt ? ' · Member since ' + fmtDate(u.createdAt) : '');
+  }
+  paintGreeting(user);
+  window.AamakoAPI.me().then(function (fresh) {
+    paintGreeting(fresh);
+    localStorage.setItem('aamako_user', JSON.stringify(fresh));
+  }).catch(function () { /* offline-safe: keep cached values */ });
+
+  try {
+    var localCart = JSON.parse(localStorage.getItem('aka-cart') || '[]');
+    var qty = localCart.reduce(function (n, i) { return n + (i.qty || i.quantity || 1); }, 0);
+    document.getElementById('statCart').textContent = String(qty);
+  } catch (_) { document.getElementById('statCart').textContent = '0'; }
+
+  window.AamakoAPI.myOrders().then(function (orders) {
+    var list = Array.isArray(orders) ? orders : [];
+    document.getElementById('statOrders').textContent = String(list.length);
+    var active = list.filter(function (o) {
+      return ['PLACED', 'CONFIRMED', 'PAID', 'PAYMENT_PENDING', 'FULFILLED'].indexOf(o.status) !== -1;
+    });
+    document.getElementById('statActive').textContent = String(active.length);
+
+    var wrap = document.getElementById('recentOrders');
+    if (list.length === 0) {
+      wrap.innerHTML =
+        '<p style="font-size:14px; color:var(--ink-soft);">No orders yet — your first order will show up here.</p>' +
+        '<a href="shop.html" class="btn btn-primary" style="display:inline-block; margin-top:var(--space-4);">Start shopping</a>';
+      return;
+    }
+    wrap.innerHTML = list.slice(0, 5).map(function (o) {
+      var items = o.items || [];
+      var lines = items.reduce(function (n, it) { return n + it.quantity; }, 0);
+      return '<div class="order-card">' +
+        '<div class="order-card-head">' +
+          '<div><div class="order-num">#' + o.orderNumber + '</div>' +
+          '<div class="order-date">' + fmtDate(o.createdAt) + ' · ' + lines + ' item' + (lines === 1 ? '' : 's') + '</div></div>' +
+          '<div style="text-align:right;"><span class="obadge ' + String(o.status).toLowerCase() + '">' + String(o.status).replace(/_/g, ' ') + '</span>' +
+          '<div class="order-total" style="margin-top:6px;">' + fmtNpr(o.totalCents) + '</div></div>' +
+        '</div></div>';
+    }).join('');
+  }).catch(function () {
+    document.getElementById('recentOrders').innerHTML =
+      '<p style="font-size:13.5px; color:#9a6700;">Could not load your orders just now. Please refresh in a moment.</p>';
+  });
+})();
+</script>
+</body></html>
+

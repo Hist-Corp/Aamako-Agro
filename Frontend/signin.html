@@ -142,6 +142,7 @@
 </script>
 
   <script src="js/api.js"></script>
+  <script src="js/account-menu.js"></script>
   <script src="js/password-toggle.js"></script>
   <script>
     async function handleSignIn(e) {
@@ -154,11 +155,20 @@
           document.getElementById('password').value
         );
         localStorage.setItem('aamako_user', JSON.stringify(user));
-        // Staff go to dashboard, customers to shop
-        if (String(user.role).indexOf('STAFF') === 0) {
-          window.location.href = 'http://localhost:5173';
+        // Staff/team accounts are managed in the Admin Dashboard — never in
+        // the storefront. Customers go to their account dashboard.
+        if (String(user.role).indexOf('STAFF') === 0 ||
+            user.role === 'SUPER_ADMIN' || user.role === 'CONTENT_MANAGER') {
+          errEl.textContent = 'This email belongs to a team account. Please sign in through the staff dashboard instead.';
+          errEl.style.display = 'block';
+          try { window.AamakoAPI.logout(); } catch (_) {}
+          localStorage.removeItem('aamako_user');
         } else {
-          window.location.href = 'shop.html';
+          // honor ?next=<page> from gated pages, then default to the dashboard
+          var params = new URLSearchParams(window.location.search);
+          var next = params.get('next');
+          window.location.href =
+            next && /^[a-z-]+\.html$/i.test(next) ? next : 'account.html';
         }
       } catch (err) {
         errEl.textContent = err.message || 'Sign in failed';

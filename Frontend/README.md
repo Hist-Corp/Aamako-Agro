@@ -36,8 +36,19 @@ A static HTML/CSS/JS marketing site for a Nepali freeze-dried food brand. No bui
 | `journal.html` | Blog articles, FAQ accordion |
 | `signin.html` | Sign in form |
 | `signup.html` | Sign up form |
+| `account.html` | Post-login user dashboard: greeting, stats (orders / active / cart), recent orders, quick actions |
+| `profile.html` | Profile & security: edit name/phone, read-only email/role, change password |
+| `orders.html` | Full order history with status badges and expandable line items |
 
 ## Key Features
+
+### User Account Area
+- **`account.html`** dashboard shown after sign-in/signup (customers only)
+- **`profile.html`** self-service editing via `PATCH /api/auth/me`; password change via `POST /api/auth/change-password` (revokes all other sessions)
+- **`orders.html`** order history from `GET /api/orders/mine`
+- Shared **`js/account-menu.js`** turns the header "Sign in" button into an Account ▾ dropdown on any page that includes it after `js/api.js`
+- Gated pages redirect signed-out visitors to `signin.html?next=<page>` and return after login
+- Team/staff accounts are refused at the storefront sign-in with a clear notice
 
 ### Mobile Hamburger Menu
 - Menu drawer opens **pinned below the sticky header** (no full-screen overlay)

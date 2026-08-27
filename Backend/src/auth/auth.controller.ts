@@ -1,11 +1,33 @@
-import { Body, Controller, Get, HttpCode, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Post, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { Role } from '@prisma/client';
 import type { Request } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 import { AuthService } from './auth.service';
-import { LoginDto, LogoutDto, RefreshDto, RegisterDto } from './dto/auth.dto';
+import {
+  ChangePasswordDto,
+  LoginDto,
+  LogoutDto,
+  RefreshDto,
+  RegisterDto,
+  UpdateProfileDto,
+} from './dto/auth.dto';
+
+/** Any authenticated role may manage its OWN profile (customers included). */
+const ANY_AUTHENTICATED_ROLE: Role[] = [
+  Role.RETAIL_CUSTOMER,
+  Role.WHOLESALE_CUSTOMER,
+  Role.STAFF_SALES,
+  Role.CONTENT_MANAGER,
+  Role.STAFF_SUPPORT,
+  Role.STAFF_MANAGER,
+  Role.STAFF_ADMIN,
+  Role.SUPER_ADMIN,
+];
+
 
 @ApiTags('auth')
 @Controller('auth')
@@ -45,8 +67,30 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
+  @Roles(...ANY_AUTHENTICATED_ROLE)
   @Get('me')
-  me(@CurrentUser() user?: { id: string; email: string; role: string }) {
-    return user;
+  me(@CurrentUser() user?: { id: string }) {
+    return this.auth.getProfile(user!.id);
+  }
+
+  @ApiBearerAuth()
+  @Roles(...ANY_AUTHENTICATED_ROLE)
+  @Patch('me')
+  updateMe(
+    @CurrentUser() user?: { id: string },
+    @Body() dto?: UpdateProfileDto,
+  ) {
+    return this.auth.updateProfile(user!.id, dto!);
+  }
+
+  @ApiBearerAuth()
+  @Roles(...ANY_AUTHENTICATED_ROLE)
+  @Post('change-password')
+  @HttpCode(200)
+  changePassword(
+    @CurrentUser() user?: { id: string },
+    @Body() dto?: ChangePasswordDto,
+  ) {
+    return this.auth.changePassword(user!.id, dto!);
   }
 }

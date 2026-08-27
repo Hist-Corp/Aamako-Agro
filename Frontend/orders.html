@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<link rel="icon" type="image/png" href="favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="favicon.png">
+<title>Order History — Aama ko Agro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="trust-strip"><span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span><span>MADE IN NEPAL</span><span>NO ADDED PRESERVATIVES</span></div>
+<header>
+  <nav class="wrap"><a href="index.html" class="logo"><img src="logo.png" alt="Aama ko Agro"></a><div class="nav-links"><a href="shop.html">Shop</a><a href="process.html">Why Freeze-Dried</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a></div><div class="nav-actions"><a href="signin.html" class="btn btn-ghost">Sign in</a><a href="shop.html" class="btn btn-primary">Shop now</a></div><button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button></nav>
+</header>
+<div class="mobile-drawer" id="mobileDrawer"><a href="index.html">Home</a><a href="shop.html">Shop</a><a href="process.html">Why Freeze-Dried</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a><a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a></div>
+
+<div class="page-header"><div class="wrap page-header-grid"><div><div class="eyebrow">Your account</div><h1 class="page-title">Order History</h1><p class="page-sub">Every order you've placed, newest first.</p></div></div></div>
+
+<section><div class="wrap">
+  <div style="max-width:820px;">
+    <div id="ordersLoading" style="font-size:14px; color:var(--ink-soft);">Loading your orders…</div>
+    <div id="ordersList"></div>
+    <div id="ordersEmpty" style="display:none;" class="cart-empty-page">
+      <h2>No orders yet</h2>
+      <p>Your order history will appear here after your first purchase.</p>
+      <a href="shop.html" class="btn btn-primary">Browse the shop</a>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap"><div class="foot-grid"><div class="foot-col"><a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img src="logo-footer.png" alt="Aama ko Agro" style="height:72px;"></a><p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p></div><div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div><div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div><div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div><div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div></div><div class="foot-bottom"><span>© 2026 Aama ko Agro. All rights reserved.</span><span>DFTQC registration — [placeholder]</span></div></div></footer>
+
+<script>
+(function(){
+  var btn=document.getElementById("hamburgerBtn"),drawer=document.getElementById("mobileDrawer");
+  if(btn&&drawer){btn.addEventListener("click",function(){var o=drawer.classList.toggle("is-open");btn.classList.toggle("is-open",o);btn.setAttribute("aria-expanded",o?"true":"false");document.body.style.overflow=o?"hidden":"";document.body.classList.toggle('drawer-open',o);var hdr=document.querySelector('header');if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}else drawer.style.removeProperty('--drawer-top');});drawer.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){drawer.classList.remove("is-open");btn.classList.remove("is-open");document.body.style.overflow="";document.body.classList.remove('drawer-open');});});}
+  (function(){var header=document.querySelector('header');if(!header)return;var lastY=0;window.addEventListener('scroll',function(){var y=window.pageYOffset||document.documentElement.scrollTop;if(y>80&&y>lastY&&!drawer.classList.contains("is-open")){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}if(y<=80){header.classList.remove('is-hidden','is-scrolled');}lastY=y;});})();
+})();
+</script>
+
+<script src="js/api.js"></script>
+<script src="js/account-menu.js"></script>
+<script>
+(function () {
+  var user = JSON.parse(localStorage.getItem('aamako_user') || 'null');
+  if (!user || !localStorage.getItem('aamako_tokens')) {
+    window.location.replace('signin.html?next=' + encodeURIComponent('orders.html'));
+    return;
+  }
+
+  var fmtNpr = function (cents) { return 'Rs ' + ((cents || 0) / 100).toLocaleString(); };
+  function fmtDate(iso) {
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch (_) { return ''; }
+  }
+
+  window.AamakoAPI.myOrders().then(function (orders) {
+    document.getElementById('ordersLoading').style.display = 'none';
+    var list = Array.isArray(orders) ? orders : [];
+    if (list.length === 0) {
+      document.getElementById('ordersEmpty').style.display = '';
+      return;
+    }
+    document.getElementById('ordersList').innerHTML = list.map(function (o) {
+      var items = o.items || [];
+      var lines = items.reduce(function (n, it) { return n + it.quantity; }, 0);
+      var itemRows = items.map(function (it) {
+        return '<div style="display:flex; justify-content:space-between; font-size:12.5px; padding:3px 0;">' +
+          '<span>' + it.quantity + ' × ' + (it.variantId ? ('SKU ' + String(it.variantId).slice(0, 8) + '…') : 'Item') + '</span>' +
+          '<span style="font-family:var(--mono);">' + fmtNpr(it.lineTotalCents) + '</span></div>';
+      }).join('');
+      return '<div class="order-card">' +
+        '<div class="order-card-head">' +
+          '<div><div class="order-num">#' + o.orderNumber + '</div>' +
+          '<div class="order-date">Placed ' + fmtDate(o.createdAt) + ' · Payment terms: ' + String(o.paymentTerms || '').toLowerCase() + '</div></div>' +
+          '<div style="text-align:right;"><span class="obadge ' + String(o.status).toLowerCase() + '">' + String(o.status).replace(/_/g, ' ') + '</span>' +
+          '<div class="order-total" style="margin-top:6px;">' + fmtNpr(o.totalCents) + '</div></div>' +
+        '</div>' +
+        (itemRows ? '<details style="margin-top:var(--space-3);"><summary style="font-size:12.5px; cursor:pointer; color:var(--ink-soft);">Show ' + lines + ' item' + (lines === 1 ? '' : 's') + '</summary><div style="margin-top:8px;">' + itemRows + '</div></details>' : '') +
+        '<div class="order-meta">Shipping to: ' + (o.shippingAddress || '—') + '</div>' +
+        '</div>';
+    }).join('');
+  }).catch(function () {
+    document.getElementById('ordersLoading').style.display = 'none';
+    document.getElementById('ordersList').innerHTML =
+      '<p style="font-size:13.5px; color:#9a6700;">Could not load your orders right now. Please try again shortly.</p>';
+  });
+})();
+</script>
+</body></html>
+

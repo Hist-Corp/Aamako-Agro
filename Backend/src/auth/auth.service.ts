@@ -96,6 +96,77 @@ export class AuthService {
     return { success: true };
   }
 
+  /** Full own-profile view for the storefront account pages. */
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        createdAt: true,
+        isActive: true,
+      },
+    });
+    if (!user || !user.isActive) throw new UnauthorizedException('Account not found');
+    return user;
+  }
+
+  /** Self-service profile edit — whitelist-only fields. */
+  async updateProfile(userId: string, dto: { firstName?: string; lastName?: string; phone?: string }) {
+    const data: Record<string, string> = {};
+    if (dto.firstName !== undefined) data.firstName = dto.firstName.trim();
+    if (dto.lastName !== undefined) data.lastName = dto.lastName?.trim();
+    if (dto.phone !== undefined) data.phone = dto.phone?.trim();
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        createdAt: true,
+      },
+    });
+    return updated;
+  }
+
+  /**
+   * Change password: verify the current one, rehash, and revoke every OTHER
+   * session so stolen tokens stop working. The initiating session survives
+   * when its refresh token is supplied.
+   */
+  async changePassword(
+    userId: string,
+    dto: { currentPassword: string; newPassword: string; refreshToken?: string },
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive) throw new UnauthorizedException('Account not found');
+    if (!(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
+      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Current password is incorrect' });
+    }
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+      this.prisma.session.updateMany({
+        where: {
+          userId,
+          revokedAt: null,
+          ...(dto.refreshToken ? { refreshTokenHash: { not: sha256(dto.refreshToken) } } : {}),
+        },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+    return { success: true };
+  }
+
+
   private async issueTokens(
     userId: string,
     email: string,

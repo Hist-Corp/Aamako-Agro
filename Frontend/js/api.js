@@ -86,6 +86,22 @@
     logout: logout,
     me: function () { return request('GET', '/auth/me'); },
 
+    // ---- own profile (storefront account pages) ----
+    updateMe: function (payload) {
+      // payload: { firstName?, lastName?, phone? } — whitelist-only
+      return request('PATCH', '/auth/me', payload);
+    },
+    changePassword: function (payload) {
+      // payload: { currentPassword, newPassword }
+      var body = payload || {};
+      var tokens = JSON.parse(localStorage.getItem('aamako_tokens') || 'null');
+      if (!body.refreshToken && tokens && tokens.refreshToken) {
+        // keeps THIS session alive while all others are revoked server-side
+        body.refreshToken = tokens.refreshToken;
+      }
+      return request('POST', '/auth/change-password', body);
+    },
+
     // ---- catalog ----
     listProducts: function (page, categorySlug) {
       var q = '?page=' + (page || 1) + '&limit=20' + (categorySlug ? '&categorySlug=' + encodeURIComponent(categorySlug) : '');
