@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/config/auth-context';
 import { ROLE_PERMISSIONS, type Role } from '@aamako/shared-types';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Shield, ShieldCheck, ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Shield, ShieldCheck, ShieldAlert, X } from 'lucide-react';
 
 const ROLE_INFO: Record<Role, { label: string; description: string; color: string; icon: typeof Shield }> = {
   SUPER_ADMIN: { label: 'Super Admin', description: 'Full access to everything', color: 'bg-purple-500', icon: ShieldCheck },
@@ -47,18 +48,38 @@ const PERMISSION_GROUPS = [
 
 /** Screen: Roles & Permissions
  *  Can view: SUPER_ADMIN, ADMIN
- *  Read-only overview of all roles and their permissions
+ *  Read-only overview of all roles and their permissions.
+ *  Role cards are clickable — clicking one opens the full permission
+ *  list of that role, grouped by module.
  */
 export default function RolesPage() {
   const { user } = useAuth();
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
   const roles = Object.keys(ROLE_PERMISSIONS) as Role[];
+
+  // Close the details panel with the Escape key
+  useEffect(() => {
+    if (!selectedRole) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedRole(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedRole]);
+
+  const handleCardKeyDown = (e: React.KeyboardEvent, role: Role) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setSelectedRole(role);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Roles & Permissions"
-        description="Overview of all roles and their access levels"
+        description="Click a role to see its full permission list"
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Roles & Permissions' }]}
       />
 
@@ -69,9 +90,23 @@ export default function RolesPage() {
           const permissions = ROLE_PERMISSIONS[role];
           const Icon = info.icon;
           const isCurrentUser = user?.role === role;
+          const isSelected = selectedRole === role;
 
           return (
-            <Card key={role} className={isCurrentUser ? 'ring-2 ring-brand-500 ring-offset-2' : ''}>
+            <Card
+              key={role}
+              padding="none"
+              role="button"
+              tabIndex={0}
+              aria-expanded={isSelected}
+              onClick={() => setSelectedRole(role)}
+              onKeyDown={(e) => handleCardKeyDown(e, role)}
+              className={cn(
+                'cursor-pointer transition-all focus-ring hover:shadow-md hover:border-brand-300',
+                isCurrentUser && 'ring-2 ring-brand-500 ring-offset-2',
+                isSelected && 'border-brand-500 shadow-md'
+              )}
+            >
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${info.color}`}>
@@ -101,6 +136,7 @@ export default function RolesPage() {
                       </Badge>
                     )}
                   </div>
+                  <p className="text-xs text-brand-600 pt-1">View all permissions →</p>
                 </div>
               </div>
             </Card>
@@ -118,9 +154,14 @@ export default function RolesPage() {
                 <th className="px-4 py-3 text-left font-semibold text-surface-600">Module</th>
                 {roles.map((role) => (
                   <th key={role} className="px-4 py-3 text-center font-semibold text-surface-600">
-                    <div className="flex flex-col items-center">
-                      <span className="text-2xs">{ROLE_INFO[role].label}</span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole(role)}
+                      title={`View ${ROLE_INFO[role].label} permissions`}
+                      className="cursor-pointer rounded px-2 py-1 text-2xs hover:bg-surface-100 hover:text-brand-700 focus-ring"
+                    >
+                      {ROLE_INFO[role].label}
+                    </button>
                   </th>
                 ))}
               </tr>
@@ -150,6 +191,108 @@ export default function RolesPage() {
           </table>
         </div>
       </Card>
+
+      {/* Role Permission Details Modal */}
+      {selectedRole && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${ROLE_INFO[selectedRole].label} permissions`}
+        >
+          {/* Backdrop */}
+          <button
+            type="button"
+            aria-label="Close"
+            className="absolute inset-0 bg-surface-900/60 cursor-default"
+            onClick={() => setSelectedRole(null)}
+            tabIndex={-1}
+          />
+
+          {/* Panel */}
+          <div className="relative bg-white rounded-lg border border-surface-200 shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-start justify-between p-5 border-b border-surface-100">
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${ROLE_INFO[selectedRole].color}`}>
+                  {React.createElement(ROLE_INFO[selectedRole].icon, { className: 'h-5 w-5 text-white' })}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-surface-900">{ROLE_INFO[selectedRole].label}</h2>
+                    {user?.role === selectedRole && <Badge variant="success">Your Role</Badge>}
+                  </div>
+                  <p className="text-xs text-surface-500">{ROLE_INFO[selectedRole].description}</p>
+                  <p className="mt-1 text-xs font-medium text-brand-600">
+                    {ROLE_PERMISSIONS[selectedRole].length} total permissions
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedRole(null)}
+                className="rounded-md p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-700 focus-ring"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Body: permissions grouped by module */}
+            <div className="overflow-y-auto p-5 space-y-5">
+              {(() => {
+                const granted = new Set(ROLE_PERMISSIONS[selectedRole]);
+                const shown = new Set<string>();
+                const sections: { label: string; perms: string[] }[] = [];
+
+                for (const group of PERMISSION_GROUPS) {
+                  const perms = group.permissions.filter((p) => granted.has(p));
+                  if (perms.length > 0) {
+                    sections.push({ label: group.label, perms });
+                    perms.forEach((p) => shown.add(p));
+                  }
+                }
+
+                const other = [...granted].filter((p) => !shown.has(p));
+                if (other.length > 0) sections.push({ label: 'Other', perms: other });
+
+                if (sections.length === 0) {
+                  return (
+                    <p className="text-sm text-surface-500">This role has no permissions assigned.</p>
+                  );
+                }
+
+                return sections.map((section) => (
+                  <div key={section.label}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-surface-600">{section.label}</h4>
+                      <span className="text-2xs text-surface-400">{section.perms.length}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {section.perms.map((perm) => (
+                        <Badge key={perm} variant="success" className="text-2xs font-mono">
+                          {perm}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t border-surface-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedRole(null)}
+                className="inline-flex items-center justify-center rounded-lg text-sm font-medium h-9 px-4 bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 focus-ring"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

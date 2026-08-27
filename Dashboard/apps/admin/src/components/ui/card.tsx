@@ -2,13 +2,13 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-export function Card({ children, className, padding = 'md' }: CardProps) {
+export function Card({ children, className, padding = 'md', ...rest }: CardProps) {
   const paddingClass = {
     none: '',
     sm: 'p-4',
@@ -17,7 +17,7 @@ export function Card({ children, className, padding = 'md' }: CardProps) {
   }[padding];
 
   return (
-    <div className={cn('bg-white rounded-lg border border-surface-200', paddingClass, className)}>
+    <div className={cn('bg-white rounded-lg border border-surface-200', paddingClass, className)} {...rest}>
       {children}
     </div>
   );
