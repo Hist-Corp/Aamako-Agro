@@ -90,9 +90,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   ADMIN: [
     'dashboard:view',
     // Users & Roles
-    // NOTE: 'roles:view' intentionally NOT granted — Roles & Permissions is
-    // restricted exclusively to Superadmin and Manager roles.
     'users:view', 'users:create', 'users:edit',
+    'roles:view',
     // Staff
     'staff:view', 'staff:manage',
     // Products
@@ -218,15 +217,13 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   ],
 
   // ── Real backend roles (returned by the API) ────────────────────────
-  // STAFF_ADMIN: can view/manage Users, Staff, Settings and (view-only)
-  // Roles. Per hierarchy, an admin manages everyone below admin — but can
-  // never manage other admins or super admins (assignment of admin/super
-  // roles stays in the backend's rank check).
+  // STAFF_ADMIN: can view/manage Users, Staff, Settings and Roles. Roles &
+  // Permissions is accessible to Admin, Super Admin and Manager roles.
   STAFF_ADMIN: [
     'dashboard:view',
-    // Users & Roles (admin manages users below admin). NOTE: no 'roles:view'
-    // — Roles & Permissions is exclusive to Superadmin and Manager roles.
+    // Users & Roles
     'users:view', 'users:create', 'users:edit', 'users:delete',
+    'roles:view',
     // Staff
     'staff:view', 'staff:manage',
     // Products

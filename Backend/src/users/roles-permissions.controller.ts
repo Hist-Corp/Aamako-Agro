@@ -13,13 +13,13 @@ import {
  * Mirrors @aamako/shared-types ROLE_PERMISSIONS for every REAL backend role
  * so the dashboard can render each role's assigned permissions.
  *
- * RESTRICTED: only SUPER_ADMIN ("Superadmin") and STAFF_MANAGER ("Manager")
- * may access this section.
+ * RESTRICTED: accessible by SUPER_ADMIN ("Superadmin"), STAFF_ADMIN
+ * ("Admin") and STAFF_MANAGER ("Manager").
  */
 export const BACKEND_ROLE_PERMISSIONS: Record<Role, string[]> = {
   [Role.SUPER_ADMIN]: ['*'],
   [Role.STAFF_ADMIN]: [
-    'dashboard:view', 'users:view', 'users:create', 'users:edit', 'users:delete',
+    'dashboard:view', 'roles:view', 'users:view', 'users:create', 'users:edit', 'users:delete',
     'staff:view', 'staff:manage',
     'products:view', 'products:edit', 'products:create', 'products:publish',
     'inventory:view', 'inventory:adjust', 'warehouses:view', 'warehouses:manage',
@@ -87,7 +87,7 @@ export const BACKEND_ROLE_PERMISSIONS: Record<Role, string[]> = {
 @Controller('admin/rbac')
 export class RbacPermissionsController {
   /** Role overview: permission list + rank + manageable roles. */
-  @Roles(Role.SUPER_ADMIN, Role.STAFF_MANAGER)
+  @Roles(Role.SUPER_ADMIN, Role.STAFF_ADMIN, Role.STAFF_MANAGER)
   @Get('permissions')
   listPermissions() {
     return Object.values(Role).map((role) => ({
