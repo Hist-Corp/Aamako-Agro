@@ -59,7 +59,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden login-bg">
+    <div
+      className="min-h-screen flex items-center justify-center relative overflow-hidden login-bg"
+      style={{ backgroundColor: '#101812', minHeight: '100vh' }}
+    >
       {/* Brand background — deep forest base with lime glows straight from the logo */}
       <div className="absolute inset-0 brand-bg" />
       
@@ -94,7 +97,7 @@ export default function LoginPage() {
             className="h-24 w-24 mb-4 object-contain drop-shadow-[0_14px_35px_rgba(0,0,0,0.45)]"
           />
           <h1 className="text-2xl font-bold text-white tracking-tight">आमाको एग्रो</h1>
-          <p className="text-sm text-green-100 mt-1 font-medium">Admin Dashboard</p>
+          <p className="text-sm text-green-100 mt-1 font-medium">Centeral Management System</p>
         </div>
 
         {/* Login Card */}

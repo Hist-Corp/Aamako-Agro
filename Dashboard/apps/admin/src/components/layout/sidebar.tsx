@@ -30,13 +30,11 @@ export function Sidebar() {
     >
       {/* Brand */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-surface-800 flex-shrink-0">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white flex-shrink-0 overflow-hidden">
-          <img src="/logo.png" alt="Aama ko Agro logo" className="h-7 w-7 object-contain" />
-        </div>
+        <img src="/logo.png" alt="Aama ko Agro logo" className="h-9 w-9 object-contain flex-shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]" />
         {!collapsed && (
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white truncate">आमाको एग्रो</p>
-            <p className="text-2xs text-surface-400">Admin Dashboard</p>
+            <p className="text-2xs text-surface-400 truncate">Central Management Software</p>
           </div>
         )}
       </div>

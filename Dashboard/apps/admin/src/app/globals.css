@@ -4,6 +4,12 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* Prevent rubber-band overscroll at the top/bottom — page stops at the header, background stays fixed */
+html {
+  overscroll-behavior-y: none;
+  background: #f8fafc;
+}
+
 @layer base {
   * {
     border-color: theme('colors.surface.200');
@@ -11,6 +17,7 @@
 
   body {
     @apply bg-surface-50 text-surface-900 antialiased;
+    overscroll-behavior-y: none;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
