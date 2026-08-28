@@ -629,7 +629,19 @@ export interface AdminNotification {
 const MOCK_APP_NOTIFICATIONS: AdminNotification[] = [
   { id: 'N001', type: 'ORDER', title: 'New order received', message: 'Order #ORD-2847 from KTM Fresh Mart — Rs. 12,400', read: false, createdAt: new Date(Date.now() - 300000).toISOString() },
   { id: 'N002', type: 'INVENTORY', title: 'Low stock alert', message: 'Red Lentils (1kg) has only 15 units remaining', read: false, createdAt: new Date(Date.now() - 900000).toISOString() },
+  { id: 'N003', type: 'SUPPORT', title: 'New support ticket', message: 'Urgent: Account access issue from Pokhara Organics', read: false, createdAt: new Date(Date.now() - 1800000).toISOString() },
+  { id: 'N004', type: 'SYSTEM', title: 'System maintenance scheduled', message: 'Scheduled maintenance window: Aug 25, 2026 2:00 AM - 4:00 AM', read: true, createdAt: new Date(Date.now() - 3600000).toISOString() },
+  { id: 'N005', type: 'ORDER', title: 'Order shipped', message: 'Order #ORD-2843 shipped via Pathao Courier', read: true, createdAt: new Date(Date.now() - 7200000).toISOString() },
+  { id: 'N006', type: 'USER', title: 'New user registered', message: 'Ram Sales (sales@aamako.com) joined the team', read: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
 ];
+
+// Read-state for demo notifications (ids not backed by the database), so a
+// "mark as read" survives the 15s background refetch.
+const notificationReadIds = new Set<string>();
+
+function withReadState(list: AdminNotification[]): AdminNotification[] {
+  return list.map((n) => (notificationReadIds.has(n.id) ? { ...n, read: true } : n));
+}
 
 export function useNotifications() {
   return useQuery({
@@ -638,6 +650,11 @@ export function useNotifications() {
       withFallback<AdminNotification[]>(
         async () => {
           const res = await apiClient.get<any[]>('/notifications');
+          // Empty inbox (nothing seeded for this user yet) → show the shared
+          // demo set so the section and the header bell stay in sync.
+          if (!Array.isArray(res) || res.length === 0) {
+            return withReadState(MOCK_APP_NOTIFICATIONS);
+          }
           // Backend shape: { id, userId, type, title, message, actionUrl, isRead, createdAt }
           return res.map((n) => ({
             id: n.id,
@@ -659,7 +676,14 @@ export function useMarkNotificationRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.patch(`/notifications/${id}/read`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] }),
+    onSuccess: (_res, id) => {
+      // Optimistically update the cache; remember demo ids so the 15s
+      // refetch (which falls back to the demo set) keeps them read.
+      notificationReadIds.add(id);
+      qc.setQueryData<AdminNotification[]>(['admin', 'notifications'], (old) =>
+        old ? old.map((n) => (n.id === id ? { ...n, read: true } : n)) : old
+      );
+    },
   });
 }
 
@@ -667,7 +691,12 @@ export function useMarkAllNotificationsRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => apiClient.patch('/notifications/read-all'),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] }),
+    onSuccess: () => {
+      qc.setQueryData<AdminNotification[]>(['admin', 'notifications'], (old) => {
+        old?.forEach((n) => notificationReadIds.add(n.id));
+        return old ? old.map((n) => ({ ...n, read: true })) : old;
+      });
+    },
   });
 }
 

@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/config/auth-context';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Search, ChevronRight, User, LogOut, Settings, Shield } from 'lucide-react';
+import { Bell, Search, ChevronRight, User, LogOut, Settings, Shield, ShoppingCart, Package, MessageSquare, Check } from 'lucide-react';
+import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead, type AdminNotification } from '@/lib/api-hooks';
+import { relativeTime } from '@/lib/utils';
+import { Dialog } from '@/components/ui/dialog';
 
 const ROLE_BADGE_VARIANT: Record<string, string> = {
   SUPER_ADMIN: 'danger',
@@ -41,11 +44,33 @@ const ROLE_LABELS: Record<string, string> = {
   WHOLESALE_CUSTOMER: 'Wholesale',
 };
 
+const NOTIF_ICONS: Record<string, typeof Bell> = {
+  ORDER: ShoppingCart,
+  INVENTORY: Package,
+  SYSTEM: Settings,
+  SUPPORT: MessageSquare,
+  USER: User,
+  SETTINGS: Settings,
+};
+
+const NOTIF_ICON_COLORS: Record<string, string> = {
+  ORDER: 'text-blue-600 bg-blue-100',
+  INVENTORY: 'text-amber-600 bg-amber-100',
+  SYSTEM: 'text-surface-600 bg-surface-100',
+  SUPPORT: 'text-purple-600 bg-purple-100',
+  USER: 'text-green-600 bg-green-100',
+  SETTINGS: 'text-surface-600 bg-surface-100',
+};
+
 export function Header() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<AdminNotification | null>(null);
+  const { data: notifications = [] } = useNotifications();
+  const markReadMutation = useMarkNotificationRead();
+  const markAllReadMutation = useMarkAllNotificationsRead();
 
   // Generate breadcrumbs from pathname
   const generateBreadcrumbs = () => {
@@ -67,7 +92,20 @@ export function Header() {
   };
 
   const breadcrumbs = generateBreadcrumbs();
-  const unreadCount = 3; // Mock unread count
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const dropdownNotifications = notifications.slice(0, 5);
+
+  /** Open the details popup: closes the menu and auto-marks the item read. */
+  const openNotification = (notification: AdminNotification) => {
+    setSelectedNotification(notification);
+    setShowNotifications(false);
+    if (!notification.read) markReadMutation.mutate(notification.id);
+  };
+  const closeNotification = () => setSelectedNotification(null);
+  const selectedIsRead = selectedNotification
+    ? (notifications.find((n) => n.id === selectedNotification.id)?.read ?? false)
+    : false;
+  const SelectedIcon = selectedNotification ? (NOTIF_ICONS[selectedNotification.type] || Bell) : Bell;
 
   return (
     <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-surface-200 flex-shrink-0">
@@ -129,33 +167,45 @@ export function Header() {
                 <div className="p-3 border-b border-surface-100">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-surface-900">Notifications</h3>
-                    <button className="text-xs text-brand-600 hover:text-brand-800">Mark all read</button>
+                    <button
+                      className="text-xs text-brand-600 hover:text-brand-800"
+                      onClick={() => markAllReadMutation.mutate()}
+                    >
+                      Mark all read
+                    </button>
                   </div>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {[
-                    { title: 'New order received', message: 'Order #ORD-2847 — Rs. 12,400', time: '5m ago', unread: true },
-                    { title: 'Low stock alert', message: 'Red Lentils — 15 units left', time: '15m ago', unread: true },
-                    { title: 'Support ticket', message: 'Urgent: Account access issue', time: '30m ago', unread: true },
-                  ].map((notification, i) => (
-                    <div
-                      key={i}
-                      className={`p-3 hover:bg-surface-50 cursor-pointer border-b border-surface-100 last:border-0 ${
-                        notification.unread ? 'bg-brand-50/30' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        {notification.unread && (
-                          <span className="h-2 w-2 rounded-full bg-brand-500 mt-1.5 flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-surface-900">{notification.title}</p>
-                          <p className="text-xs text-surface-500 truncate">{notification.message}</p>
-                          <p className="text-2xs text-surface-400 mt-0.5">{notification.time}</p>
+                  {dropdownNotifications.length === 0 && (
+                    <p className="p-4 text-sm text-surface-500 text-center">No notifications yet</p>
+                  )}
+                  {dropdownNotifications.map((notification) => {
+                    const Icon = NOTIF_ICONS[notification.type] || Bell;
+                    const colorClass = NOTIF_ICON_COLORS[notification.type] || 'text-surface-600 bg-surface-100';
+                    return (
+                      <div
+                        key={notification.id}
+                        onClick={() => openNotification(notification)}
+                        className={`p-3 hover:bg-surface-50 cursor-pointer border-b border-surface-100 last:border-0 ${
+                          !notification.read ? 'bg-brand-50/30' : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className={`flex items-center justify-center w-7 h-7 rounded-md flex-shrink-0 ${colorClass}`}>
+                            <Icon className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-surface-900">{notification.title}</p>
+                            <p className="text-xs text-surface-500 truncate">{notification.message}</p>
+                            <p className="text-2xs text-surface-400 mt-0.5">{relativeTime(notification.createdAt)}</p>
+                          </div>
+                          {!notification.read && (
+                            <span className="h-2 w-2 rounded-full bg-brand-500 mt-1.5 flex-shrink-0" />
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="p-2 border-t border-surface-100">
                   <Link
@@ -229,6 +279,62 @@ export function Header() {
           )}
         </div>
       </div>
+
+      {/* Notification details popup */}
+      <Dialog
+        open={!!selectedNotification}
+        onClose={closeNotification}
+        title={selectedNotification?.title ?? ''}
+        description={selectedNotification ? relativeTime(selectedNotification.createdAt) : undefined}
+        maxWidth="sm"
+      >
+        {selectedNotification && (
+          <div className="space-y-4">
+            {/* Type */}
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-lg flex-shrink-0 ${NOTIF_ICON_COLORS[selectedNotification.type] || 'text-surface-600 bg-surface-100'}`}>
+                <SelectedIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-2xs font-medium uppercase tracking-wide text-surface-400">Type</p>
+                <p className="text-sm font-medium text-surface-800">{selectedNotification.type.replace(/_/g, ' ')}</p>
+              </div>
+            </div>
+
+            {/* Message */}
+            <div className="rounded-lg bg-surface-50 border border-surface-100 p-4">
+              <p className="text-2xs font-medium uppercase tracking-wide text-surface-400 mb-1">Message</p>
+              <p className="text-sm text-surface-800 leading-relaxed">{selectedNotification.message}</p>
+            </div>
+
+            {/* Meta */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg bg-surface-50 border border-surface-100 p-3">
+                <p className="text-2xs font-medium uppercase tracking-wide text-surface-400 mb-0.5">Received</p>
+                <p className="text-xs text-surface-800">{new Date(selectedNotification.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg bg-surface-50 border border-surface-100 p-3">
+                <p className="text-2xs font-medium uppercase tracking-wide text-surface-400 mb-0.5">Status</p>
+                <p className="text-xs">
+                  {selectedIsRead ? (
+                    <span className="inline-flex items-center gap-1 font-medium text-green-700">
+                      <Check className="h-3.5 w-3.5" /> Read
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-medium text-brand-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-brand-500" /> Unread
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-2xs text-surface-400 text-center">
+              Notifications are marked as read automatically when opened.
+            </p>
+          </div>
+        )}
+      </Dialog>
     </header>
   );
 }
