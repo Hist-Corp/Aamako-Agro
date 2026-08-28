@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Leaf,
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -31,8 +30,8 @@ export function Sidebar() {
     >
       {/* Brand */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-surface-800 flex-shrink-0">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-600 flex-shrink-0">
-          <Leaf className="h-4 w-4 text-white" />
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white flex-shrink-0 overflow-hidden">
+          <img src="/logo.png" alt="Aama ko Agro logo" className="h-7 w-7 object-contain" />
         </div>
         {!collapsed && (
           <div className="min-w-0">

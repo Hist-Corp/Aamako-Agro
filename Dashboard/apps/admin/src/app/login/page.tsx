@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/config/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Leaf, Shield, Users, BarChart3, Package, Star, MessageSquare, Settings, Eye, EyeOff } from 'lucide-react';
+import { Shield, Users, BarChart3, Package, Star, MessageSquare, Settings, Eye, EyeOff } from 'lucide-react';
 
 const ROLES = [
   { value: 'SUPER_ADMIN', label: 'Super Admin', description: 'Full system access', icon: Settings, color: 'bg-purple-500', email: 'superadmin@aamako.com' },
@@ -93,8 +93,8 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md px-4">
         {/* Brand */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm mb-4 shadow-lg border border-white/30">
-            <Leaf className="h-8 w-8 text-white" />
+          <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-white/95 backdrop-blur-sm mb-4 shadow-lg border border-white/30 overflow-hidden">
+            <img src="/logo.png" alt="Aama ko Agro" className="h-16 w-16 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">आमाको एग्रो</h1>
           <p className="text-sm text-green-100 mt-1 font-medium">Admin Dashboard</p>

@@ -19,10 +19,19 @@
 
 <div class="page-header"><div class="wrap page-header-grid"><div><div class="eyebrow">Your order</div><h1 class="page-title">Cart</h1><p class="page-sub" id="cartSubhead">Review your selections before checkout.</p></div></div></div>
 
+<nav class="account-nav" aria-label="Account sections">
+  <a href="account.html">Dashboard</a>
+  <a href="profile.html">Profile &amp; security</a>
+  <a href="orders.html">Order history</a>
+  <a href="cart.html" class="is-active">Cart</a>
+</nav>
+
 <section><div class="wrap">
   <div id="cartContent"><div class="cart-page-grid">
     <div>
-      <table class="cart-table"><thead><tr><th style="width:36px;"></th><th style="width:90px;">Product</th><th>Details</th><th>Price</th><th>Qty</th><th>Total</th><th></th></tr></thead><tbody id="cartTableBody"></tbody></table>
+      <div class="cart-table-wrap">
+        <table class="cart-table"><thead><tr><th style="width:36px;"></th><th style="width:90px;">Product</th><th>Details</th><th>Price</th><th>Qty</th><th>Total</th><th></th></tr></thead><tbody id="cartTableBody"></tbody></table>
+      </div>
       <div style="margin-top:var(--space-5);"><a href="shop.html" class="link-arrow" style="font-size:13px;">Continue shopping</a></div>
     </div>
     <div class="order-summary">
