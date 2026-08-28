@@ -8,6 +8,8 @@ export interface Customer {
   email: string;
   phone?: string;
   status: CustomerStatus;
+  /** PERSONAL = individual/retail shopper, WHOLESALE = B2B account. */
+  customerType?: 'PERSONAL' | 'WHOLESALE';
   orderCount: number;
   totalSpent: number;
   lastOrderDate?: string;

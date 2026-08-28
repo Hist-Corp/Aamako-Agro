@@ -123,8 +123,36 @@ model User {
   carts                Cart[]
   orders               Order[]
   notifications        Notification[]
+  tasksAssigned        Task[]             @relation("TasksAssignedTo")
+  tasksCreated         Task[]             @relation("TasksAssignedBy")
 
   @@map("users")
+}
+
+// ---------- Staff task assignment ----------
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+}
+
+model Task {
+  id           String     @id @default(uuid())
+  title        String
+  description  String?
+  status       TaskStatus @default(PENDING)
+  dueDate      DateTime?
+  assignedToId String
+  assignedTo   User       @relation("TasksAssignedTo", fields: [assignedToId], references: [id], onDelete: Cascade)
+  assignedById String
+  assignedBy   User       @relation("TasksAssignedBy", fields: [assignedById], references: [id], onDelete: Cascade)
+  completedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([assignedToId, status])
+  @@index([assignedById])
+  @@map("tasks")
 }
 
 model Session {

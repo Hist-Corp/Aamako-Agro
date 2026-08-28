@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -11,6 +11,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
+
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -18,6 +19,7 @@ import { useToast } from '@/components/ui/toast';
 import type { User, Role } from '@aamako/shared-types';
 import { creatableRolesFor } from '@aamako/shared-types';
 import { Users, Plus, Shield, ShieldCheck } from 'lucide-react';
+import { TasksPanel } from '@/components/tasks/tasks-panel';
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: 'SUPER_ADMIN', label: 'Super Admin' },
@@ -56,7 +58,7 @@ const ROLE_BADGE_VARIANT: Record<Role, string> = {
 /** Screen: Users Management
  *  Can view: SUPER_ADMIN, ADMIN, MANAGER, SALES (via users:view)
  *  Can add users / assign roles: driven by USER_CREATION_ALLOWED_TARGETS
- *  in @aamako/shared-types — Super Admin/Admin/Staff Admin (any role),
+ *  in @aamako/shared-types â€” Super Admin/Admin/Staff Admin (any role),
  *  Manager (support, inventory mgr, sales, content mgr),
  *  Sales (support, inventory mgr).
  */
@@ -112,6 +114,9 @@ export default function UsersPage() {
     setCreateDialog(false);
     setNewUser({ name: '', email: '', role: DEFAULT_NEW_USER_ROLE });
   };
+
+  // â”€â”€ Tasks: assign below your rank; assignees complete from here â”€â”€
+  // (Rendered via the shared <TasksPanel /> component below.)
 
   const columns = useMemo<ColumnDef<User>[]>(() => [
     {
@@ -223,7 +228,7 @@ export default function UsersPage() {
         columns={columns}
         data={users ?? []}
         isLoading={isLoading}
-        searchPlaceholder="Search users by name, email…"
+        searchPlaceholder="Search users by name, emailâ€¦"
         emptyState={
           <EmptyState
             icon={Users}
@@ -232,6 +237,10 @@ export default function UsersPage() {
           />
         }
       />
+
+      {/* Tasks section â€” assign tasks to users below your rank; assignees see
+          their task details here and mark them complete. */}
+      <TasksPanel />
 
       {/* Edit Role Dialog */}
       {editDialog && (
@@ -263,7 +272,7 @@ export default function UsersPage() {
             {canAssignRoles && (
               <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
                 <p className="text-sm text-amber-800">
-                  ⚠️ Only Super Admins can assign roles. Admins can view but not change roles.
+                  âš ï¸ Only Super Admins can assign roles. Admins can view but not change roles.
                 </p>
               </div>
             )}
@@ -309,3 +318,4 @@ export default function UsersPage() {
     </div>
   );
 }
+

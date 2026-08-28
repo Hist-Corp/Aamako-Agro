@@ -29,7 +29,11 @@ export class NotificationsService {
     return { success: true, updated: res.count };
   }
 
-  /** Fan-out a notification to every active user with the given role. */
+  /**
+   * Fan-out a notification to every active user with the given role.
+   * Targeting is strict: only users with exactly this role receive it, so
+   * each dashboard user only gets notifications aligned with their role.
+   */
   async notifyRole(
     role: string,
     payload: { type: string; title: string; message: string; actionUrl?: string },
@@ -42,5 +46,16 @@ export class NotificationsService {
     return this.prisma.notification.createMany({
       data: users.map((u) => ({ userId: u.id, ...payload })),
     });
+  }
+
+  /** Fan-out to multiple roles at once (each still strictly role-targeted). */
+  async notifyRoles(
+    roles: string[],
+    payload: { type: string; title: string; message: string; actionUrl?: string },
+  ) {
+    for (const role of roles) {
+      await this.notifyRole(role, payload);
+    }
+    return { count: roles.length };
   }
 }

@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { useToast } from '@/components/ui/toast';
-import { FileText, Globe, Pencil, Plus, RotateCcw } from 'lucide-react';
+import { FileText, Globe, Pencil, Plus, RotateCcw, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 /** A CMS page as returned by GET /content/manage (includes unpublished). */
 interface CmsItem {
@@ -110,6 +110,54 @@ export default function ContentPage() {
     void load();
   }, [load]);
 
+  // ── Moderation queue (pending revisions) ──
+  interface PendingRevision {
+    id: string;
+    contentItemId: string;
+    proposedTitle: string;
+    proposedShortDescription: string | null;
+    proposedBody: string;
+    status: string;
+    createdAt: string;
+    contentItem: { key: string; title: string };
+  }
+  const [pending, setPending] = useState<PendingRevision[]>([]);
+  const canApprove = !!user && canAct(user.role, 'content:approve');
+
+  const loadPending = useCallback(async () => {
+    if (!canApprove) return;
+    try {
+      const data = await apiClient.get<PendingRevision[]>('/content/revisions');
+      setPending(data);
+    } catch {
+      /* queue is optional UI — ignore load errors */
+    }
+  }, [canApprove]);
+
+  useEffect(() => {
+    void loadPending();
+  }, [loadPending]);
+
+  const review = async (id: string, approve: boolean) => {
+    try {
+      await apiClient.post(`/content/revisions/${id}/${approve ? 'approve' : 'reject'}`, {});
+      addToast({
+        type: 'success',
+        title: approve ? 'Approved & published' : 'Rejected',
+        description: approve
+          ? 'The change is now live on the storefront.'
+          : 'The live site is unchanged.',
+      });
+      await Promise.all([load(), loadPending()]);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: approve ? 'Approve failed' : 'Reject failed',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    }
+  };
+
   // ── Edit dialog ──
   const [editTarget, setEditTarget] = useState<CmsItem | null>(null);
   const [editForm, setEditForm] = useState<FormState>(EMPTY_FORM);
@@ -133,15 +181,23 @@ export default function ContentPage() {
     }
     setIsSaving(true);
     try {
-      await apiClient.put(`/content/${encodeURIComponent(editTarget.key)}`, {
-        title: editForm.title.trim(),
-        shortDescription: editForm.shortDescription,
-        longDescription: editForm.longDescription,
-        body: editForm.body,
-      });
-      addToast({ type: 'success', title: 'Content updated & published', description: editTarget.key });
+      const res = await apiClient.put<{ live?: boolean; message?: string }>(
+        `/content/${encodeURIComponent(editTarget.key)}`,
+        {
+          title: editForm.title.trim(),
+          shortDescription: editForm.shortDescription,
+          longDescription: editForm.longDescription,
+          body: editForm.body,
+        },
+      );
+      addToast(
+        res?.live
+          ? { type: 'success', title: 'Content updated & published', description: editTarget.key }
+          : { type: 'success', title: 'Sent for approval', description: res?.message ?? 'A Manager must approve this change before it appears on the storefront.' },
+      );
       setEditTarget(null);
       await load();
+      void loadPending();
     } catch (err) {
       addToast({
         type: 'error',
@@ -191,16 +247,21 @@ export default function ContentPage() {
     }
     setIsSaving(true);
     try {
-      await apiClient.post('/content', {
+      const res = await apiClient.post<{ live?: boolean; message?: string }>('/content', {
         key,
         title: newTitle.trim(),
         shortDescription: newForm.shortDescription,
         longDescription: newForm.longDescription,
         body: newForm.body,
       });
-      addToast({ type: 'success', title: 'Page created & published', description: key });
+      addToast(
+        res?.live
+          ? { type: 'success', title: 'Page created & published', description: key }
+          : { type: 'success', title: 'Page created — awaiting approval', description: res?.message ?? 'A Manager has been notified and must approve before it appears on the storefront.' },
+      );
       setNewDialog(false);
       await load();
+      void loadPending();
     } catch (err) {
       addToast({
         type: 'error',
@@ -358,6 +419,44 @@ export default function ContentPage() {
           </div>
         </button>
       </div>
+
+      {/* Pending approvals — Manager/Admin/Super Admin review Content Manager proposals */}
+      {canApprove && (
+        <div className="rounded-lg border border-surface-200 bg-white p-5">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-amber-500" />
+            <h2 className="text-sm font-semibold text-surface-900">Pending approval</h2>
+            <Badge variant="warning" dot>{pending.length}</Badge>
+            <span className="text-xs text-surface-500">Changes by Content Managers go live only after you approve them.</span>
+          </div>
+          {pending.length === 0 ? (
+            <p className="mt-3 text-sm text-surface-500">No changes waiting for approval.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-surface-100">
+              {pending.map((rev) => (
+                <li key={rev.id} className="flex flex-wrap items-center gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-surface-900">
+                      {rev.proposedTitle} <span className="text-surface-400">({rev.contentItem.key})</span>
+                    </p>
+                    <p className="text-xs text-surface-500">
+                      Proposed {relativeTime(rev.createdAt)} — appears on the storefront only after approval.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={() => review(rev.id, true)}>
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Approve &amp; Publish
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => review(rev.id, false)}>
+                      <XCircle className="h-3.5 w-3.5" /> Reject
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-3">

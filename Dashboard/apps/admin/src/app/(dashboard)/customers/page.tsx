@@ -24,16 +24,38 @@ import { Users, UserX, UserCheck } from 'lucide-react';
 export default function CustomersPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
-  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'' | 'PERSONAL' | 'WHOLESALE'>('');
+  const [statusFilter, setStatusFilter] = useState<'' | 'ACTIVE' | 'SUSPENDED'>('');
   const [actionDialog, setActionDialog] = useState<Customer | null>(null);
 
   const canSuspend = user && canAct(user.role, 'customers:suspend');
   const suspendMutation = useSuspendCustomer();
 
-  const { data: customersData, isLoading } = useCustomers({
-    status: (statusFilter as CustomerStatus) || undefined,
-  });
+  // Fetch ALL customers once; type/status segmentation happens client-side so
+  // each section (Personal/Wholesale × Active/Suspended) has live counts.
+  const { data: customersData, isLoading } = useCustomers();
   const customers = customersData?.data ?? [];
+
+  const ofType = (type: '' | 'PERSONAL' | 'WHOLESALE') =>
+    type === '' ? customers : customers.filter((c) => c.customerType === type);
+
+  const visibleCustomers = ofType(typeFilter).filter(
+    (c) => statusFilter === '' || c.status === statusFilter,
+  );
+
+  const counts = {
+    all: customers.length,
+    personal: customers.filter((c) => c.customerType === 'PERSONAL').length,
+    wholesale: customers.filter((c) => c.customerType === 'WHOLESALE').length,
+  };
+  const statusCounts = (type: '' | 'PERSONAL' | 'WHOLESALE') => {
+    const scoped = ofType(type);
+    return {
+      all: scoped.length,
+      active: scoped.filter((c) => c.status === 'ACTIVE').length,
+      suspended: scoped.filter((c) => c.status === 'SUSPENDED').length,
+    };
+  };
 
   const handleAction = async (customer: Customer) => {
     const newStatus = customer.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
@@ -60,6 +82,15 @@ export default function CustomersPage() {
             <p className="font-medium text-surface-900">{row.original.name}</p>
             <p className="text-2xs text-surface-400">{row.original.email}</p>
           </div>
+        ),
+      },
+      {
+        id: 'type',
+        header: 'Type',
+        cell: ({ row }) => (
+          <Badge variant={row.original.customerType === 'WHOLESALE' ? 'info' : 'neutral'}>
+            {row.original.customerType === 'WHOLESALE' ? 'Wholesale' : 'Personal'}
+          </Badge>
         ),
       },
       {
@@ -133,25 +164,63 @@ export default function CustomersPage() {
     [canSuspend]
   );
 
-  const tabs = [
-    { id: '', label: 'All' },
-    { id: 'ACTIVE', label: 'Active' },
-    { id: 'SUSPENDED', label: 'Suspended' },
+  const typeTabs = [
+    { id: '', label: `All (${counts.all})` },
+    { id: 'PERSONAL', label: `Personal / Individual (${counts.personal})` },
+    { id: 'WHOLESALE', label: `Wholesale (${counts.wholesale})` },
+  ];
+  const sc = statusCounts(typeFilter);
+  const statusTabs = [
+    { id: '', label: `All (${sc.all})` },
+    { id: 'ACTIVE', label: `Active (${sc.active})` },
+    { id: 'SUSPENDED', label: `Suspended (${sc.suspended})` },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Customers"
-        description="Customer accounts and order history"
+        description="Personal (individual) and wholesale customer accounts, with active/suspended status"
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Customers' }]}
       />
 
-      <Tabs tabs={tabs} activeTab={statusFilter} onChange={setStatusFilter} />
+      {/* Customer-type segmentation */}
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-surface-400">Customer type</p>
+        <Tabs tabs={typeTabs} activeTab={typeFilter} onChange={(t) => setTypeFilter(t as typeof typeFilter)} />
+      </div>
+
+      {/* Active / Suspended status within the selected type */}
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-surface-400">Account status</p>
+        <Tabs tabs={statusTabs} activeTab={statusFilter} onChange={(s) => setStatusFilter(s as typeof statusFilter)} />
+      </div>
+
+      {/* Status summary cards for the selected type */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-lg border border-surface-200 bg-white p-5">
+          <div className="flex items-center gap-3">
+            <Badge variant="success" dot>ACTIVE</Badge>
+            <span className="text-2xl font-bold text-surface-900">{sc.active}</span>
+          </div>
+          <p className="mt-1 text-xs text-surface-500">
+            {typeFilter === 'WHOLESALE' ? 'Wholesale' : typeFilter === 'PERSONAL' ? 'Personal' : 'All'} customers who can place orders
+          </p>
+        </div>
+        <div className="rounded-lg border border-surface-200 bg-white p-5">
+          <div className="flex items-center gap-3">
+            <Badge variant="warning" dot>SUSPENDED</Badge>
+            <span className="text-2xl font-bold text-surface-900">{sc.suspended}</span>
+          </div>
+          <p className="mt-1 text-xs text-surface-500">
+            {typeFilter === 'WHOLESALE' ? 'Wholesale' : typeFilter === 'PERSONAL' ? 'Personal' : 'All'} customers blocked from ordering
+          </p>
+        </div>
+      </div>
 
       <DataTable
         columns={columns}
-        data={customers}
+        data={visibleCustomers}
         isLoading={isLoading}
         searchPlaceholder="Search by name, email…"
         emptyState={

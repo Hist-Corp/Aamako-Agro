@@ -8,13 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Shield, Users, BarChart3, Package, Star, MessageSquare, Settings, Eye, EyeOff } from 'lucide-react';
 
 const ROLES = [
-  { value: 'SUPER_ADMIN', label: 'Super Admin', description: 'Full system access', icon: Settings, color: 'bg-purple-500', email: 'superadmin@aamako.com' },
-  { value: 'ADMIN', label: 'Admin', description: 'Second-level administrator', icon: Shield, color: 'bg-blue-500', email: 'admin@aamako.com' },
-  { value: 'MANAGER', label: 'Manager', description: 'Business operations', icon: Users, color: 'bg-green-500', email: 'manager@aamako.com' },
-  { value: 'SALES', label: 'Sales', description: 'Sales & wholesale', icon: BarChart3, color: 'bg-cyan-500', email: 'sales@aamako.com' },
-  { value: 'INVENTORY_MANAGER', label: 'Inventory Mgr', description: 'Warehouse & distribution', icon: Package, color: 'bg-amber-500', email: 'inventory@aamako.com' },
-  { value: 'CONTENT_MANAGER', label: 'Content Mgr', description: 'CMS & content', icon: Star, color: 'bg-pink-500', email: 'content@aamako.com' },
-  { value: 'CUSTOMER_SUPPORT', label: 'Support', description: 'Customer support', icon: MessageSquare, color: 'bg-indigo-500', email: 'support@aamako.com' },
+  { value: 'SUPER_ADMIN', label: 'Super Admin', description: 'Full system access', icon: Settings, color: 'bg-purple-500', email: 'admin@aamako.agro' },
+  { value: 'STAFF_ADMIN', label: 'Admin', description: 'Second-level administrator', icon: Shield, color: 'bg-blue-500', email: 'admin2@aamako.agro' },
+  { value: 'STAFF_MANAGER', label: 'Manager', description: 'Business operations', icon: Users, color: 'bg-green-500', email: 'manager@aamako.agro' },
+  { value: 'STAFF_SALES', label: 'Sales', description: 'Sales & wholesale', icon: BarChart3, color: 'bg-cyan-500', email: 'sales@aamako.agro' },
+  { value: 'STAFF_MANAGER', label: 'Inventory Mgr', description: 'Warehouse & distribution', icon: Package, color: 'bg-amber-500', email: 'inventory@aamako.agro' },
+  { value: 'CONTENT_MANAGER', label: 'Content Mgr', description: 'CMS & content', icon: Star, color: 'bg-pink-500', email: 'content@aamako.agro' },
+  { value: 'STAFF_SUPPORT', label: 'Support', description: 'Customer support', icon: MessageSquare, color: 'bg-indigo-500', email: 'support@aamako.agro' },
 ];
 
 export default function LoginPage() {

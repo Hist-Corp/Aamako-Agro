@@ -288,6 +288,10 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'quotes:view', 'quotes:respond',
     // Customers
     'customers:view', 'customers:edit',
+    // Content management — Manager reviews & approves Content Manager changes
+    'content:view', 'content:edit', 'content:publish', 'content:approve',
+    // Notifications (content approval requests arrive here)
+    'notifications:view',
     // Reports & Analytics
     'reports:view',
     'analytics:view',

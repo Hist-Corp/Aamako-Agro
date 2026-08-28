@@ -6,12 +6,14 @@ import { Role, RevisionStatus } from '@prisma/client';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 class UpsertContentDto {
   @ApiProperty() @IsString() @MinLength(1) title!: string;
@@ -45,11 +47,18 @@ const CONTENT_EDITORS = [
   Role.SUPER_ADMIN,
 ];
 /** Who may approve/reject (publish to live).
- *  The Content Manager has FULL content-management rights: they can edit all
- *  existing pages, create new pages and publish/approve without waiting for
- *  another manager. */
+ *  STAFF_MANAGER ("Manager"), STAFF_ADMIN and SUPER_ADMIN review and approve.
+ *  The CONTENT_MANAGER proposes changes — their edits/creations land in the
+ *  moderation queue and the Manager is notified; nothing goes live until a
+ *  reviewer approves it. */
 const CONTENT_APPROVERS = [
   Role.CONTENT_MANAGER,
+  Role.STAFF_MANAGER,
+  Role.STAFF_ADMIN,
+  Role.SUPER_ADMIN,
+];
+/** Roles whose content writes publish immediately (no review needed). */
+const DIRECT_PUBLISHERS: Role[] = [
   Role.STAFF_MANAGER,
   Role.STAFF_ADMIN,
   Role.SUPER_ADMIN,
@@ -59,7 +68,30 @@ const CONTENT_APPROVERS = [
 @ApiTags('content')
 @Controller('content')
 export class ContentController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
+
+  /** Notify every reviewer role (Manager / Admin / Super Admin) that a
+   *  Content Manager proposed a change. Only users holding exactly one of
+   *  these approver roles receive it — Sales, Support and the submitting
+   *  Content Manager never get approval-request notifications. */
+  private notifyManagersOfProposal(action: 'created' | 'updated', key: string, title: string) {
+    void this.notifications
+      .notifyRoles(
+        [Role.STAFF_MANAGER, Role.STAFF_ADMIN, Role.SUPER_ADMIN],
+        {
+          type: 'CONTENT',
+          title: `Content ${action} — approval needed`,
+          message: `"${title}" (${key}) was ${action} by a Content Manager and is awaiting approval before it appears on the storefront.`,
+          actionUrl: '/content',
+        },
+      )
+      .catch(() => {
+        /* notification fan-out must never break the content write */
+      });
+  }
 
   /** PUBLIC: live website content only — pending revisions are never exposed. */
   @Public()
@@ -124,9 +156,12 @@ export class ContentController {
   }
 
   /**
-   * Create a brand-new page/article (Content Manager full CMS rights).
-   * Editors hold content:publish, so the item goes LIVE immediately and an
-   * APPROVED ContentRevision snapshot is appended for the audit trail.
+   * Create a brand-new page/article.
+   * - DIRECT_PUBLISHERS (Manager/Admin/Super Admin): item goes LIVE immediately
+   *   with an APPROVED revision snapshot for the audit trail.
+   * - CONTENT_MANAGER: item is created UNPUBLISHED with a PENDING revision;
+   *   Managers are notified and it only appears on the storefront after one
+   *   of them approves it.
    */
   @Roles(...CONTENT_EDITORS)
   @Post()
@@ -145,6 +180,8 @@ export class ContentController {
       );
     }
 
+    const canPublishDirectly = DIRECT_PUBLISHERS.includes(actor!.role);
+
     const item = await this.prisma.contentItem.create({
       data: {
         key: dto.key,
@@ -153,7 +190,7 @@ export class ContentController {
         longDescription: dto.longDescription?.trim() || null,
         category: dto.category?.trim() || null,
         body: dto.body ?? '',
-        isPublished: true,
+        isPublished: canPublishDirectly,
         updatedById: actor!.id,
       },
     });
@@ -165,24 +202,34 @@ export class ContentController {
         proposedLongDescription: item.longDescription,
         proposedBody: item.body,
         submittedById: actor!.id,
-        status: RevisionStatus.APPROVED,
-        reviewedById: actor!.id,
-        reviewedAt: new Date(),
+        status: canPublishDirectly ? RevisionStatus.APPROVED : RevisionStatus.PENDING,
+        reviewedById: canPublishDirectly ? actor!.id : null,
+        reviewedAt: canPublishDirectly ? new Date() : null,
       },
     });
+
+    if (!canPublishDirectly) {
+      this.notifyManagersOfProposal('created', item.key, item.title);
+    }
 
     return {
       id: item.id,
       key: item.key,
-      live: true,
-      message: 'Page created and published.',
+      live: canPublishDirectly,
+      status: canPublishDirectly ? 'APPROVED' : 'PENDING',
+      message: canPublishDirectly
+        ? 'Page created and published.'
+        : 'Page created — it will appear on the website after a Manager approves it.',
     };
   }
 
   /**
    * Create or propose an edit to a content item.
-   * - Editors (incl. CONTENT_MANAGER): applied to the live item immediately,
-   *   with an APPROVED revision snapshot kept for the audit trail.
+   * - DIRECT_PUBLISHERS (Manager/Admin/Super Admin): applied to the live item
+   *   immediately, with an APPROVED revision snapshot for the audit trail.
+   * - CONTENT_MANAGER: live content is untouched; the edit is stored as a
+   *   PENDING revision and Managers are notified. The change only appears on
+   *   the storefront after a Manager approves it.
    */
   @Roles(...CONTENT_EDITORS)
   @Put(':key')
@@ -191,12 +238,7 @@ export class ContentController {
     @Body() dto: UpsertContentDto,
     @CurrentUser() actor?: { id: string; role: Role },
   ) {
-    const canPublishDirectly = ([
-      Role.CONTENT_MANAGER,
-      Role.STAFF_MANAGER,
-      Role.STAFF_ADMIN,
-      Role.SUPER_ADMIN,
-    ] as Role[]).includes(actor!.role);
+    const canPublishDirectly = DIRECT_PUBLISHERS.includes(actor!.role);
 
     const item = await this.prisma.contentItem.upsert({
       where: { key },
@@ -240,6 +282,10 @@ export class ContentController {
       },
     });
 
+    if (!canPublishDirectly) {
+      this.notifyManagersOfProposal('updated', item.key, dto.title.trim());
+    }
+
     return {
       revisionId: revision.id,
       status: revision.status,
@@ -262,6 +308,11 @@ export class ContentController {
     if (!revision) throw new NotFoundException('Revision not found');
     if (revision.status !== RevisionStatus.PENDING) {
       throw new BadRequestException(`Revision already ${revision.status.toLowerCase()}`);
+    }
+    // A Content Manager cannot approve their own proposals — approval must
+    // come from a Manager, Admin or Super Admin.
+    if (actor!.role === Role.CONTENT_MANAGER) {
+      throw new ForbiddenException('Content Managers cannot approve revisions — Manager approval is required.');
     }
 
     const [applied] = await this.prisma.$transaction([

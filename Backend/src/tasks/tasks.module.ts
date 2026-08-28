@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ContentController } from './content.controller';
+import { TasksController } from './tasks.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [NotificationsModule],
-  controllers: [ContentController],
+  controllers: [TasksController],
 })
-export class ContentModule {}
+export class TasksModule {}

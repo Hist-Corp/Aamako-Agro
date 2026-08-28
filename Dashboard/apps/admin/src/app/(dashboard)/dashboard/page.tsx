@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { KPICard } from '@/components/dashboard/kpi-card';
 import { ActivityFeed } from '@/components/dashboard/activity-feed';
 import { FulfillmentPipeline } from '@/components/dashboard/fulfillment-pipeline';
+import { TasksPanel } from '@/components/tasks/tasks-panel';
 import { KPISkeleton } from '@/components/ui/skeleton';
 import {
   ShoppingCart,
@@ -276,6 +277,10 @@ export default function DashboardPage() {
       ) : (
         getRoleKPIs()
       )}
+
+      {/* Tasks — every user sees their assigned tasks & can complete them;
+          Super Admin / Admin / Manager / Sales can assign to lower ranks. */}
+      <TasksPanel />
 
       {/* Fulfillment Pipeline - only for roles that manage orders */}
       {user?.role !== 'CONTENT_MANAGER' && user?.role !== 'CUSTOMER_SUPPORT' && (

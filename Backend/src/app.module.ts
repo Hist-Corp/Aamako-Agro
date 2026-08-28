@@ -17,6 +17,7 @@ import { ContentModule } from './content/content.module';
 import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MediaModule } from './media/media.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { MediaModule } from './media/media.module';
     AdminModule,
     NotificationsModule,
     MediaModule,
+    TasksModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
