@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" type="image/png" href="favicon.png?v=2">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png?v=2">
 <title>Profile &amp; Security — Aama ko Agro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -30,6 +30,21 @@
   <div class="dash-panel-grid">
     <div class="dash-panel">
       <h3>Personal information</h3>
+
+      <!-- Profile photo — passport-size upload slot -->
+      <div style="display:flex; gap:18px; align-items:center; margin-bottom:var(--space-5); padding-bottom:var(--space-5); border-bottom:1px dashed var(--line);">
+        <div class="profile-photo-slot profile-photo-lg" id="photoPreview" aria-label="Profile photo"><div class="photo-window is-empty"></div></div>
+        <div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary" id="photoUploadBtn" style="padding:8px 16px; font-size:13px;">Upload photo</button>
+            <button type="button" class="btn btn-ghost" id="photoRemoveBtn" style="color:#a33a2a;">Remove</button>
+            <input type="file" id="photoInput" accept="image/png,image/jpeg,image/webp" hidden>
+          </div>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-top:8px;">Passport-style photo · JPG, PNG or WebP · stays private on this device.</p>
+          <span id="photoMsg" role="status" style="font-size:12.5px;"></span>
+        </div>
+      </div>
+
       <form id="profileForm" onsubmit="return false;">
         <div class="field">
           <label for="pfFirstName">First name</label>
@@ -89,7 +104,7 @@
   </div>
 </div></section>
 
-<footer><div class="wrap"><div class="foot-grid"><div class="foot-col"><a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img draggable="false" src="logo-footer.png" alt="Aama ko Agro" style="height:72px;"></a><p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p></div><div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div><div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div><div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div><div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div></div><div class="foot-bottom"><span>© 2026 Aama ko Agro. All rights reserved.</span><span>DFTQC registration — [placeholder]</span></div></div></footer>
+<footer><div class="wrap"><div class="foot-grid"><div class="foot-col"><a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img draggable="false" src="logo-footer.png" alt="Aama ko Agro" style="height:88px;"></a><p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p></div><div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div><div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div><div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div><div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div></div><div class="foot-bottom"><span>© 2026 Aama ko Agro. All rights reserved.</span><span>DFTQC registration — [placeholder]</span></div></div></footer>
 
 <script>
 (function(){
@@ -124,6 +139,87 @@
   }
 
   paint(user);
+
+  // ---- Profile photo upload (passport-size, stored on this device) ----
+  var photoPreview = document.getElementById('photoPreview');
+  var photoInput = document.getElementById('photoInput');
+  var photoMsg = document.getElementById('photoMsg');
+
+  function paintPhoto() {
+    if (!photoPreview || !window.AamakoAvatar) return;
+    var win = photoPreview.querySelector('.photo-window');
+    if (!win) return;
+    var url = window.AamakoAvatar.get();
+    if (url) {
+      win.innerHTML = '<img src="' + url + '" alt="Profile photo" draggable="false">';
+      win.classList.remove('is-empty');
+    } else {
+      win.textContent = window.AamakoAvatar.initials(user);
+      win.classList.add('is-empty');
+    }
+  }
+  paintPhoto();
+
+  function flashPhotoMsg(text, color) {
+    photoMsg.textContent = text;
+    photoMsg.style.color = color || '';
+    setTimeout(function () { photoMsg.textContent = ''; }, 3500);
+  }
+
+  if (document.getElementById('photoUploadBtn')) {
+    document.getElementById('photoUploadBtn').addEventListener('click', function () {
+      photoInput.click();
+    });
+    photoInput.addEventListener('change', function () {
+      var file = photoInput.files && photoInput.files[0];
+      photoInput.value = ''; // allow re-selecting the same file later
+      if (!file) return;
+      if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+        flashPhotoMsg('Please choose a JPG, PNG or WebP image.', '#a33a2a');
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        flashPhotoMsg('That image is too large (max 8 MB).', '#a33a2a');
+        return;
+      }
+      photoMsg.textContent = 'Processing…';
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          try {
+            // center-crop to passport ratio (35:45) and fit a crisp 280×360 frame
+            var TW = 280, TH = 360, ratio = TW / TH;
+            var sx, sy, cw, ch;
+            if (img.width / img.height > ratio) {
+              ch = img.height; cw = img.height * ratio;
+              sx = (img.width - cw) / 2; sy = 0;
+            } else {
+              cw = img.width; ch = img.width / ratio;
+              sx = 0; sy = (img.height - ch) / 2;
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = TW; canvas.height = TH;
+            canvas.getContext('2d').drawImage(img, sx, sy, cw, ch, 0, 0, TW, TH);
+            window.AamakoAvatar.set(canvas.toDataURL('image/jpeg', 0.85));
+            paintPhoto();
+            flashPhotoMsg('✓ Photo saved', '#2c5e34');
+          } catch (e) {
+            flashPhotoMsg('Could not process that image.', '#a33a2a');
+          }
+        };
+        img.onerror = function () { flashPhotoMsg('Could not read that image.', '#a33a2a'); };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    document.getElementById('photoRemoveBtn').addEventListener('click', function () {
+      window.AamakoAvatar.clear();
+      paintPhoto();
+      flashPhotoMsg('Photo removed.');
+    });
+  }
+
   window.AamakoAPI.me().then(function (fresh) {
     paint(fresh);
     localStorage.setItem('aamako_user', JSON.stringify(fresh));
@@ -185,6 +281,7 @@
     e.preventDefault();
     try { window.AamakoAPI.logout(); } catch (_) {}
     localStorage.removeItem('aamako_user');
+    localStorage.removeItem('aamako_avatar');
     window.location.replace('signin.html');
   });
 })();

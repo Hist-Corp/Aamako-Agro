@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" type="image/png" href="favicon.png?v=2">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png?v=2">
 <title>My Account — Aama ko Agro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 </header>
 <div class="mobile-drawer" id="mobileDrawer"><a href="index.html">Home</a><a href="shop.html">Shop</a><a href="process.html">Why Freeze-Dried</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a><a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a></div>
 
-<div class="page-header"><div class="wrap page-header-grid"><div><div class="eyebrow">Your account</div><h1 class="page-title">Namaste, <span class="greeting-name" id="greetName">there</span></h1><p class="page-sub" id="greetSub">Here's a snapshot of your activity at Aama ko Agro.</p></div></div></div>
+<div class="page-header"><div class="wrap page-header-grid"><div style="display:flex; align-items:center; gap:var(--space-5);"><div class="profile-photo-slot" id="headerPhoto" aria-label="Profile photo"><div class="photo-window is-empty"></div></div><div><div class="eyebrow">Your account</div><h1 class="page-title">Namaste, <span class="greeting-name" id="greetName">there</span></h1><p class="page-sub" id="greetSub">Here's a snapshot of your activity at Aama ko Agro.</p></div></div></div></div>
 
 <nav class="account-nav" aria-label="Account sections">
   <a href="account.html" class="is-active">Dashboard</a>
@@ -77,7 +77,7 @@
 
 </div></section>
 
-<footer><div class="wrap"><div class="foot-grid"><div class="foot-col"><a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img draggable="false" src="logo-footer.png" alt="Aama ko Agro" style="height:72px;"></a><p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p></div><div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div><div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div><div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div><div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div></div><div class="foot-bottom"><span>© 2026 Aama ko Agro. All rights reserved.</span><span>DFTQC registration — [placeholder]</span></div></div></footer>
+<footer><div class="wrap"><div class="foot-grid"><div class="foot-col"><a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img draggable="false" src="logo-footer.png" alt="Aama ko Agro" style="height:88px;"></a><p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p></div><div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div><div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div><div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div><div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div></div><div class="foot-bottom"><span>© 2026 Aama ko Agro. All rights reserved.</span><span>DFTQC registration — [placeholder]</span></div></div></footer>
 
 <script>
 (function(){
@@ -111,6 +111,25 @@
       'Signed in as ' + u.email + (u.createdAt ? ' · Member since ' + fmtDate(u.createdAt) : '');
   }
   paintGreeting(user);
+
+  // ---- Passport-size profile photo beside the greeting ----
+  function paintHeaderPhoto() {
+    var slot = document.getElementById('headerPhoto');
+    if (!slot || !window.AamakoAvatar) return;
+    var win = slot.querySelector('.photo-window');
+    if (!win) return;
+    var url = window.AamakoAvatar.get();
+    if (url) {
+      win.innerHTML = '<img src="' + url + '" alt="" draggable="false">';
+      win.classList.remove('is-empty');
+    } else {
+      win.textContent = window.AamakoAvatar.initials(user);
+      win.classList.add('is-empty');
+    }
+  }
+  paintHeaderPhoto();
+  document.addEventListener('aamako-avatar-changed', paintHeaderPhoto);
+
   window.AamakoAPI.me().then(function (fresh) {
     paintGreeting(fresh);
     localStorage.setItem('aamako_user', JSON.stringify(fresh));

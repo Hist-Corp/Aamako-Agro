@@ -41,13 +41,14 @@
 }
 
 *, *::before, *::after{box-sizing:border-box; margin:0; padding:0;}
-html{scroll-behavior:smooth; -webkit-text-size-adjust:100%;}
+html{scroll-behavior:smooth; -webkit-text-size-adjust:100%; background:var(--bg); overscroll-behavior-y:none;}
 body{
   background:var(--bg); color:var(--ink); font-family:var(--body);
   line-height:1.6; font-size:16px; font-weight:400;
   background-image: radial-gradient(circle at 1px 1px, rgba(33,31,23,0.03) 1px, transparent 0);
   background-size: 24px 24px;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y:none;
 }
 img{max-width:100%; height:auto; display:block; -webkit-user-drag:none; user-drag:none;}
 a{color:inherit; text-decoration:none;}
@@ -1144,7 +1145,27 @@ footer{border-top:1px solid var(--line); margin-top:var(--space-8); padding:var(
   border-radius:var(--radius-sm); transition:background .15s ease;}
 .acct-trigger:hover{background:rgba(0,0,0,.05);}
 .acct-avatar{width:30px; height:30px; border-radius:50%; background:var(--sage); color:#fff;
-  display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:600; letter-spacing:.5px;}
+  display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:600; letter-spacing:.5px; overflow:hidden;}
+.acct-avatar img{width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;}
+
+/* ---- Profile photo — passport-style holder (35:45 photo in a white mat) ---- */
+.profile-photo-slot{flex:0 0 auto; width:100px; height:124px; padding:5px; background:#fff;
+  border:1px solid var(--line); border-radius:6px;
+  box-shadow:0 1px 2px rgba(0,0,0,.06), 0 6px 14px -6px rgba(0,0,0,.14);
+  display:flex; align-items:center; justify-content:center;}
+.profile-photo-slot .photo-window{width:100%; height:100%; border-radius:3px; overflow:hidden;
+  background:var(--sage); color:#fff; display:flex; align-items:center; justify-content:center;
+  font-family:var(--display); font-size:30px; font-weight:600; letter-spacing:.5px; user-select:none;}
+.profile-photo-slot .photo-window.is-empty{background:#eef3ec; color:#4c7a54; border:1px dashed #b9cfba;}
+.profile-photo-slot .photo-window img{width:100%; height:100%; object-fit:cover; display:block;}
+.profile-photo-slot.profile-photo-lg{width:116px; height:142px;}
+.profile-photo-slot.profile-photo-lg .photo-window{font-size:34px;}
+@media (max-width:480px){
+  .profile-photo-slot{width:82px; height:102px; padding:4px;}
+  .profile-photo-slot .photo-window{font-size:24px;}
+  .profile-photo-slot.profile-photo-lg{width:96px; height:118px;}
+  .profile-photo-slot.profile-photo-lg .photo-window{font-size:28px;}
+}
 .acct-caret{transition:transform .15s ease;}
 .acct-wrap.is-open .acct-caret{transform:rotate(180deg);}
 .acct-menu{position:absolute; right:0; top:calc(100% + 6px); min-width:200px; background:var(--paper);

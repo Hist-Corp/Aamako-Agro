@@ -60,27 +60,22 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden login-bg">
-      {/* Agro-themed background pattern */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-900 via-emerald-800 to-teal-900" />
+      {/* Brand background — deep forest base with lime glows straight from the logo */}
+      <div className="absolute inset-0 brand-bg" />
       
-      {/* Decorative leaf pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {/* Large background leaves */}
-          <g fill="currentColor" className="text-white">
-            <path d="M10,20 Q15,10 20,15 Q15,25 10,20" opacity="0.3" />
-            <path d="M80,10 Q85,5 90,10 Q85,15 80,10" opacity="0.2" />
-            <path d="M5,50 Q10,40 15,45 Q10,55 5,50" opacity="0.25" />
-            <path d="M85,80 Q90,70 95,75 Q90,85 85,80" opacity="0.2" />
-            <path d="M50,5 Q55,0 60,5 Q55,10 50,5" opacity="0.3" />
-            <path d="M30,90 Q35,80 40,85 Q35,95 30,90" opacity="0.2" />
-            <path d="M70,60 Q75,50 80,55 Q75,65 70,60" opacity="0.15" />
-            <path d="M20,70 Q25,60 30,65 Q25,75 20,70" opacity="0.2" />
-            <path d="M60,30 Q65,20 70,25 Q65,35 60,30" opacity="0.25" />
-            <path d="M40,40 Q45,30 50,35 Q45,45 40,40" opacity="0.2" />
-          </g>
-        </svg>
-      </div>
+      {/* Brand watermark — the logo butterfly, echoed large and faint */}
+      <img
+        src="/logo-mark.png"
+        alt=""
+        aria-hidden="true"
+        className="absolute -right-28 -bottom-28 w-[520px] max-w-none opacity-[0.08] pointer-events-none select-none"
+      />
+      <img
+        src="/logo-mark.png"
+        alt=""
+        aria-hidden="true"
+        className="absolute -left-24 -top-24 w-[340px] max-w-none opacity-[0.06] pointer-events-none select-none"
+      />
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -93,15 +88,17 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md px-4">
         {/* Brand */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-white/95 backdrop-blur-sm mb-4 shadow-lg border border-white/30 overflow-hidden">
-            <img src="/logo.png" alt="Aama ko Agro" className="h-16 w-16 object-contain" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Aama ko Agro"
+            className="h-24 w-24 mb-4 object-contain drop-shadow-[0_14px_35px_rgba(0,0,0,0.45)]"
+          />
           <h1 className="text-2xl font-bold text-white tracking-tight">आमाको एग्रो</h1>
           <p className="text-sm text-green-100 mt-1 font-medium">Admin Dashboard</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-white/20 p-6 shadow-2xl">
+        <div className="bg-white rounded-2xl p-6 ring-1 ring-black/5 shadow-[0_30px_90px_-20px_rgba(0,0,0,0.65)]">
           <h2 className="text-lg font-semibold text-surface-900 mb-5">Sign in</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -197,6 +194,13 @@ export default function LoginPage() {
       <style jsx>{`
         .login-bg {
           min-height: 100vh;
+        }
+        .brand-bg {
+          background:
+            radial-gradient(900px 620px at 10% -8%, rgba(180, 236, 106, 0.16), transparent 60%),
+            radial-gradient(820px 600px at 108% 108%, rgba(74, 222, 128, 0.14), transparent 55%),
+            radial-gradient(1200px 800px at 50% 125%, rgba(0, 0, 0, 0.4), transparent 62%),
+            linear-gradient(150deg, #20291f 0%, #182219 45%, #101812 100%);
         }
         .particle {
           position: absolute;

@@ -33,11 +33,34 @@
     return name || user.email;
   }
 
+  // ---- Profile photo (passport-size), stored privately on this device ----
+  var AVATAR_KEY = 'aamako_avatar';
+
+  function getAvatar() {
+    try { return localStorage.getItem(AVATAR_KEY); } catch (_) { return null; }
+  }
+
+  function setAvatar(dataUrl) {
+    try { localStorage.setItem(AVATAR_KEY, dataUrl); } catch (_) { /* storage full */ }
+    document.dispatchEvent(new CustomEvent('aamako-avatar-changed'));
+  }
+
+  function clearAvatar() {
+    try { localStorage.removeItem(AVATAR_KEY); } catch (_) { /* ignore */ }
+    document.dispatchEvent(new CustomEvent('aamako-avatar-changed'));
+  }
+
+  function avatarInner(user) {
+    var url = getAvatar();
+    return url ? '<img src="' + url + '" alt="" draggable="false">' : initials(user);
+  }
+
   function signOut() {
     if (window.AamakoAPI && window.AamakoAPI.logout) {
       try { window.AamakoAPI.logout(); } catch (_) { /* network errors don't block signout */ }
     }
     localStorage.removeItem('aamako_user');
+    localStorage.removeItem(AVATAR_KEY);
     // back to shop home, replacing history so "back" doesn't re-enter authed page
     window.location.replace('index.html');
   }
@@ -45,7 +68,7 @@
   var MENU_HTML =
     '<div class="acct-wrap" id="acctWrap">' +
       '<button type="button" class="acct-trigger" id="acctTrigger" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">' +
-        '<span class="acct-avatar">{{INITIALS}}</span>' +
+        '<span class="acct-avatar">{{AVATAR}}</span>' +
         '<svg class="acct-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>' +
       '</button>' +
       '<div class="acct-menu" role="menu" aria-label="Account menu">' +
@@ -70,7 +93,7 @@
     }
 
     var html = MENU_HTML
-      .replace('{{INITIALS}}', initials(user))
+      .replace('{{AVATAR}}', avatarInner(user))
       .replace(/\{\{NAME\}\}/g, displayName(user))
       .replace('{{EMAIL}}', user.email);
 
@@ -125,6 +148,21 @@
     init();
   }
 
+  // repaint every rendered avatar (header trigger etc.) when the photo changes
+  function applyAvatars() {
+    var user = currentUser();
+    if (!user) return;
+    var nodes = document.querySelectorAll('.acct-avatar');
+    for (var i = 0; i < nodes.length; i++) nodes[i].innerHTML = avatarInner(user);
+  }
+  document.addEventListener('aamako-avatar-changed', applyAvatars);
+
   // expose for pages that render their own header markup dynamically
   window.AamakoAccountMenu = { refresh: init };
+  window.AamakoAvatar = {
+    get: getAvatar,
+    set: setAvatar,
+    clear: clearAvatar,
+    initials: initials
+  };
 })();
