@@ -8,13 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Shield, Users, BarChart3, Package, Star, MessageSquare, Settings, Eye, EyeOff } from 'lucide-react';
 
 const ROLES = [
-  { value: 'SUPER_ADMIN', label: 'Super Admin', description: 'Full system access', icon: Settings, color: 'bg-purple-500', email: 'admin@aamako.agro' },
-  { value: 'STAFF_ADMIN', label: 'Admin', description: 'Second-level administrator', icon: Shield, color: 'bg-blue-500', email: 'admin2@aamako.agro' },
-  { value: 'STAFF_MANAGER', label: 'Manager', description: 'Business operations', icon: Users, color: 'bg-green-500', email: 'manager@aamako.agro' },
-  { value: 'STAFF_SALES', label: 'Sales', description: 'Sales & wholesale', icon: BarChart3, color: 'bg-cyan-500', email: 'sales@aamako.agro' },
-  { value: 'STAFF_MANAGER', label: 'Inventory Mgr', description: 'Warehouse & distribution', icon: Package, color: 'bg-amber-500', email: 'inventory@aamako.agro' },
-  { value: 'CONTENT_MANAGER', label: 'Content Mgr', description: 'CMS & content', icon: Star, color: 'bg-pink-500', email: 'content@aamako.agro' },
-  { value: 'STAFF_SUPPORT', label: 'Support', description: 'Customer support', icon: MessageSquare, color: 'bg-indigo-500', email: 'support@aamako.agro' },
+  { id: 'super-admin', value: 'SUPER_ADMIN', label: 'Super Admin', description: 'Full system access', icon: Settings, color: 'bg-purple-500', email: 'admin@aamako.agro' },
+  { id: 'staff-admin', value: 'STAFF_ADMIN', label: 'Admin', description: 'Second-level administrator', icon: Shield, color: 'bg-blue-500', email: 'admin2@aamako.agro' },
+  { id: 'manager', value: 'STAFF_MANAGER', label: 'Manager', description: 'Business operations', icon: Users, color: 'bg-green-500', email: 'manager@aamako.agro' },
+  { id: 'sales', value: 'STAFF_SALES', label: 'Sales', description: 'Sales & wholesale', icon: BarChart3, color: 'bg-cyan-500', email: 'sales@aamako.agro' },
+  { id: 'inventory', value: 'STAFF_MANAGER', label: 'Inventory Mgr', description: 'Warehouse & distribution', icon: Package, color: 'bg-amber-500', email: 'inventory@aamako.agro' },
+  { id: 'content', value: 'CONTENT_MANAGER', label: 'Content Mgr', description: 'CMS & content', icon: Star, color: 'bg-pink-500', email: 'content@aamako.agro' },
+  { id: 'support', value: 'STAFF_SUPPORT', label: 'Support', description: 'Customer support', icon: MessageSquare, color: 'bg-indigo-500', email: 'support@aamako.agro' },
 ];
 
 export default function LoginPage() {
@@ -22,7 +22,11 @@ export default function LoginPage() {
   const { login, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState('SUPER_ADMIN');
+  // Tracks WHICH role card is selected — must be a unique id per card, not the
+  // RBAC value. "Manager" and "Inventory Mgr" share STAFF_MANAGER, so keying on
+  // value highlighted both cards at once.
+  const [selectedRole, setSelectedRole] = useState('super-admin');
+  const selectedRoleObj = ROLES.find((r) => r.id === selectedRole);
   const [totpCode, setTotpCode] = useState('');
   const [showTotp, setShowTotp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -113,11 +117,15 @@ export default function LoginPage() {
                   const Icon = role.icon;
                   return (
                     <button
-                      key={role.value}
+                      key={role.id}
                       type="button"
-                      onClick={() => setSelectedRole(role.value)}
+                      onClick={() => {
+                        setSelectedRole(role.id);
+                        // Prefill the demo email for this account (still editable)
+                        setEmail(role.email);
+                      }}
                       className={`flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all text-left ${
-                        selectedRole === role.value
+                        selectedRole === role.id
                           ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-500/20'
                           : 'border-surface-200 hover:border-surface-300 hover:bg-surface-50'
                       }`}
@@ -138,7 +146,7 @@ export default function LoginPage() {
             <Input
               label="Email"
               type="email"
-              placeholder={`${selectedRole.toLowerCase()}@aamako.com`}
+              placeholder={selectedRoleObj?.email ?? 'you@aamako.agro'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
@@ -183,7 +191,7 @@ export default function LoginPage() {
             )}
 
             <Button type="submit" isLoading={isLoading} className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5">
-              Sign in as {ROLES.find(r => r.value === selectedRole)?.label}
+              Sign in as {selectedRoleObj?.label ?? 'Super Admin'}
             </Button>
 
           </form>

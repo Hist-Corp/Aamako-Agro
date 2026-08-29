@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, Search, ChevronRight, User, LogOut, Settings, Shield, ShoppingCart, Package, MessageSquare, Check } from 'lucide-react';
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead, type AdminNotification } from '@/lib/api-hooks';
 import { relativeTime } from '@/lib/utils';
+import { filterNotificationsByPermission } from '@/lib/notification-visibility';
 import { Dialog } from '@/components/ui/dialog';
 
 const ROLE_BADGE_VARIANT: Record<string, string> = {
@@ -63,12 +64,14 @@ const NOTIF_ICON_COLORS: Record<string, string> = {
 };
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const pathname = usePathname();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<AdminNotification | null>(null);
-  const { data: notifications = [] } = useNotifications();
+  const { data: rawNotifications = [] } = useNotifications();
+  // Only surface the notifications the current role has permission to see.
+  const notifications = filterNotificationsByPermission(rawNotifications, hasPermission);
   const markReadMutation = useMarkNotificationRead();
   const markAllReadMutation = useMarkAllNotificationsRead();
 

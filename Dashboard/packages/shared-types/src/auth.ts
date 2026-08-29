@@ -252,6 +252,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'media:view', 'media:upload', 'media:edit', 'media:publish', 'media:delete',
     // Reviews
     'reviews:view', 'reviews:moderate',
+    // Notifications (content role — alerts on editorial/publishing activity)
+    'notifications:view',
     // Profile
     'profile:view', 'profile:edit',
   ],
@@ -376,6 +378,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     // Reports (sales only)
     'reports:view',
     'analytics:view',
+    // Notifications (sales role — alerts on orders/wholesale/quotes)
+    'notifications:view',
     // Profile
     'profile:view', 'profile:edit',
   ],
@@ -389,6 +393,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'orders:view', 'orders:limited-status',
     // Support
     'support:view', 'support:manage',
+    // Notifications (support role — alerts on tickets/customer activity)
+    'notifications:view',
     // Profile
     'profile:view', 'profile:edit',
   ],

@@ -66,12 +66,6 @@ export const NAV_STRUCTURE: NavGroup[] = [
     label: 'Administration',
     items: [
       {
-        label: 'Users',
-        href: '/users',
-        icon: Users,
-        permission: 'users:view',
-      },
-      {
         label: 'Roles & Permissions',
         href: '/roles',
         icon: Shield,

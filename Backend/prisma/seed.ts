@@ -17,6 +17,31 @@ async function main() {
       role: Role.SUPER_ADMIN,
     },
   });
+  // Second-level administrator for the dashboard role selector: admin2@aamako.agro / Admin123! (STAFF_ADMIN)
+  await prisma.user.upsert({
+    where: { email: 'admin2@aamako.agro' },
+    update: {},
+    create: {
+      email: 'admin2@aamako.agro',
+      passwordHash: await bcrypt.hash('Admin123!', 12),
+      firstName: 'Bishal',
+      lastName: 'Admin',
+      role: Role.STAFF_ADMIN,
+    },
+  });
+
+  // Business operations manager for the dashboard role selector: manager@aamako.agro / Manager123! (STAFF_MANAGER)
+  await prisma.user.upsert({
+    where: { email: 'manager@aamako.agro' },
+    update: {},
+    create: {
+      email: 'manager@aamako.agro',
+      passwordHash: await bcrypt.hash('Manager123!', 12),
+      firstName: 'Mina',
+      lastName: 'Manager',
+      role: Role.STAFF_MANAGER,
+    },
+  });
 
   // Demo staff accounts for the hierarchical RBAC
   await prisma.user.upsert({

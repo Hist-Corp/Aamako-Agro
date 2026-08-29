@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/config/auth-context';
 import { relativeTime } from '@/lib/utils';
+import { filterNotificationsByPermission } from '@/lib/notification-visibility';
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead, type AdminNotification } from '@/lib/api-hooks';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardHeader } from '@/components/ui/card';
@@ -69,10 +70,12 @@ const TYPE_COLORS: Record<string, string> = {
  *  Can manage: SUPER_ADMIN, ADMIN
  */
 export default function NotificationsPage() {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { addToast } = useToast();
   const [filter, setFilter] = useState('all');
-  const { data: notifications = [], isLoading } = useNotifications();
+  const { data: rawNotifications = [], isLoading } = useNotifications();
+  // Only show the notifications the current role has permission to see.
+  const notifications = filterNotificationsByPermission(rawNotifications, hasPermission);
   const markReadMutation = useMarkNotificationRead();
   const markAllReadMutation = useMarkAllNotificationsRead();
 
