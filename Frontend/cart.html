@@ -9,6 +9,39 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* ---- Checkout modal (3 steps: address → payment → confirmation) ---- */
+  .ck-overlay{position:fixed;inset:0;background:rgba(20,26,18,.55);backdrop-filter:blur(3px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;}
+  .ck-overlay.is-open{display:flex;}
+  .ck-modal{background:#fff;border-radius:var(--radius-md);max-width:520px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;position:relative;}
+  .ck-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink-soft);line-height:1;}
+  .ck-step-label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--sage);font-weight:600;margin-bottom:4px;}
+  .ck-title{font-family:'Playfair Display',serif;font-size:22px;margin:0 0 16px;}
+  .ck-field{margin-bottom:14px;}
+  .ck-field label{display:block;font-size:13px;font-weight:600;margin-bottom:5px;}
+  .ck-field input,.ck-field textarea{width:100%;padding:10px 12px;border:1px solid #dcd9d0;border-radius:var(--radius-sm);font-family:inherit;font-size:14px;box-sizing:border-box;}
+  .ck-field input:focus,.ck-field textarea:focus{outline:none;border-color:var(--sage);}
+  .ck-row{display:flex;gap:12px;}
+  .ck-row .ck-field{flex:1;}
+  .ck-err{color:#b3261e;font-size:12.5px;margin:-6px 0 10px;display:none;}
+  .ck-actions{display:flex;gap:10px;margin-top:18px;}
+  .ck-actions .btn{flex:1;padding:12px;text-align:center;}
+  .ck-back{background:none;border:1px solid #dcd9d0;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;}
+  .ck-pay-opt{display:flex;align-items:center;gap:10px;border:1px solid #dcd9d0;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;cursor:pointer;}
+  .ck-pay-opt input{accent-color:var(--sage);}
+  .ck-pay-opt.is-selected{border-color:var(--sage);background:#f4f7f2;}
+  .ck-pay-name{font-weight:600;font-size:14px;}
+  .ck-pay-desc{font-size:12px;color:var(--ink-soft);}
+  .ck-summary-row{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;border-bottom:1px dashed #e5e2d9;}
+  .ck-summary-row:last-child{border-bottom:none;font-weight:700;}
+  .ck-confirm-icon{width:56px;height:56px;border-radius:50%;background:#e7f0e4;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px;}
+  .ck-confirm-text{text-align:center;font-size:13.5px;color:var(--ink-soft);margin:6px 0 14px;}
+  .ck-progress{display:flex;gap:6px;margin-bottom:18px;}
+  .ck-progress span{flex:1;height:4px;border-radius:2px;background:#e5e2d9;}
+  .ck-progress span.is-done{background:var(--sage);}
+</style>
+</head>
 </head>
 <body>
 <div class="trust-strip"><span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span><span>MADE IN NEPAL</span><span>NO ADDED PRESERVATIVES</span></div>
@@ -86,37 +119,242 @@
 </script>
   <script src="js/api.js"></script>
   <script src="js/account-menu.js"></script>
+  <!-- Checkout modal: step 1 address → step 2 payment → step 3 confirmation -->
+  <div class="ck-overlay" id="ckOverlay">
+    <div class="ck-modal" role="dialog" aria-modal="true" aria-labelledby="ckTitle">
+      <button class="ck-close" id="ckClose" aria-label="Close checkout">&times;</button>
+      <div class="ck-progress" id="ckProgress"><span data-step="1" class="is-done"></span><span data-step="2"></span><span data-step="3"></span></div>
+
+      <!-- STEP 1 — Delivery address -->
+      <div id="ckStep1">
+        <div class="ck-step-label">Step 1 of 3</div>
+        <h3 class="ck-title" id="ckTitle">Delivery address</h3>
+        <div class="ck-row">
+          <div class="ck-field"><label for="ckName">Full name</label><input id="ckName" type="text" autocomplete="name" placeholder="Ram Shrestha"></div>
+          <div class="ck-field"><label for="ckPhone">Phone</label><input id="ckPhone" type="tel" autocomplete="tel" placeholder="98XXXXXXXX"></div>
+        </div>
+        <div class="ck-field"><label for="ckEmail">Email (order confirmation)</label><input id="ckEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+        <div class="ck-field"><label for="ckAddress">Street address</label><textarea id="ckAddress" rows="2" placeholder="House no, street, ward"></textarea></div>
+        <div class="ck-row">
+          <div class="ck-field"><label for="ckCity">City</label><input id="ckCity" type="text" placeholder="Kathmandu"></div>
+          <div class="ck-field"><label for="ckZone">Province / Zone</label><input id="ckZone" type="text" placeholder="Bagmati"></div>
+        </div>
+        <div class="ck-err" id="ckErr1">Please fill in name, phone, email, street address and city.</div>
+        <div class="ck-actions"><button class="btn btn-primary" id="ckToPayment">Continue to payment</button></div>
+      </div>
+
+      <!-- STEP 2 — Payment method -->
+      <div id="ckStep2" style="display:none;">
+        <div class="ck-step-label">Step 2 of 3</div>
+        <h3 class="ck-title">Payment method</h3>
+        <label class="ck-pay-opt"><input type="radio" name="ckPay" value="cod" checked><span><span class="ck-pay-name">Cash on Delivery</span><br><span class="ck-pay-desc">Pay in cash when your order arrives.</span></span></label>
+        <label class="ck-pay-opt"><input type="radio" name="ckPay" value="esewa"><span><span class="ck-pay-name">eSewa</span><br><span class="ck-pay-desc">Pay instantly with your eSewa wallet.</span></span></label>
+        <label class="ck-pay-opt"><input type="radio" name="ckPay" value="khalti"><span><span class="ck-pay-name">Khalti</span><br><span class="ck-pay-desc">Pay instantly with your Khalti wallet.</span></span></label>
+        <label class="ck-pay-opt"><input type="radio" name="ckPay" value="bank"><span><span class="ck-pay-name">Bank Transfer</span><br><span class="ck-pay-desc">Deposit to our account and share the reference.</span></span></label>
+        <div id="ckPayDetails" style="display:none;">
+          <div class="ck-field"><label for="ckPayId">Account / mobile number</label><input id="ckPayId" type="text" placeholder="Wallet number or account number"></div>
+          <div class="ck-field"><label for="ckPayTxn">Transaction reference</label><input id="ckPayTxn" type="text" placeholder="e.g. 9F3K2L (from your payment app)"></div>
+        </div>
+        <div class="ck-err" id="ckErr2">Please fill in the required payment details.</div>
+        <div class="ck-actions">
+          <button class="btn ck-back" id="ckBack1">Back</button>
+          <button class="btn btn-primary" id="ckPlaceOrder">Place order</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 — Order confirmation -->
+      <div id="ckStep3" style="display:none;">
+        <div class="ck-step-label">Step 3 of 3</div>
+        <div class="ck-confirm-icon">✓</div>
+        <h3 class="ck-title" style="text-align:center;">Order confirmed!</h3>
+        <p class="ck-confirm-text">Thank you — your order has been placed successfully. A confirmation has been sent to your email.</p>
+        <div id="ckConfirmDetails"></div>
+        <div class="ck-actions"><a href="orders.html" class="btn ck-back" style="text-decoration:none;">View my orders</a><button class="btn btn-primary" id="ckDone">Continue shopping</button></div>
+      </div>
+    </div>
+  </div>
   <script>
-    // Checkout: push the local cart to the server cart, then place the order.
+    // ---- Checkout: 3-step modal (address → payment → confirmation) ----
     // Prices are ALWAYS recomputed server-side by the backend pricing engine —
     // any local prices here are display-only and never trusted by the API.
-    document.querySelector('.checkout-btn').addEventListener('click', async function () {
-      try {
-        var local = JSON.parse(localStorage.getItem('aka-cart') || '[]')
-          .filter(function (i) { return i._sel !== false; });
-        if (local.length === 0) {
-          alert('Please select at least one item to checkout.');
+    (function () {
+      var overlay = document.getElementById('ckOverlay');
+      var steps = [document.getElementById('ckStep1'), document.getElementById('ckStep2'), document.getElementById('ckStep3')];
+      var orderPlaced = false;
+      var savedAddress = null;
+      var user = JSON.parse(localStorage.getItem('aamako_user') || 'null');
+
+      function showStep(n) {
+        steps.forEach(function (s, i) { s.style.display = i === n ? '' : 'none'; });
+        overlay.querySelectorAll('.ck-progress span').forEach(function (bar, i) { bar.classList.toggle('is-done', i <= n); });
+      }
+      function openModal() { overlay.classList.add('is-open'); document.body.style.overflow = 'hidden'; prefill(); showStep(0); }
+      function closeModal() { overlay.classList.remove('is-open'); document.body.style.overflow = ''; }
+      document.getElementById('ckClose').addEventListener('click', closeModal);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay && !orderPlaced) closeModal(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !orderPlaced) closeModal(); });
+
+      function prefill() {
+        if (!user) return;
+        if (!document.getElementById('ckName').value) document.getElementById('ckName').value = [user.firstName, user.lastName].filter(Boolean).join(' ');
+        if (!document.getElementById('ckEmail').value) document.getElementById('ckEmail').value = user.email || '';
+        if (!document.getElementById('ckPhone').value && user.phone) document.getElementById('ckPhone').value = user.phone;
+      }
+
+      document.getElementById('ckToPayment').addEventListener('click', function () {
+        var name = document.getElementById('ckName').value.trim();
+        var phone = document.getElementById('ckPhone').value.trim();
+        var email = document.getElementById('ckEmail').value.trim();
+        var addr = document.getElementById('ckAddress').value.trim();
+        var city = document.getElementById('ckCity').value.trim();
+        var zone = document.getElementById('ckZone').value.trim();
+        var ok = name && phone && email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && addr && city;
+        document.getElementById('ckErr1').style.display = ok ? 'none' : '';
+        if (!ok) return;
+        savedAddress = { name: name, phone: phone, email: email, full: addr + ', ' + city + (zone ? ', ' + zone : '') };
+        localStorage.setItem('aamako_last_address', JSON.stringify(savedAddress)); // remember for next time
+        showStep(1);
+      });
+      document.getElementById('ckBack1').addEventListener('click', function () { showStep(0); });
+
+      var payRadios = document.querySelectorAll('input[name="ckPay"]');
+      function payMethod() {
+        for (var i = 0; i < payRadios.length; i++) if (payRadios[i].checked) return payRadios[i].value;
+        return 'cod';
+      }
+      function togglePayDetails() {
+        document.getElementById('ckPayDetails').style.display = payMethod() !== 'cod' ? '' : 'none';
+        document.querySelectorAll('.ck-pay-opt').forEach(function (o) { o.classList.toggle('is-selected', o.querySelector('input').checked); });
+        document.getElementById('ckErr2').style.display = 'none';
+      }
+      payRadios.forEach(function (r) { r.addEventListener('change', togglePayDetails); });
+    })();
+  </script>
+
+  <script>
+    // ---- Place order → confirmation; opens the modal from the checkout button ----
+    (function () {
+      var overlay = document.getElementById('ckOverlay');
+      var steps = [document.getElementById('ckStep1'), document.getElementById('ckStep2'), document.getElementById('ckStep3')];
+      var orderPlaced = false;
+      function showStep(n) {
+        steps.forEach(function (s, i) { s.style.display = i === n ? '' : 'none'; });
+        overlay.querySelectorAll('.ck-progress span').forEach(function (bar, i) { bar.classList.toggle('is-done', i <= n); });
+      }
+      var payRadios = document.querySelectorAll('input[name="ckPay"]');
+      function payMethod() {
+        for (var i = 0; i < payRadios.length; i++) if (payRadios[i].checked) return payRadios[i].value;
+        return 'cod';
+      }
+
+      document.getElementById('ckPlaceOrder').addEventListener('click', async function () {
+        var method = payMethod();
+        var payId = document.getElementById('ckPayId').value.trim();
+        var payTxn = document.getElementById('ckPayTxn').value.trim();
+        if (method !== 'cod' && (!payId || !payTxn)) {
+          document.getElementById('ckErr2').style.display = '';
           return;
         }
-        for (var i = 0; i < local.length; i++) {
-          await window.AamakoAPI.addToCart(local[i].variantId || local[i].id, local[i].qty || local[i].quantity || 1);
+        var savedAddress = JSON.parse(localStorage.getItem('aamako_last_address') || 'null');
+        if (!savedAddress) { showStep(0); return; }
+        var btn = this;
+        btn.disabled = true; btn.textContent = 'Placing order…';
+        try {
+          var local = JSON.parse(localStorage.getItem('aka-cart') || '[]')
+            .filter(function (i) { return i._sel !== false; });
+          if (local.length === 0) { alert('Please select at least one item to checkout.'); return; }
+          for (var i = 0; i < local.length; i++) {
+            await window.AamakoAPI.addToCart(local[i].variantId || local[i].id, local[i].qty || local[i].quantity || 1);
+          }
+          var payLabels = { cod: 'Cash on Delivery', esewa: 'eSewa', khalti: 'Khalti', bank: 'Bank Transfer' };
+          var order = await window.AamakoAPI.checkout({
+            contactName: savedAddress.name,
+            contactEmail: savedAddress.email,
+            contactPhone: savedAddress.phone,
+            shippingAddress: savedAddress.full,
+            notes: 'Payment method: ' + payLabels[method] +
+              (payId ? ' · Account/No: ' + payId : '') +
+              (payTxn ? ' · Txn ref: ' + payTxn : '')
+          });
+          // Remove ONLY the ordered (selected) items from the local cart.
+          var remaining = JSON.parse(localStorage.getItem('aka-cart') || '[]')
+            .filter(function (i) { return i._sel === false; });
+          if (remaining.length > 0) localStorage.setItem('aka-cart', JSON.stringify(remaining));
+          else localStorage.removeItem('aka-cart');
+          orderPlaced = true;
+          document.getElementById('ckConfirmDetails').innerHTML =
+            '<div class="ck-summary-row"><span>Order number</span><span>' + order.orderNumber + '</span></div>' +
+            '<div class="ck-summary-row"><span>Total</span><span>Rs ' + Number((order.totalCents || 0) / 100).toLocaleString('en-IN') + '</span></div>' +
+            '<div class="ck-summary-row"><span>Payment</span><span>' + payLabels[method] + '</span></div>' +
+            '<div class="ck-summary-row"><span>Deliver to</span><span style="text-align:right;max-width:60%;">' + savedAddress.full + '</span></div>';
+          showStep(2);
+        } catch (err) {
+          alert(err.message || 'Checkout failed');
+        } finally {
+          btn.disabled = false; btn.textContent = 'Place order';
         }
-        // Remove ONLY the selected items from the local cart after ordering.
-        var remaining = JSON.parse(localStorage.getItem('aka-cart') || '[]')
-          .filter(function (i) { return i._sel === false; });
-        if (remaining.length > 0) localStorage.setItem('aka-cart', JSON.stringify(remaining));
-        else localStorage.removeItem('aka-cart');
-        var user = JSON.parse(localStorage.getItem('aamako_user') || 'null');
-        var order = await window.AamakoAPI.checkout({
-          contactName: user ? (user.firstName || 'Customer') : 'Guest',
-          contactEmail: user ? user.email : prompt('Email for order confirmation:') || '',
-          shippingAddress: prompt('Shipping address:') || ''
-        });
-        alert('Order placed! Number: ' + order.orderNumber);
-        window.location.href = 'index.html';
-      } catch (err) {
-        alert(err.message || 'Checkout failed');
+      });
+    })();
+  </script>
+
+  <script>
+    // ---- Open the modal / restore last address ----
+    (function () {
+      var overlay = document.getElementById('ckOverlay');
+      var steps = [document.getElementById('ckStep1'), document.getElementById('ckStep2'), document.getElementById('ckStep3')];
+      function showStep(n) {
+        steps.forEach(function (s, i) { s.style.display = i === n ? '' : 'none'; });
+        overlay.querySelectorAll('.ck-progress span').forEach(function (bar, i) { bar.classList.toggle('is-done', i <= n); });
       }
-    });
+      // Restore a previously used address into step 1, if any
+      try {
+        var last = JSON.parse(localStorage.getItem('aamako_last_address') || 'null');
+        if (last) {
+          document.getElementById('ckName').value = last.name || '';
+          document.getElementById('ckPhone').value = last.phone || '';
+          document.getElementById('ckEmail').value = last.email || '';
+          var parts = (last.full || '').split(', ');
+          document.getElementById('ckAddress').value = parts[0] || '';
+          document.getElementById('ckCity').value = parts[1] || '';
+          document.getElementById('ckZone').value = parts[2] || '';
+        }
+      } catch (_) {}
+      // Open the modal when "Proceed to checkout" is clicked
+      document.querySelector('.checkout-btn').addEventListener('click', function () {
+        var sel = JSON.parse(localStorage.getItem('aka-cart') || '[]').filter(function (i) { return i._sel !== false; });
+        if (sel.length === 0) { alert('Please select at least one item to checkout.'); return; }
+        overlay.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+        showStep(0);
+      });
+    })();
+  </script>
+
+  <script>
+    // ---- Out-of-stock sweep ----
+    // Items stay in the cart across refreshes; they are removed ONLY when the
+    // customer removes them or when the product is genuinely out of stock.
+    (function () {
+      if (!window.AamakoAPI) return;
+      window.AamakoAPI.listProducts(1, null).then(function (res) {
+        var stock = {};
+        (res.items || []).forEach(function (p) {
+          (p.variants || []).forEach(function (v) {
+            var inv = v.inventory;
+            stock[v.id] = (inv && typeof inv.stockOnHand === 'number') ? inv.stockOnHand : null;
+          });
+        });
+        var cart = JSON.parse(localStorage.getItem('aka-cart') || '[]');
+        var before = cart.length;
+        cart = cart.filter(function (i) {
+          var s = stock[i.variantId || i.id];
+          return s == null || s > 0; // unknown stock → keep; 0 or less → remove
+        });
+        if (cart.length !== before) {
+          localStorage.setItem('aka-cart', JSON.stringify(cart));
+          location.reload(); // re-render the cleaned cart table
+        }
+      }).catch(function () { /* backend down → leave the cart untouched */ });
+    })();
   </script>
 </body></html>

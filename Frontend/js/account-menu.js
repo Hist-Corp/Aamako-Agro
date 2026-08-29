@@ -67,9 +67,22 @@
   function reconcileCartForUser(user) {
     var uid = userIdOf(user);
     if (!uid) return;
-    if (lsGet('aka-cart-owner') === uid) return; // same user — keep their live cart
-    // Different (or unknown/legacy) owner: restore THIS user's snapshot or start
-    // clean, then take ownership. Prevents cross-account cart/wishlist leaks.
+    var owner = lsGet('aka-cart-owner');
+    if (owner === uid) return; // same user — keep their live cart
+    var activeCart = lsGet('aka-cart');
+    var activeHasItems = !!activeCart && activeCart !== '[]';
+    if (!owner && activeHasItems) {
+      // No previous owner recorded (guest cart, legacy data, or a fresh
+      // sign-in on this device): ADOPT the active cart for this user
+      // instead of wiping it. Refreshing the page must never empty the cart.
+      lsSet('aka-cart-owner', uid);
+      return;
+    }
+    if (owner && owner !== uid) {
+      // A DIFFERENT account's cart is live: snapshot it under its owner and
+      // restore THIS user's snapshot (or start clean).
+      try { snapshotForUser(owner); } catch (_) { /* ignore */ }
+    }
     var snapCart = lsGet('aka-cart:' + uid);
     var snapWish = lsGet('aka-wishlist:' + uid);
     if (snapCart) lsSet('aka-cart', snapCart); else lsDel('aka-cart');
