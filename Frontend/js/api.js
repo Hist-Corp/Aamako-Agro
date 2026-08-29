@@ -25,6 +25,24 @@
     return cartSession;
   }
 
+  var refreshInFlight = null;
+  /** One silent refresh shared by ALL concurrent 401s. Two parallel refreshes
+   *  in the same second would mint identical refresh JWTs and the backend
+   *  rejects the duplicate session (P2002), logging the user out. */
+  function silentRefresh() {
+    if (!refreshInFlight) {
+      refreshInFlight = fetch(API_BASE + '/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: tokens ? tokens.refreshToken : null }),
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) { refreshInFlight = null; return data; })
+        .catch(function () { refreshInFlight = null; return null; });
+    }
+    return refreshInFlight;
+  }
+
   async function request(method, path, body) {
     var headers = { 'Content-Type': 'application/json' };
     if (tokens && tokens.accessToken)
@@ -38,14 +56,10 @@
     });
 
     if (res.status === 401 && tokens) {
-      // Try one silent refresh
-      var refreshed = await fetch(API_BASE + '/auth/refresh', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({ refreshToken: tokens.refreshToken }),
-      });
-      if (refreshed.ok) {
-        tokens = await refreshed.json();
+      // Try one silent refresh (shared across concurrent 401s)
+      var fresh = await silentRefresh();
+      if (fresh && fresh.accessToken) {
+        tokens = fresh;
         localStorage.setItem('aamako_tokens', JSON.stringify(tokens));
         return request(method, path, body);
       }

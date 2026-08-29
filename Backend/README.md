@@ -38,6 +38,9 @@ NestJS 10 + TypeScript REST API serving both frontends:
 | What | Value |
 |---|---|
 | Staff admin | `admin@aamako.agro` / `Admin123!` |
+| Staff roles | `admin2@aamako.agro` / `Admin123!` · `manager@aamako.agro` / `Manager123!` · `sales@aamako.agro` / `Sales123!` · `content@aamako.agro` / `Content123!` · `inventory@aamako.agro` / `Inventory123!` · `support@aamako.agro` / `Support123!` |
+| Storefront retail customer | `customer@aamako.agro` / `Customer123!` (RETAIL_CUSTOMER) |
+| Storefront wholesale customer | `wholesale@aamako.agro` / `Wholesale123!` (WHOLESALE_CUSTOMER, active GROWTH account) |
 | Pricing tiers | STARTER / GROWTH / ENTERPRISE |
 | Catalog | 3 products w/ variants + inventory + wholesale price lists (-10/-18/-25%) |
 

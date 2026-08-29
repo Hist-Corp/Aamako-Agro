@@ -141,7 +141,7 @@
     document.getElementById('statCart').textContent = String(qty);
   } catch (_) { document.getElementById('statCart').textContent = '0'; }
 
-  window.AamakoAPI.myOrders().then(function (orders) {
+  function renderRecentOrders(orders) {
     var list = Array.isArray(orders) ? orders : [];
     document.getElementById('statOrders').textContent = String(list.length);
     var active = list.filter(function (o) {
@@ -167,10 +167,22 @@
           '<div class="order-total" style="margin-top:6px;">' + fmtNpr(o.totalCents) + '</div></div>' +
         '</div></div>';
     }).join('');
-  }).catch(function () {
-    document.getElementById('recentOrders').innerHTML =
-      '<p style="font-size:13.5px; color:#9a6700;">Could not load your orders just now. Please refresh in a moment.</p>';
-  });
+  }
+  function loadRecentOrders() {
+    window.AamakoAPI.myOrders().then(renderRecentOrders).catch(function () {
+      // One automatic retry — a transient hiccup (token refresh race, rate
+      // limit) must never force the user to hit refresh manually.
+      setTimeout(function () {
+        window.AamakoAPI.myOrders().then(renderRecentOrders).catch(function () {
+          document.getElementById('recentOrders').innerHTML =
+            '<p style="font-size:13.5px; color:#9a6700;">Could not load your orders just now. Please refresh in a moment.</p>';
+        });
+      }, 800);
+    });
+  }
+  loadRecentOrders();
+  // Back/forward-cache restores stale DOM — always re-fetch fresh data instead.
+  window.addEventListener('pageshow', function (e) { if (e.persisted) window.location.reload(); });
 })();
 </script>
 </body></html>

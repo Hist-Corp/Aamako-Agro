@@ -121,5 +121,6 @@ Once startup finishes:
   ⚙️  API docs   : ${SERVICES[0].url}
 
 Admin login (after seeding): admin@aamako.agro / Admin123!
+Storefront: customer@aamako.agro / Customer123!  ·  wholesale@aamako.agro / Wholesale123!
 Press ${DIM}Ctrl+C${RESET} to stop everything.
 `);

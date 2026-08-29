@@ -65,7 +65,7 @@
     } catch (_) { return ''; }
   }
 
-  window.AamakoAPI.myOrders().then(function (orders) {
+  function renderOrders(orders) {
     document.getElementById('ordersLoading').style.display = 'none';
     var list = Array.isArray(orders) ? orders : [];
     if (list.length === 0) {
@@ -91,11 +91,22 @@
         '<div class="order-meta">Shipping to: ' + (o.shippingAddress || '—') + '</div>' +
         '</div>';
     }).join('');
-  }).catch(function () {
-    document.getElementById('ordersLoading').style.display = 'none';
-    document.getElementById('ordersList').innerHTML =
-      '<p style="font-size:13.5px; color:#9a6700;">Could not load your orders right now. Please try again shortly.</p>';
-  });
+  }
+  function loadOrders() {
+    window.AamakoAPI.myOrders().then(renderOrders).catch(function () {
+      // One automatic retry — transient failures never require a manual refresh.
+      setTimeout(function () {
+        window.AamakoAPI.myOrders().then(renderOrders).catch(function () {
+          document.getElementById('ordersLoading').style.display = 'none';
+          document.getElementById('ordersList').innerHTML =
+            '<p style="font-size:13.5px; color:#9a6700;">Could not load your orders right now. Please try again shortly.</p>';
+        });
+      }, 800);
+    });
+  }
+  loadOrders();
+  // Back/forward-cache restores stale DOM — always re-fetch fresh data instead.
+  window.addEventListener('pageshow', function (e) { if (e.persisted) window.location.reload(); });
 })();
 </script>
 </body></html>

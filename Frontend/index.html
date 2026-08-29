@@ -317,6 +317,8 @@
 </footer>
 
 
+<script src="js/api.js"></script>
+<script src="js/account-menu.js"></script>
 <script>
 (function(){
   /* hamburger */
@@ -397,7 +399,8 @@
   function closeCart(){ overlay.classList.remove('is-open'); cartDrawer.classList.remove('is-open'); document.body.style.overflow=''; }
   function updateBadge(){
     var count = cart.reduce(function(s,i){ return s+i.qty; }, 0);
-    var total = cart.reduce(function(s,i){return s+i.price*i.qty;},0);
+    var unitPriceOf = function(i){ return (i.unitPrice != null ? i.unitPrice : i.price) || 0; };
+    var total = cart.reduce(function(s,i){return s+unitPriceOf(i)*i.qty;},0);
     if(count>0){ cartBadge.textContent=count; cartBadge.style.display='inline-flex'; cartBadge.classList.remove('bounce'); void cartBadge.offsetWidth; cartBadge.classList.add('bounce'); }
     else { cartBadge.style.display='none'; }
     cartTotal.textContent='Rs '+total;
@@ -415,7 +418,7 @@
         + '<div class="cart-item-photo"><div class="photo" style="height:100%;background:var(--sage);"></div></div>'
         + '<div class="cart-item-info"><div class="cart-item-name">'+item.name+'</div><div class="cart-item-meta">'+item.meta+'</div>'
         + '<div class="cart-item-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div>'
-        + '</div><div class="cart-item-right"><div class="cart-item-price">Rs '+(item.price*item.qty)+'</div>'
+        + '</div><div class="cart-item-right"><div class="cart-item-price">Rs '+(((item.unitPrice!=null?item.unitPrice:item.price)||0)*item.qty)+'</div>'
         + '<button class="cart-item-remove" data-idx="'+i+'" aria-label="Remove">×</button></div></div>';
     }).join('');
     cartItems.querySelectorAll('.cart-item-remove').forEach(function(b){ b.addEventListener('click',function(){ cart.splice(parseInt(b.dataset.idx),1); localStorage.setItem('aka-cart',JSON.stringify(cart)); updateBadge(); }); });
@@ -438,11 +441,15 @@
       localStorage.setItem('aka-cart',JSON.stringify(cart)); updateBadge(); b.classList.add('is-added'); setTimeout(function(){b.classList.remove('is-added');},500);
     });
   });
+  // account-menu.js may restore this user's saved cart after sign-in —
+  // re-read storage so the badge/drawer reflect it without a manual refresh.
+  window.addEventListener('aamako-cart-restored', function () {
+    try { cart = JSON.parse(localStorage.getItem('aka-cart') || '[]'); } catch (_) { cart = []; }
+    updateBadge();
+  });
   updateBadge();
 })();
 </script>
-<script src="js/api.js"></script>
-<script src="js/account-menu.js"></script>
 
 </body>
 </html>

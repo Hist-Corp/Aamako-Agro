@@ -178,6 +178,12 @@
   function renderCartItems(){if(cart.length===0){cartItems.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you\'ll love.</div></div>';return;}cartItems.innerHTML=cart.map(function(item,i){return '<div class="cart-item"><div class="cart-item-photo"><div class="photo" style="height:100%;background:var(--sage);"></div></div><div class="cart-item-info"><div class="cart-item-name">'+item.name+'</div><div class="cart-item-meta">'+item.meta+'</div><div class="cart-item-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div></div><div class="cart-item-right"><div class="cart-item-price">'+fmt(unitPriceOf(item)*item.qty)+'</div><button class="cart-item-remove" data-idx="'+i+'" aria-label="Remove">×</button></div></div>';}).join('');cartItems.querySelectorAll('.cart-item-remove').forEach(function(b){b.addEventListener('click',function(){cart.splice(parseInt(b.dataset.idx),1);localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});cartItems.querySelectorAll('.cart-item-qty button').forEach(function(b){b.addEventListener('click',function(){var idx=parseInt(b.dataset.idx);if(b.dataset.action==='inc')cart[idx].qty++;else{cart[idx].qty--;if(cart[idx].qty<=0)cart.splice(idx,1);}localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});}
   if(cartToggle)cartToggle.addEventListener('click',function(e){e.preventDefault();openCart();});if(cartClose)cartClose.addEventListener('click',closeCart);if(overlay)overlay.addEventListener('click',closeCart);
   function addToCart(entry){var ex=cart.find(function(i){return i.variantId===entry.variantId;});if(ex){ex.qty++;}else{cart.push(entry);}saveCart();updateBadge();}
+  // account-menu.js may restore this user's saved cart after sign-in —
+  // re-read storage so the badge/drawer reflect it without a manual refresh.
+  window.addEventListener('aamako-cart-restored', function () {
+    try { cart = JSON.parse(localStorage.getItem('aka-cart') || '[]'); } catch (_) { cart = []; }
+    updateBadge();
+  });
   updateBadge();
 })();
 </script>

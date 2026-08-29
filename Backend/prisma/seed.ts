@@ -92,6 +92,34 @@ async function main() {
     },
   });
 
+  // Storefront retail customer: customer@aamako.agro / Customer123! (RETAIL_CUSTOMER)
+  await prisma.user.upsert({
+    where: { email: 'customer@aamako.agro' },
+    update: {},
+    create: {
+      email: 'customer@aamako.agro',
+      passwordHash: await bcrypt.hash('Customer123!', 12),
+      firstName: 'Ram',
+      lastName: 'Shrestha',
+      phone: '+9779800000000',
+      role: Role.RETAIL_CUSTOMER,
+    },
+  });
+
+  // Storefront wholesale customer: wholesale@aamako.agro / Wholesale123! (WHOLESALE_CUSTOMER)
+  await prisma.user.upsert({
+    where: { email: 'wholesale@aamako.agro' },
+    update: {},
+    create: {
+      email: 'wholesale@aamako.agro',
+      passwordHash: await bcrypt.hash('Wholesale123!', 12),
+      firstName: 'Hari',
+      lastName: 'Tamang',
+      phone: '+9779811111111',
+      role: Role.WHOLESALE_CUSTOMER,
+    },
+  });
+
   const tiers = Object.values(Tier);
   for (const [i, tier] of tiers.entries()) {
     await prisma.pricingTier.upsert({
@@ -104,6 +132,30 @@ async function main() {
       },
     });
   }
+
+  // Active wholesale account for wholesale@aamako.agro (GROWTH tier) so the
+  // storefront wholesale flows show tier pricing immediately.
+  const wholesaleUser = await prisma.user.findUniqueOrThrow({
+    where: { email: 'wholesale@aamako.agro' },
+  });
+  const whAdmin = await prisma.user.findUniqueOrThrow({
+    where: { email: 'admin@aamako.agro' },
+  });
+  const growthTier = await prisma.pricingTier.findUniqueOrThrow({
+    where: { tier: Tier.GROWTH },
+  });
+  await prisma.wholesaleAccount.upsert({
+    where: { userId: wholesaleUser.id },
+    update: { tierId: growthTier.id, isActive: true },
+    create: {
+      userId: wholesaleUser.id,
+      tierId: growthTier.id,
+      companyName: 'Himalayan Organics Pvt. Ltd.',
+      vatNumber: '302712345',
+      isActive: true,
+      approvedById: whAdmin.id,
+    },
+  });
 
   const cat = await prisma.category.upsert({
     where: { slug: 'freeze-dried-fruits' },
@@ -158,7 +210,7 @@ async function main() {
     }
   }
 
-  console.log('Seed complete: staff admin + tiers + catalog + wholesale price lists');
+  console.log('Seed complete: staff admin + customers + tiers + catalog + wholesale price lists');
 }
 
 main()

@@ -279,6 +279,13 @@
 
   document.getElementById('signOutLink').addEventListener('click', function (e) {
     e.preventDefault();
+    // snapshot cart/wishlist back to THIS account before the session is dropped,
+    // so the next sign-in (any account) starts from its own data
+    if (window.AamakoAccountMenu && window.AamakoAccountMenu.purgeForSignOut) {
+      try { window.AamakoAccountMenu.purgeForSignOut(); } catch (_) {}
+    } else {
+      ['aka-cart', 'aka-wishlist', 'aka-cart-owner'].forEach(function (k) { localStorage.removeItem(k); });
+    }
     try { window.AamakoAPI.logout(); } catch (_) {}
     localStorage.removeItem('aamako_user');
     localStorage.removeItem('aamako_avatar');

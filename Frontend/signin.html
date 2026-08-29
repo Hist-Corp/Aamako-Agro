@@ -164,11 +164,18 @@
           try { window.AamakoAPI.logout(); } catch (_) {}
           localStorage.removeItem('aamako_user');
         } else {
-          // honor ?next=<page> from gated pages, then default to the dashboard
+          // Hydrate the FULL profile (name, phone…) right away — the login
+          // payload only carries {id, email, role}, so the header avatar/menu
+          // would otherwise show the email instead of the real name.
+          try {
+            var full = await window.AamakoAPI.me();
+            localStorage.setItem('aamako_user', JSON.stringify(full));
+          } catch (_) { /* keep the login payload; header falls back to email */ }
+          // honor ?next=<page> from gated pages, then land on the home page
           var params = new URLSearchParams(window.location.search);
           var next = params.get('next');
           window.location.href =
-            next && /^[a-z-]+\.html$/i.test(next) ? next : 'account.html';
+            next && /^[a-z-]+\.html$/i.test(next) ? next : 'index.html';
         }
       } catch (err) {
         errEl.textContent = err.message || 'Sign in failed';

@@ -165,9 +165,17 @@ For full API documentation, refer to the Swagger UI at `/api/docs` when the back
 
 ## Default Credentials
 
-After seeding, access the admin panel with:
-- **Email**: `admin@aamako.agro`
-- **Password**: `Admin123!`
+After seeding, the following accounts are available:
+
+**Admin Dashboard** (http://localhost:3001/login):
+- **Email**: `admin@aamako.agro` · **Password**: `Admin123!` (SUPER_ADMIN)
+
+**Storefront** (http://localhost:8080/signin.html):
+- **Retail customer**: `customer@aamako.agro` / `Customer123!` (RETAIL_CUSTOMER)
+- **Wholesale customer**: `wholesale@aamako.agro` / `Wholesale123!` (WHOLESALE_CUSTOMER, active GROWTH account)
+
+> Staff/team accounts can only sign in through the Admin Dashboard, and
+> customer accounts can only sign in through the Storefront (surface-separated auth).
 
 ## Architecture Highlights
 

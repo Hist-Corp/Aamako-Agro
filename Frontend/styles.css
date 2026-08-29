@@ -764,6 +764,10 @@ footer{border-top:1px solid var(--line); margin-top:var(--space-8); padding:var(
 .prod-card:hover{transform:translateY(-4px); box-shadow:var(--shadow-md);}
 
 .add-btn.is-added{background:var(--sage-deep); color:var(--paper); border-color:var(--sage-deep); animation:btn-pulse 400ms var(--ease-out);}
+/* PDP wishlist "love" reaction — filled heart state */
+.pdp-cta .btn-ghost.is-loved,
+.pdp-cta .btn-ghost.is-loved:hover{color:#b3261e; border-color:#b3261e;}
+.pdp-cta .btn-ghost.is-loved{animation:btn-pulse 400ms var(--ease-out);}
 @keyframes btn-pulse{ 0%{transform:scale(1);} 40%{transform:scale(1.2);} 100%{transform:scale(1);} }
 
 .cart-badge{
@@ -780,7 +784,10 @@ footer{border-top:1px solid var(--line); margin-top:var(--space-8); padding:var(
 }
 .cart-badge.bounce{animation:badge-bounce 350ms var(--ease-out);}
 @keyframes badge-bounce{ 0%{transform:scale(1);} 35%{transform:scale(1.35);} 100%{transform:scale(1);} }
-.cart-btn-wrap{position:relative; display:inline-flex;}
+.cart-btn-wrap{position:relative; display:none;}
+/* Cart is an authenticated surface: account-menu.js toggles these body classes */
+body.is-signed-in .cart-btn-wrap{display:inline-flex;}
+body.is-signed-out .cart-btn-wrap{display:none;}
 
 .cart-overlay{
   position:fixed; inset:0; background:rgba(33,31,23,0.5); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);

@@ -8,8 +8,10 @@
  * When signed in, replaces the header "Sign in" ghost button with an
  * icon-only profile avatar (initials) that opens an Account ▾ dropdown
  * (name + email, Dashboard / Profile / Orders / Cart / Sign out) and swaps
- * the mobile drawer's sign-in link accordingly. When signed out, does
- * nothing — the static "Sign in" link stays.
+ * the mobile drawer's sign-in link accordingly. It also toggles body-level
+ * auth classes — "is-signed-in" / "is-signed-out" — which styles.css uses to
+ * show the nav Cart button only for signed-in users. When signed out, the
+ * static "Sign in" link stays and cart surfaces stay hidden.
  */
 (function () {
   'use strict';
@@ -31,6 +33,62 @@
   function displayName(user) {
     var name = [user.firstName, user.lastName].filter(Boolean).join(' ');
     return name || user.email;
+  }
+  // ---- Per-user cart & wishlist scoping (localStorage) ----
+  // The active cart lives in "aka-cart" (and wishlist in "aka-wishlist"). On
+  // sign-out they are snapshotted to "aka-cart:<userId>" / "aka-wishlist:<userId>"
+  // and the active keys are wiped; on sign-in the user's own snapshot is restored.
+  // That way account B never sees account A's items or "history".
+  function userIdOf(user) {
+    if (!user) return '';
+    return String(user.id || user.userId || user.email || '');
+  }
+  function lsGet(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
+  function lsSet(key, val) { try { localStorage.setItem(key, val); } catch (_) { /* quota */ } }
+  function lsDel(key) { try { localStorage.removeItem(key); } catch (_) { /* ignore */ } }
+  function cartCount() {
+    var items;
+    try { items = JSON.parse(lsGet('aka-cart') || '[]'); } catch (_) { return 0; }
+    return (items || []).reduce(function (s, i) { return s + (Number(i.qty) || Number(i.quantity) || 1); }, 0);
+  }
+  function snapshotForUser(uid) {
+    var cart = lsGet('aka-cart');
+    var wish = lsGet('aka-wishlist');
+    if (cart && cart !== '[]') lsSet('aka-cart:' + uid, cart); else lsDel('aka-cart:' + uid);
+    if (wish && wish !== '[]') lsSet('aka-wishlist:' + uid, wish); else lsDel('aka-wishlist:' + uid);
+  }
+  function purgeForSignOut() {
+    var uid = userIdOf(currentUser());
+    if (uid) snapshotForUser(uid);
+    lsDel('aka-cart');
+    lsDel('aka-wishlist');
+    lsDel('aka-cart-owner');
+  }
+  function reconcileCartForUser(user) {
+    var uid = userIdOf(user);
+    if (!uid) return;
+    if (lsGet('aka-cart-owner') === uid) return; // same user — keep their live cart
+    // Different (or unknown/legacy) owner: restore THIS user's snapshot or start
+    // clean, then take ownership. Prevents cross-account cart/wishlist leaks.
+    var snapCart = lsGet('aka-cart:' + uid);
+    var snapWish = lsGet('aka-wishlist:' + uid);
+    if (snapCart) lsSet('aka-cart', snapCart); else lsDel('aka-cart');
+    if (snapWish) lsSet('aka-wishlist', snapWish); else lsDel('aka-wishlist');
+    lsSet('aka-cart-owner', uid);
+  }
+  // Scope the stored cart/wishlist to the signed-in user BEFORE any page script
+  // reads them (this file is included before every page's inline script).
+  reconcileCartForUser(currentUser());
+  // Pages read the cart in their own inline scripts; once all of them have
+  // parsed and registered listeners (DOMContentLoaded), tell them to re-sync
+  // in case the reconcile swapped in this user's saved snapshot.
+  function announceCartRestore() {
+    try { window.dispatchEvent(new CustomEvent('aamako-cart-restored')); } catch (_) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', announceCartRestore);
+  } else {
+    announceCartRestore();
   }
 
   // ---- Profile photo (passport-size), stored privately on this device ----
@@ -56,6 +114,7 @@
   }
 
   function signOut() {
+    purgeForSignOut(); // snapshot cart/wishlist for THIS user, then wipe active keys
     if (window.AamakoAPI && window.AamakoAPI.logout) {
       try { window.AamakoAPI.logout(); } catch (_) { /* network errors don't block signout */ }
     }
@@ -87,8 +146,26 @@
   function init() {
     var user = currentUser();
     if (!user) {
-      // signed-out: leave default Sign in links untouched
+      // signed-out: leave default Sign in links untouched, hide cart surfaces
       document.body.classList.add('is-signed-out');
+      document.body.classList.remove('is-signed-in');
+      return;
+    }
+
+    // signed-in: reveal authed-only header surfaces (nav Cart button)
+    document.body.classList.remove('is-signed-out');
+    document.body.classList.add('is-signed-in');
+
+    // refresh() re-run (e.g. after profile edits): repaint name/email/avatar in
+    // the existing menu, don't rebuild markup or double-bind listeners.
+    var existingWrap = document.getElementById('acctWrap');
+    if (existingWrap) {
+      var nm = existingWrap.querySelector('.acct-menu-name');
+      var em = existingWrap.querySelector('.acct-menu-email');
+      var av = existingWrap.querySelector('.acct-avatar');
+      if (nm) nm.textContent = displayName(user);
+      if (em) em.textContent = user.email;
+      if (av) av.innerHTML = avatarInner(user);
       return;
     }
 
@@ -103,6 +180,18 @@
       var wrap = document.createElement('span');
       wrap.innerHTML = html;
       signinLink.replaceWith(wrap.firstElementChild);
+    }
+
+    // Desktop header: on pages whose primary CTA is "Shop now" (no cart drawer
+    // of their own), swap it for a Cart button once the user is signed in.
+    var shopNow = document.querySelector('.nav-actions a.btn-primary[href="shop.html"]');
+    if (shopNow && !document.getElementById('cartToggle') && !shopNow.closest('.cart-btn-wrap')) {
+      var n = cartCount();
+      var cartWrap = document.createElement('span');
+      cartWrap.innerHTML =
+        '<div class="cart-btn-wrap"><a href="cart.html" class="btn btn-primary" id="cartToggle" title="View your cart">Cart' +
+        '<span class="cart-badge" id="cartBadge"' + (n > 0 ? '' : ' style="display:none;"') + '>' + n + '</span></a></div>';
+      shopNow.replaceWith(cartWrap.firstElementChild);
     }
 
     // Mobile drawer: point the primary CTA at the dashboard
@@ -158,7 +247,11 @@
   document.addEventListener('aamako-avatar-changed', applyAvatars);
 
   // expose for pages that render their own header markup dynamically
-  window.AamakoAccountMenu = { refresh: init };
+  window.AamakoAccountMenu = {
+    refresh: init,
+    purgeForSignOut: purgeForSignOut,
+    cartCount: cartCount
+  };
   window.AamakoAvatar = {
     get: getAvatar,
     set: setAvatar,

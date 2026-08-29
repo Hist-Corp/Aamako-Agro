@@ -469,6 +469,12 @@
           if (signupTokens && signupTokens.user) {
             localStorage.setItem('aamako_user', JSON.stringify(signupTokens.user));
           }
+          // Hydrate the FULL profile so the header avatar/menu shows the real
+          // name immediately (the signup payload only carries id/email/role).
+          try {
+            var fullMe = await window.AamakoAPI.me();
+            localStorage.setItem('aamako_user', JSON.stringify(fullMe));
+          } catch (_) { /* keep the signup payload */ }
           // Wholesale intent → file an inquiry for staff approval flow
           var bName = document.getElementById('businessName');
           if (bName && bName.value) {
@@ -480,7 +486,8 @@
               message: 'Submitted via signup page'
             });
           }
-          window.location.href = 'account.html';
+          // land on the storefront home page after a successful signup
+          window.location.href = 'index.html';
         } catch (err) {
           alert(err.message || 'Signup failed');
         }
