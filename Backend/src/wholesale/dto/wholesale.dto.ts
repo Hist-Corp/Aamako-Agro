@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsEnum,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -50,4 +51,21 @@ export class PrivateLabelLeadDto {
   @ApiPropertyOptional() @IsOptional() @IsString() productInterest?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() quantityEstimate?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(2000) message?: string;
+}
+
+/** Sales/Manager response to a wholesale quote request. */
+export class RespondQuoteDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(2000) responseNote?: string;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() totalEstimate?: number;
+}
+
+/** Approve/reject a wholesale business application (maps onto WholesaleInquiry review). */
+export class BusinessActionDto {
+  @ApiProperty({ enum: ['APPROVED', 'REJECTED'] })
+  @IsEnum(['APPROVED', 'REJECTED'])
+  status!: 'APPROVED' | 'REJECTED';
+
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(2000) reason?: string;
+
+  @ApiPropertyOptional({ enum: Tier }) @IsOptional() @IsEnum(Tier) priceTier?: Tier;
 }

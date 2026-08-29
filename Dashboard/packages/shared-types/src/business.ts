@@ -29,6 +29,7 @@ export interface Business {
   orderCount: number;
   totalSpend: number;
   notes?: string;
+  reviewNote?: string;
   rejectionReason?: string;
   approvedAt?: string;
   rejectedAt?: string;

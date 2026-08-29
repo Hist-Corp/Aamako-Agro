@@ -2,9 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useUsers, useUpdateUserRole } from '@/lib/api-hooks';
+import { useUsers, useUpdateUserRole, useRemoveUser } from '@/lib/api-hooks';
 import { useAuth } from '@/config/auth-context';
-import { canAct } from '@/config/rbac';
 import { formatDateTime } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
 import { DataTable } from '@/components/ui/data-table';
@@ -15,6 +14,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import type { User, Role } from '@aamako/shared-types';
+import { rolesBelow, canPromoteDemote, isCustomerRole } from '@aamako/shared-types';
 import { Settings, Shield, ShieldCheck } from 'lucide-react';
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
@@ -63,12 +63,35 @@ export default function SettingsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const updateRoleMutation = useUpdateUserRole();
+  const removeUserMutation = useRemoveUser();
   const { data: users, isLoading } = useUsers();
+  const [removeTarget, setRemoveTarget] = useState<User | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
-  // Gate: only roles with settings:view can open this screen. Hierarchy is
-  // preserved: role assignment (roles:manage) remains SUPER_ADMIN only.
-  const canView = user && canAct(user.role, 'settings:view');
-  const canAssignRoles = user && canAct(user.role, 'roles:manage');
+  // Settings manages dashboard users only — hide storefront customer accounts
+  // (retail / wholesale customers) from the list entirely.
+  const staffUsers = useMemo(
+    () => (users ?? []).filter((u) => !isCustomerRole(u.role)),
+    [users],
+  );
+
+  // Gate: Super Admin / Admin / Staff Admin / Manager / Staff Manager / Sales
+  // / Staff Sales can open Settings and promote/demote users. The role picker
+  // is limited to roles strictly below the actor's rank (see rolesBelow), so
+  // nobody can assign their own rank or higher, or assign SUPER_ADMIN.
+  const canManageRoles = !!user && canPromoteDemote(user.role);
+  const canView = canManageRoles;
+
+  // Only admin and super admin may remove dashboard users.
+  const canRemoveUsers =
+    !!user && (user.role === 'SUPER_ADMIN' || user.role === 'STAFF_ADMIN' || user.role === 'ADMIN');
+
+  // Roles the actor may promote/demote a user to — strictly below their own
+  // rank, so their own rank / higher and SUPER_ADMIN are never offered.
+  const assignableRoleOptions = useMemo(() => {
+    const allowed = new Set(rolesBelow(user?.role));
+    return ROLE_OPTIONS.filter((o) => allowed.has(o.value));
+  }, [user]);
 
   if (!canView) {
     return (
@@ -98,6 +121,24 @@ export default function SettingsPage() {
       addToast({ type: 'error', title: 'Failed to update role', description: err.message });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleRemoveUser = async () => {
+    if (!removeTarget) return;
+    setIsRemoving(true);
+    try {
+      await removeUserMutation.mutateAsync(removeTarget.id);
+      addToast({
+        type: 'success',
+        title: 'User removed',
+        description: `${removeTarget.name} has been removed from the dashboard.`,
+      });
+      setRemoveTarget(null);
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Failed to remove user', description: err.message });
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -169,10 +210,11 @@ export default function SettingsPage() {
         size: 80,
         cell: ({ row }) => {
           const targetUser = row.original;
-          // Can't change your own role; only SUPER_ADMIN may assign roles
-          if (targetUser.id === user?.id || !canAssignRoles) return null;
+          // Can't change your own role; only actors with a higher rank may
+          // promote/demote (Super Admin / Admin / Manager / Sales).
+          if (targetUser.id === user?.id || !canManageRoles) return null;
           return (
-            <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <div className="flex items-center gap-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
               <Button
                 variant="secondary"
                 size="sm"
@@ -183,12 +225,17 @@ export default function SettingsPage() {
               >
                 Edit
               </Button>
+              {canRemoveUsers && targetUser.id !== user?.id && (
+                <Button variant="danger" size="sm" onClick={() => setRemoveTarget(targetUser)}>
+                  Remove
+                </Button>
+              )}
             </div>
           );
         },
       },
     ],
-    [user?.id]
+    [user?.id, canManageRoles, canRemoveUsers]
   );
 
   return (
@@ -201,7 +248,7 @@ export default function SettingsPage() {
 
       <DataTable
         columns={columns}
-        data={users ?? []}
+        data={staffUsers}
         isLoading={isLoading}
         searchPlaceholder="Search users…"
         emptyState={
@@ -237,7 +284,11 @@ export default function SettingsPage() {
               label="New Role"
               value={newRole}
               onChange={(e) => setNewRole(e.target.value as Role)}
-              options={ROLE_OPTIONS}
+              options={
+                assignableRoleOptions.length > 0
+                  ? assignableRoleOptions
+                  : [{ value: 'STAFF_SUPPORT' as Role, label: 'No lower roles available' }]
+              }
             />
 
             {editDialog.id === user?.id && (
@@ -247,6 +298,27 @@ export default function SettingsPage() {
                 </p>
               </div>
             )}
+          </div>
+        </Dialog>
+      )}
+
+      {/* Remove User Confirmation Dialog */}
+      {removeTarget && (
+        <Dialog
+          open={!!removeTarget}
+          onClose={() => setRemoveTarget(null)}
+          title="Remove user"
+          description="This permanently removes the user and all their associated data. This action cannot be undone."
+          destructiveAction={{
+            label: 'Remove User',
+            onClick: handleRemoveUser,
+            isLoading: isRemoving,
+          }}
+        >
+          <div className="rounded-lg bg-surface-50 p-3 text-sm">
+            <p><span className="font-medium">User:</span> {removeTarget.name}</p>
+            <p><span className="font-medium">Email:</span> {removeTarget.email}</p>
+            <p><span className="font-medium">Role:</span> {removeTarget.role.replace(/_/g, ' ')}</p>
           </div>
         </Dialog>
       )}

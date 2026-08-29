@@ -32,6 +32,13 @@ export const MANAGEABLE_USER_ROLES: Role[] = [
   Role.SUPER_ADMIN,
 ];
 
+/** Dashboard / staff roles only — excludes storefront customer roles.
+ *  Used for role promotion/demotion and the Staff section so that retail and
+ *  wholesale customer accounts are never treated as dashboard staff. */
+export const STAFF_ROLES: Role[] = MANAGEABLE_USER_ROLES.filter(
+  (r) => r !== Role.RETAIL_CUSTOMER && r !== Role.WHOLESALE_CUSTOMER,
+);
+
 /**
  * Which roles each actor may CREATE via POST /admin/users:
  *  - SUPER_ADMIN / STAFF_ADMIN: any manageable role except Super Admin

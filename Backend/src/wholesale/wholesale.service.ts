@@ -3,9 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InquiryStatus } from '@prisma/client';
+import { InquiryStatus, Tier } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  BusinessActionDto,
   CreateInquiryDto,
   PrivateLabelLeadDto,
   ReviewInquiryDto,
@@ -68,6 +69,22 @@ export class WholesaleService {
         reviewedById: reviewerId,
         requestedUserId: dto.userId ?? inquiry.requestedUserId,
       },
+    });
+  }
+
+  /** Dashboard business approve/reject — wraps the review flow with a simpler DTO. */
+  async businessAction(id: string, reviewerId: string, dto: BusinessActionDto) {
+    const inquiry = await this.prisma.wholesaleInquiry.findUnique({ where: { id } });
+    if (!inquiry) throw new NotFoundException('Business not found');
+    if (inquiry.status !== InquiryStatus.PENDING) {
+      throw new BadRequestException('Business already reviewed');
+    }
+    const status = dto.status === 'APPROVED' ? InquiryStatus.APPROVED : InquiryStatus.REJECTED;
+    return this.review(id, reviewerId, {
+      status,
+      tier: dto.priceTier ?? Tier.STARTER,
+      reviewNote: dto.reason,
+      userId: inquiry.requestedUserId ?? undefined,
     });
   }
 

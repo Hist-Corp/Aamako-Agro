@@ -18,7 +18,7 @@ import {
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
-import { CREATABLE_ROLES_BY_ACTOR, MANAGEABLE_USER_ROLES, outranks } from '../common/rbac';
+import { CREATABLE_ROLES_BY_ACTOR, MANAGEABLE_USER_ROLES, STAFF_ROLES, outranks } from '../common/rbac';
 
 export class CreateStaffUserDto {
   @ApiProperty() @IsEmail() email!: string;
@@ -39,6 +39,11 @@ export const USER_MANAGEMENT_ROLES = [
   Role.STAFF_ADMIN,
   Role.SUPER_ADMIN,
 ];
+
+/** Actors that may REMOVE (permanently delete) dashboard users. Only admin
+ *  and super admin can remove users; hierarchy (outranks) still applies so an
+ *  admin cannot remove another admin / super admin. */
+export const USER_REMOVAL_ROLES = [Role.SUPER_ADMIN, Role.STAFF_ADMIN];
 
 /** Actors that may hit the create/assign endpoints at all; the exact target
  * roles each actor may use are enforced per-request via
@@ -145,7 +150,17 @@ export class AdminUsersController {
     return target;
   }
 
-  /** Promote / demote / reassign — same actor/target rules as creation. */
+  /** Promote / demote / reassign.
+   *
+   *  The target user must already be strictly below the actor's rank
+   *  (assertCanManage). The NEW role must also be strictly below the actor's
+   *  rank AND a dashboard/staff role (customer roles are excluded) — so Super
+   *  Admin / Admin / Manager / Sales can promote or demote a lower-ranked user
+   *  to any other staff role still below their own rank, but never to a
+   *  retail/wholesale customer role. This also inherently blocks assigning
+   *  SUPER_ADMIN (nobody outranks it) and prevents promoting someone to the
+   *  actor's own (or a higher) rank.
+   */
   @Roles(...USER_CREATION_ROLES)
   @Patch(':id/role')
   async updateRole(
@@ -160,10 +175,10 @@ export class AdminUsersController {
     if (dto.role === Role.SUPER_ADMIN) {
       throw new ForbiddenException('Super Admin cannot be assigned here');
     }
-    const allowed = CREATABLE_ROLES_BY_ACTOR[actor!.role] ?? [];
-    if (!allowed.includes(dto.role)) {
+    const validTargetRoles = STAFF_ROLES.filter((r) => outranks(actor!.role, r));
+    if (!validTargetRoles.includes(dto.role)) {
       throw new ForbiddenException(
-        `A ${actor!.role} cannot assign the role ${dto.role}`,
+        `A ${actor!.role} cannot assign the role ${dto.role} — it is not a lower-rank staff role`,
       );
     }
     return this.prisma.user.update({
@@ -186,8 +201,10 @@ export class AdminUsersController {
     return { success: true };
   }
 
-  /** Permanently remove a user (cascades sessions, carts, wholesale accounts). */
-  @Roles(...USER_MANAGEMENT_ROLES)
+  /** Permanently remove a user (cascades sessions, carts, wholesale accounts).
+   *  Admin and Super Admin only (see USER_REMOVAL_ROLES); target must be
+   *  strictly below the actor's rank. */
+  @Roles(...USER_REMOVAL_ROLES)
   @Delete(':id')
   @HttpCode(200)
   async remove(

@@ -26,13 +26,37 @@ export class CreateTaskDto {
 }
 
 /** Roles allowed to ASSIGN tasks. Target users must be strictly below the
- *  actor's rank (outranks). */
+ *  actor's rank (outranks), with one exception: a STAFF_MANAGER may assign
+ *  tasks to every user EXCEPT admins (STAFF_ADMIN) and super admins. */
 const TASK_ASSIGNER_ROLES = [
   Role.SUPER_ADMIN,
   Role.STAFF_ADMIN,
   Role.STAFF_MANAGER,
   Role.STAFF_SALES,
 ];
+
+/** Every role that may be the target of a task assignment. */
+const TASK_ASSIGNABLE_ROLES = [
+  Role.SUPER_ADMIN,
+  Role.STAFF_ADMIN,
+  Role.STAFF_MANAGER,
+  Role.STAFF_SALES,
+  Role.CONTENT_MANAGER,
+  Role.STAFF_SUPPORT,
+];
+
+/** Roles an actor may ASSIGN a task to.
+ *  - STAFF_MANAGER (Manager) can assign tasks to every user except admins
+ *    (STAFF_ADMIN) and super admins (SUPER_ADMIN) — including other managers.
+ *  - Every other assigner can only assign to users strictly below their rank. */
+function assignableTargetRoles(actorRole: Role): Role[] {
+  if (actorRole === Role.STAFF_MANAGER) {
+    return TASK_ASSIGNABLE_ROLES.filter(
+      (r) => r !== Role.STAFF_ADMIN && r !== Role.SUPER_ADMIN,
+    );
+  }
+  return TASK_ASSIGNABLE_ROLES.filter((r) => outranks(actorRole, r));
+}
 
 @ApiBearerAuth()
 @ApiTags('tasks')
@@ -80,7 +104,7 @@ export class TasksController {
     if (assignee.id === actor!.id) {
       throw new BadRequestException('You cannot assign a task to yourself');
     }
-    if (!outranks(actor!.role, assignee.role)) {
+    if (!assignableTargetRoles(actor!.role).includes(assignee.role)) {
       throw new ForbiddenException(
         `A ${actor!.role} cannot assign tasks to a user with the role ${assignee.role}`,
       );
@@ -149,21 +173,13 @@ export class TasksController {
     return { success: true, status: updated.status, completedAt: updated.completedAt };
   }
 
-  /** Users the actor may assign tasks to (strictly below their own rank). */
+  /** Users the actor may assign tasks to (see assignableTargetRoles). */
   @Roles(...TASK_ASSIGNER_ROLES)
   @Get('assignable')
   assignable(@CurrentUser() actor?: { id: string; role: Role }) {
-    const ASSIGNABLE_ROLES = [
-      Role.SUPER_ADMIN,
-      Role.STAFF_ADMIN,
-      Role.STAFF_MANAGER,
-      Role.STAFF_SALES,
-      Role.CONTENT_MANAGER,
-      Role.STAFF_SUPPORT,
-    ];
     return this.prisma.user.findMany({
       where: {
-        role: { in: ASSIGNABLE_ROLES.filter((r) => outranks(actor!.role, r)) },
+        role: { in: assignableTargetRoles(actor!.role) },
         isActive: true,
       },
       select: { id: true, firstName: true, lastName: true, email: true, role: true },

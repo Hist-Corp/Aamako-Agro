@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui/toast';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import type { User, Role } from '@aamako/shared-types';
-import { canAddStaff, creatableRolesFor } from '@aamako/shared-types';
+import { canAddStaff, creatableRolesFor, isCustomerRole } from '@aamako/shared-types';
 import { UsersRound, Plus } from 'lucide-react';
 
 const DEPARTMENT_OPTIONS = [
@@ -100,11 +100,12 @@ export default function StaffPage() {
 
   const creatableRoles = creatableRolesFor(user?.role);
 
-  // Filter to staff roles (exclude SUPER_ADMIN from staff list), then apply
-  // the department filter based on each role's department.
+  // Filter to dashboard staff (exclude SUPER_ADMIN and storefront customer
+  // accounts), then apply the department filter based on each role's department.
   const staffUsers = useMemo(() => {
     return (users ?? []).filter((u) => {
       if (u.role === 'SUPER_ADMIN') return false;
+      if (isCustomerRole(u.role)) return false;
       if (departmentFilter && ROLE_DEPARTMENT[u.role] !== departmentFilter) {
         return false;
       }

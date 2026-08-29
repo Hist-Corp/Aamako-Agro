@@ -41,7 +41,7 @@ export const BACKEND_ROLE_PERMISSIONS: Record<Role, string[]> = {
   ],
   [Role.STAFF_MANAGER]: [
     'dashboard:view', 'roles:view', 'users:view', 'staff:view', 'settings:view',
-    'products:view', 'products:edit',
+    'products:view', 'products:edit', 'products:create',
     'inventory:view', 'inventory:adjust', 'warehouses:view', 'batches:view',
     'distribution:view', 'distribution:manage', 'inventory-monitoring:view',
     'orders:view', 'orders:advance', 'orders:payment-status', 'orders:refund',

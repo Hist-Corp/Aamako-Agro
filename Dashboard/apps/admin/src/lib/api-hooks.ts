@@ -598,6 +598,15 @@ export function useUpdateUserRole() {
   });
 }
 
+/** Permanently remove a dashboard user (admin / super admin only). */
+export function useRemoveUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/admin/users/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users }),
+  });
+}
+
 export interface CreateStaffInput {
   email: string;
   password: string;

@@ -106,6 +106,19 @@ export default function WholesalePage() {
         },
       },
       {
+        accessorKey: 'reviewNote',
+        header: 'Remarks',
+        cell: ({ row }) => {
+          const note = row.original.reviewNote;
+          if (!note) return <span className="text-xs text-surface-400">—</span>;
+          return (
+            <p className="text-xs text-surface-600 max-w-[200px] truncate" title={note}>
+              {note}
+            </p>
+          );
+        },
+      },
+      {
         accessorKey: 'priceTier',
         header: 'Price Tier',
         cell: ({ row }) =>

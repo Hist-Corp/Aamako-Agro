@@ -69,7 +69,7 @@ export default function UsersPage() {
   const [editDialog, setEditDialog] = useState<User | null>(null);
   const [createDialog, setCreateDialog] = useState(false);
   const DEFAULT_NEW_USER_ROLE: Role = 'STAFF_MANAGER';
-  const [newUser, setNewUser] = useState({ name: '', email: '', role: DEFAULT_NEW_USER_ROLE as Role });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: DEFAULT_NEW_USER_ROLE as Role });
   const [newRole, setNewRole] = useState<Role>('ADMIN');
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -112,7 +112,7 @@ export default function UsersPage() {
       description: `${newUser.name} (${newUser.email}) added as ${newUser.role.replace(/_/g, ' ')}`,
     });
     setCreateDialog(false);
-    setNewUser({ name: '', email: '', role: DEFAULT_NEW_USER_ROLE });
+    setNewUser({ name: '', email: '', password: '', role: DEFAULT_NEW_USER_ROLE });
   };
 
   // â”€â”€ Tasks: assign below your rank; assignees complete from here â”€â”€
@@ -214,7 +214,7 @@ export default function UsersPage() {
           canAddUsers ? (
             <Button
               onClick={() => {
-                setNewUser({ name: '', email: '', role: assignableRoleOptions[0]?.value ?? DEFAULT_NEW_USER_ROLE });
+                setNewUser({ name: '', email: '', password: '', role: assignableRoleOptions[0]?.value ?? DEFAULT_NEW_USER_ROLE });
                 setCreateDialog(true);
               }}
             >
@@ -311,6 +311,13 @@ export default function UsersPage() {
               value={newUser.role}
               onChange={(e) => setNewUser({ ...newUser, role: e.target.value as Role })}
               options={assignableRoleOptions.length > 0 ? assignableRoleOptions : [{ value: 'STAFF_MANAGER' as Role, label: 'Staff Manager' }]}
+            />
+            <Input
+              label="Password"
+              type="password"
+              value={newUser.password}
+              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              placeholder="Set an initial password"
             />
           </div>
         </Dialog>

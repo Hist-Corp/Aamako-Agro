@@ -17,6 +17,57 @@ export type Role =
   | 'RETAIL_CUSTOMER'
   | 'WHOLESALE_CUSTOMER';
 
+/**
+ * Hierarchical authority ranking (mirrors Backend/src/common/rbac.ts).
+ * An actor may promote/demote/manage a user only to roles strictly below
+ * their own rank. SUPER_ADMIN (5) is the top — nobody can promote/demote to
+ * or above their own rank, and SUPER_ADMIN itself cannot be assigned.
+ */
+export const ROLE_RANK: Record<Role, number> = {
+  RETAIL_CUSTOMER: 0,
+  WHOLESALE_CUSTOMER: 1,
+  CONTENT_MANAGER: 1,
+  STAFF_SALES: 2,
+  STAFF_SUPPORT: 2,
+  STAFF_MANAGER: 3,
+  STAFF_ADMIN: 4,
+  SUPER_ADMIN: 5,
+  // Legacy/dashboard-only aliases ranked to mirror their real counterparts
+  CUSTOMER_SUPPORT: 2,
+  SALES: 2,
+  MANAGER: 3,
+  ADMIN: 4,
+  INVENTORY_MANAGER: 2,
+};
+
+/** Dashboard / staff roles only — excludes the storefront customer roles. */
+export const STAFF_ROLES: Role[] = [
+  'SUPER_ADMIN', 'ADMIN', 'STAFF_ADMIN',
+  'MANAGER', 'STAFF_MANAGER',
+  'SALES', 'STAFF_SALES',
+  'INVENTORY_MANAGER', 'CONTENT_MANAGER',
+  'CUSTOMER_SUPPORT', 'STAFF_SUPPORT',
+];
+
+/** Whether a role is a storefront customer account (not dashboard staff). */
+export function isCustomerRole(role: Role): boolean {
+  return role === 'RETAIL_CUSTOMER' || role === 'WHOLESALE_CUSTOMER';
+}
+
+/** Roles strictly below the given role's rank (promotable/demotable targets).
+ *  Restricted to dashboard staff roles — retail/wholesale customer accounts
+ *  are never offered for promotion/demotion. */
+export function rolesBelow(role: Role | undefined | null): Role[] {
+  if (!role || !(role in ROLE_RANK)) return [];
+  const actorRank = ROLE_RANK[role];
+  return STAFF_ROLES.filter((r) => ROLE_RANK[r] < actorRank);
+}
+
+/** Whether the actor may promote/demote users (i.e. has a staff hierarchy role). */
+export function canPromoteDemote(role: Role | undefined | null): boolean {
+  return rolesBelow(role).length > 0;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -272,8 +323,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'staff:view',
     // Settings (view)
     'settings:view',
-    // Products
-    'products:view', 'products:edit',
+    // Products — Manager adds new products to inventory (notifies Content Manager)
+    'products:view', 'products:edit', 'products:create',
     // Inventory
     'inventory:view', 'inventory:adjust',
     'warehouses:view',
@@ -304,8 +355,14 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   // Sales also updates order PAYMENT statuses and processes refunds.
   STAFF_SALES: [
     'dashboard:view',
-    // Users (manage below sales only)
-    'users:view', 'users:create', 'users:edit', 'users:delete',
+    // Roles & Permissions — Sales can view each role's assigned permissions
+    'roles:view',
+    // Users (view only — no create/edit/delete; those are above Sales hierarchy)
+    'users:view',
+    // Staff (view only)
+    'staff:view',
+    // Settings (view only)
+    'settings:view',
     // Products (view only)
     'products:view',
     // Customers
@@ -348,7 +405,6 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
  *  - Super Admin / Admin / Staff Admin: any role except Super Admin
  *  - Manager (incl. Staff Manager): Customer Support, Inventory Manager,
  *    Sales, Content Manager
- *  - Sales (incl. Staff Sales): Customer Support, Inventory Manager
  */
 export const USER_CREATION_ALLOWED_TARGETS: Partial<Record<Role, Role[]>> = {
   SUPER_ADMIN: [
@@ -372,8 +428,6 @@ export const USER_CREATION_ALLOWED_TARGETS: Partial<Record<Role, Role[]>> = {
     'CUSTOMER_SUPPORT', 'STAFF_SUPPORT', 'INVENTORY_MANAGER',
     'SALES', 'STAFF_SALES', 'CONTENT_MANAGER',
   ],
-  SALES: ['CUSTOMER_SUPPORT', 'STAFF_SUPPORT', 'INVENTORY_MANAGER'],
-  STAFF_SALES: ['CUSTOMER_SUPPORT', 'STAFF_SUPPORT', 'INVENTORY_MANAGER'],
 };
 
 /** Roles an actor may pick when adding a user/staff member. */
