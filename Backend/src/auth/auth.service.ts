@@ -2,11 +2,13 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
@@ -16,6 +18,21 @@ const STOREFRONT_ALLOWED_ROLES: Role[] = [
   Role.RETAIL_CUSTOMER,
   Role.WHOLESALE_CUSTOMER,
 ];
+
+/** Google public-key endpoint (JWKS) for ID-token signature verification. */
+const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
+const GOOGLE_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com']);
+const JWKS_TTL_MS = 60 * 60 * 1000;
+
+let jwksCache: { keys: JwkKey[]; fetchedAt: number } | null = null;
+
+/** A JWK entry returned by Google's certs endpoint. */
+interface JwkKey {
+  kid?: string;
+  kty?: string;
+  n?: string;
+  e?: string;
+}
 
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
 
@@ -70,6 +87,69 @@ export class AuthService {
     }
 
     return this.issueTokens(user.id, user.email, user.role, userAgent, ip);
+  }
+
+  /**
+   * Google Sign-In (Google Identity Services): verify the ID token handed
+   * over by Google, then look up or create the matching customer account.
+   * New Google sign-ups are created as RETAIL_CUSTOMER so they appear in the
+   * Dashboard → People → Customers list exactly like storefront registrations.
+   */
+  async googleLogin(idToken: string, userAgent?: string, ip?: string) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      throw new ServiceUnavailableException(
+        'Google Sign-In is not configured. Set GOOGLE_CLIENT_ID in the backend environment to enable it.',
+      );
+    }
+
+    const profile = await this.verifyGoogleIdToken(idToken, clientId);
+    if (profile.emailVerified === false) {
+      throw new ForbiddenException('Google email is not verified');
+    }
+
+    const email = profile.email.toLowerCase();
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+
+    if (existing) {
+      // Same storefront restriction as password login: staff accounts
+      // registered by the Admin Dashboard can never sign in here.
+      if (!STOREFRONT_ALLOWED_ROLES.includes(existing.role)) {
+        throw new ForbiddenException(
+          'This email is registered as an Admin Dashboard (staff) account and cannot be used to sign in to the storefront. Please use the staff dashboard instead.',
+        );
+      }
+      if (!existing.isActive) throw new UnauthorizedException('Account is suspended');
+      return this.issueTokens(existing.id, existing.email, existing.role, userAgent, ip);
+    }
+
+    // New Google sign-up → create a normal retail customer account so the
+    // customer shows up in the admin dashboard immediately.
+    const givenName =
+      profile.givenName?.trim() ||
+      profile.name?.trim().split(/\s+/)[0] ||
+      email.split('@')[0] ||
+      'Google';
+    const lastName =
+      profile.familyName?.trim() ||
+      (profile.name && profile.name.trim().split(/\s+/).slice(1).join(' ').trim()) ||
+      null;
+
+    const created = await this.prisma.user.create({
+      data: {
+        email,
+        // Google accounts hold no password; store an unusable random hash so
+        // the row is compatible with the shared users table.
+        passwordHash: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12),
+        firstName: givenName,
+        lastName,
+        phone: null,
+        role: Role.RETAIL_CUSTOMER,
+        isActive: true,
+      },
+    });
+
+    return this.issueTokens(created.id, created.email, created.role, userAgent, ip);
   }
 
   /** Rotating refresh: old token is revoked (single-use), new pair issued. */
@@ -183,6 +263,90 @@ export class AuthService {
     return { success: true };
   }
 
+
+  /**
+   * Cryptographically verify a Google ID token (JWT) using Google's public
+   * keys (JWKS) and the RSA signature. Claim checks mirror the OpenID Connect
+   * spec: issuer, audience (our OAuth client), expiry, and verified email.
+   */
+  private async verifyGoogleIdToken(
+    idToken: string,
+    clientId: string,
+  ): Promise<{
+    email: string;
+    emailVerified: boolean;
+    givenName?: string;
+    familyName?: string;
+    name?: string;
+  }> {
+    const parts = idToken.split('.');
+    if (parts.length !== 3) throw new UnauthorizedException('Invalid Google token');
+
+    const header = this.decodeJwtPart<{ alg?: string; kid?: string }>(parts[0]);
+    const payload = this.decodeJwtPart<{
+      iss?: string;
+      aud?: string;
+      exp?: number;
+      email?: string;
+      email_verified?: boolean;
+      given_name?: string;
+      family_name?: string;
+      name?: string;
+    }>(parts[1]);
+    const signature = Buffer.from(parts[2], 'base64url');
+
+    if (header.alg !== 'RS256') throw new UnauthorizedException('Invalid Google token algorithm');
+    if (!payload.iss || !GOOGLE_ISSUERS.has(payload.iss)) {
+      throw new UnauthorizedException('Invalid Google token issuer');
+    }
+    if (payload.aud !== clientId) throw new UnauthorizedException('Google token audience mismatch');
+    if (typeof payload.exp !== 'number' || payload.exp * 1000 <= Date.now()) {
+      throw new UnauthorizedException('Google token expired');
+    }
+    if (!payload.email) throw new UnauthorizedException('Google account has no email');
+
+    const keys = await this.fetchGoogleJwks();
+    const key = keys.find((k) => k.kid === header.kid);
+    if (!key || !key.n || !key.e) throw new UnauthorizedException('Google signing key not found');
+
+    const publicKey = crypto.createPublicKey({
+      key: { kty: key.kty ?? 'RSA', n: key.n, e: key.e } as crypto.JsonWebKey,
+      format: 'jwk',
+    });
+
+    const data = Buffer.from(`${parts[0]}.${parts[1]}`, 'utf8');
+    if (!crypto.verify('sha256', data, publicKey, signature)) {
+      throw new UnauthorizedException('Google token signature invalid');
+    }
+
+    return {
+      email: payload.email,
+      emailVerified: payload.email_verified === true,
+      givenName: payload.given_name,
+      familyName: payload.family_name,
+      name: payload.name,
+    };
+  }
+
+  private decodeJwtPart<T>(part: string): T {
+    try {
+      return JSON.parse(Buffer.from(part, 'base64url').toString('utf8')) as T;
+    } catch {
+      throw new UnauthorizedException('Invalid Google token');
+    }
+  }
+
+  /** Google's public keys, cached for one hour (kid-keyed, low churn). */
+  private async fetchGoogleJwks(): Promise<JwkKey[]> {
+    if (jwksCache && Date.now() - jwksCache.fetchedAt < JWKS_TTL_MS) {
+      return jwksCache.keys;
+    }
+    const res = await fetch(GOOGLE_JWKS_URL, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new UnauthorizedException('Unable to verify Google token');
+    const body = (await res.json()) as { keys?: JwkKey[] };
+    jwksCache = { keys: body.keys ?? [], fetchedAt: Date.now() };
+    return jwksCache.keys;
+  }
 
   private async issueTokens(
     userId: string,

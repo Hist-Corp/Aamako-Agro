@@ -57,6 +57,17 @@ export class LoginDto {
   scope?: 'storefront' | 'dashboard';
 }
 
+export class GoogleLoginDto {
+  /**
+   * Google ID token (the `credential` JWT returned by Google Identity
+   * Services after the user signs in with their Google account).
+   */
+  @ApiProperty({ description: 'Google ID token (Google Identity Services credential)' })
+  @IsString()
+  @IsNotEmpty()
+  idToken!: string;
+}
+
 export class RefreshDto {
   @ApiProperty({ description: 'Refresh token returned at login' })
   @IsString()

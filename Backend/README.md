@@ -49,7 +49,7 @@ Optional local Postgres+Redis: `docker compose up -d`
 ## API surface (prefix `/api`)
 | Area | Endpoints |
 |---|---|
-| Auth | `POST /auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `GET /auth/me` |
+| Auth | `POST /auth/register`, `/auth/login`, `/auth/google`, `/auth/refresh`, `/auth/logout`, `GET /auth/me` |
 | Catalog | `GET /products`, `/products/:idOrSlug`, `/categories`; admin CRUD under `/admin/products` |
 | Pricing | `GET /pricing/quote?variantId&quantity`, `POST /pricing/quote-cart` |
 | Cart | `GET /cart`, `POST /cart/items`, `PATCH /cart/items` (header `X-Cart-Session` for guests) |
@@ -58,6 +58,38 @@ Optional local Postgres+Redis: `docker compose up -d`
 | Admin | `/admin/orders`, `/admin/pricing-rules` (writes audited to `pricing_history` in-tx), `/admin/inventory`, `/admin/pricing-history`, `/admin/wholesale/*` |
 
 Pricing rule priority: enterprise contract → volume-discount band → active promo → tier/base list price.
+
+## Google Sign-In (storefront "Continue with Google")
+
+Google sign-up uses the same `users` table as password registration: on first
+sign-in with Google the backend creates a `RETAIL_CUSTOMER` account, so the
+new buyer appears in **Dashboard → People → Customers** immediately (same as a
+manual storefront signup).
+
+1. Create an **OAuth 2.0 Web client** at
+   https://console.cloud.google.com/apis/credentials.
+2. Add the storefront origin to **Authorized JavaScript origins**
+   (e.g. `http://localhost:8080`).
+3. Set the client ID in the backend environment (single source of truth —
+   the storefront auto-discovers it via `GET /api/auth/google-client-id`):
+   ```env
+   GOOGLE_CLIENT_ID="<your-client-id>.apps.googleusercontent.com"
+   ```
+   Then restart the API (`npm run dev`). No per-browser localStorage setup is
+   required anymore.
+4. (Optional manual override) The storefront still honours a client ID set in
+   the browser, which takes precedence over the backend value:
+   ```js
+   localStorage['aamako_google_client_id'] = '<your-client-id>.apps.googleusercontent.com'
+   ```
+   The storefront (`Frontend/js/google-signin.js`) swaps the decorative
+   "Continue with Google" button for a real Google-issued button and exchanges
+   the ID token with `POST /api/auth/google`.
+
+If `GOOGLE_CLIENT_ID` is unset, `/auth/google` returns `503` and the storefront
+button shows a setup notice instead of silently failing. ID tokens are verified
+against Google's public JWKS (signature, issuer, audience, expiry, verified
+email).
 
 ## Frontend wiring
 - Storefront loads `Frontend/js/api.js` (`window.AamakoAPI`); signin/signup/cart pages call the API.

@@ -623,7 +623,12 @@ export function useCustomers(params?: CustomerListParams) {
     queryFn: () => asPaginated<Customer>(
       apiClient.get<Customer[] | PaginatedResponse<Customer>>('/admin/customers', { params: params as Record<string, string> }),
     ),
-    placeholderData: { data: MOCK_CUSTOMERS, total: MOCK_CUSTOMERS.length, page: 1, limit: 20, totalPages: 1 },
+    // No mock fallback: the People → Customers table must always reflect real
+    // storefront registrations (including Google sign-ups), never demo rows.
+    // Refetch when the admin returns to the tab AND every 30s while the page
+    // stays open, so a signup made seconds ago appears without a manual refresh.
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
   });
 }
 

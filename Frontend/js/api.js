@@ -85,6 +85,9 @@
 
   window.AamakoAPI = {
     setApiBase: function (base) { API_BASE = base.replace(/\/$/, ''); localStorage.setItem('aamako_api_base', API_BASE); },
+    /** Current backend origin — used by google-signin.js to auto-discover the
+     *  OAuth client ID from GET /auth/google-client-id. */
+    apiBase: function () { return API_BASE; },
 
     // ---- auth ----
     signup: async function (payload) {
@@ -95,6 +98,12 @@
       saveTokens(await request('POST', '/auth/login', { email: email, password: password, scope: 'storefront' }));
       // merge anonymous cart into user cart server-side is implicit via session reuse;
       // keep header so the server can find the anon cart on next checkout.
+      return tokens.user;
+    },
+    /** Exchange a Google ID token for a storefront session (creates a customer
+     *  account on first sign-in so it shows up in the Dashboard Customers list). */
+    googleLogin: async function (idToken) {
+      saveTokens(await request('POST', '/auth/google', { idToken: idToken }));
       return tokens.user;
     },
     logout: logout,

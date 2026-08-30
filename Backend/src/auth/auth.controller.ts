@@ -9,6 +9,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { AuthService } from './auth.service';
 import {
   ChangePasswordDto,
+  GoogleLoginDto,
   LoginDto,
   LogoutDto,
   RefreshDto,
@@ -50,6 +51,28 @@ export class AuthController {
     @Req() req: Request,
   ) {
     return this.auth.login(dto, req.headers['user-agent'], req.ip);
+  }
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('google')
+  @HttpCode(200)
+  google(
+    @Body() dto: GoogleLoginDto,
+    @Req() req: Request,
+  ) {
+    return this.auth.googleLogin(dto.idToken, req.headers['user-agent'], req.ip);
+  }
+
+  /**
+   * Public: the Google OAuth client ID the storefront should render its
+   * "Continue with Google" button with. Client IDs are public by design
+   * (they are embedded in every client), so this is safe to expose — it lets
+   * Backend/.env stay the single place Google Sign-In is configured.
+   */
+  @Public()
+  @Get('google-client-id')
+  googleClientId() {
+    return { clientId: process.env.GOOGLE_CLIENT_ID?.trim() || null };
   }
   @Public()
   @Throttle({ default: { limit: 20, ttl: 60_000 } })

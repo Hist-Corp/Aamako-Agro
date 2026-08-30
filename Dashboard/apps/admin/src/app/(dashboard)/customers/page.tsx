@@ -33,7 +33,7 @@ export default function CustomersPage() {
 
   // Fetch ALL customers once; type/status segmentation happens client-side so
   // each section (Personal/Wholesale × Active/Suspended) has live counts.
-  const { data: customersData, isLoading } = useCustomers();
+  const { data: customersData, isLoading, isError, error } = useCustomers();
   const customers = customersData?.data ?? [];
 
   const ofType = (type: '' | 'PERSONAL' | 'WHOLESALE') =>
@@ -183,6 +183,16 @@ export default function CustomersPage() {
         description="Personal (individual) and wholesale customer accounts, with active/suspended status"
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Customers' }]}
       />
+
+      {/* Fetch failed — show why instead of fake/empty rows */}
+      {isError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm">
+          <p className="font-medium text-red-800">Couldn&apos;t load your customer list.</p>
+          <p className="mt-1 text-red-600">
+            {(error as Error)?.message ?? 'The customer service did not respond. Refresh to try again.'}
+          </p>
+        </div>
+      )}
 
       {/* Customer-type segmentation */}
       <div>
