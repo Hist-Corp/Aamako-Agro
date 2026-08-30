@@ -200,6 +200,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'quotes:view', 'quotes:respond',
     // Customers
     'customers:view', 'customers:edit',
+    // Customer Support — Manager oversees the support queue
+    'support:view', 'support:manage',
     // Reports & Analytics
     'reports:view',
     'analytics:view',
@@ -222,6 +224,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     // Reports (sales only)
     'reports:view',
     'analytics:view',
+    // Customer Support — Sales assists with the support queue
+    'support:view', 'support:manage',
     // Profile
     'profile:view', 'profile:edit',
   ],
@@ -341,6 +345,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'quotes:view', 'quotes:respond',
     // Customers
     'customers:view', 'customers:edit',
+    // Customer Support — Manager oversees the support queue
+    'support:view', 'support:manage',
     // Content management — Manager reviews & approves Content Manager changes
     'content:view', 'content:edit', 'content:publish', 'content:approve',
     // Notifications (content approval requests arrive here)
@@ -375,9 +381,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'sales:view',
     'wholesale:view',
     'quotes:view', 'quotes:respond',
-    // Reports (sales only)
-    'reports:view',
-    'analytics:view',
+    // Customer Support — Sales assists with the support queue
+    'support:view', 'support:manage',
     // Notifications (sales role — alerts on orders/wholesale/quotes)
     'notifications:view',
     // Profile

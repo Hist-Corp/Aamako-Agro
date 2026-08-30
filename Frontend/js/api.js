@@ -8,8 +8,16 @@
  *   await window.AamakoAPI.addToCart(variantId, 2);
  */
 (function () {
-  // Backend origin — change when deployed
-  var API_BASE = localStorage.getItem('aamako_api_base') || 'http://localhost:3000/api';
+  // Backend origin resolution (order):
+  //   1. explicit override via setApiBase() / localStorage
+  //   2. production (non-localhost)  -> "/api" — Vercel proxies /api/* to the
+  //      Render API via Frontend/vercel.json (same-origin, no CORS)
+  //   3. local dev (localhost)        -> "http://localhost:3000/api"
+  var API_BASE =
+    (localStorage.getItem('aamako_api_base')) ||
+    (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      ? '/api'
+      : 'http://localhost:3000/api');
 
   var tokens = JSON.parse(localStorage.getItem('aamako_tokens') || 'null');
   var cartSession = localStorage.getItem('aamako_cart_session');

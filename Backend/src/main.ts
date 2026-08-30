@@ -11,8 +11,22 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Security headers (Helmet-equivalent)
-  app.use(helmet());
+  // Security headers. CSP keeps helmet's safe defaults (allows the Swagger UI
+  // to load) and adds a strict Referrer-Policy so tokens/URLs in the address
+  // bar are never leaked to third parties.
+  app.use(
+    helmet({
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    }),
+  );
+
+  // Behind Render's (and typical reverse-) proxy, the request IP is only
+  // correct if the first hop is trusted. This keeps per-IP rate limiting and
+  // session IP logging accurate in production. In local dev requests are
+  // direct, so leave it off.
+  if (process.env.NODE_ENV === 'production') {
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  }
 
   // CORS locked to known frontend origins (no wildcard)
   const origins = (process.env.CORS_ORIGINS ?? '')

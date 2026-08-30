@@ -1,6 +1,8 @@
 import {
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -36,6 +38,20 @@ interface JwkKey {
 
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
 
+// ── Per-account brute-force lockout ────────────────────────────────────
+// Complements the global IP throttle (ThrottlerGuard) with a per-email guard
+// against credential stuffing / brute force. Entries are kept in memory and
+// pruned lazily, so there is no DB write and nothing to migrate.
+const MAX_LOGIN_FAILURES = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+const FAILURE_RETENTION_MS = 15 * 60 * 1000;
+
+interface FailureTracker {
+  count: number;
+  firstAt: number;
+  lockedUntil: number | null;
+}
+
 export interface AuthPayload {
   sub: string;
   email: string;
@@ -44,10 +60,68 @@ export interface AuthPayload {
 
 @Injectable()
 export class AuthService {
+  /** Per-email failed-login trackers (in-memory, pruned lazily). */
+  private readonly failedAttempts = new Map<string, FailureTracker>();
+
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
   ) {}
+
+  /**
+   * Record a failed login for `email`; throw 429 once the lockout threshold
+   * is reached. Returns the locked-until timestamp (or null) so callers can
+   * report how long the account is locked.
+   */
+  private recordFailure(email: string): number | null {
+    const now = Date.now();
+    const existing = this.failedAttempts.get(email) ?? null;
+
+    // If an existing entry has expired its lockout, start fresh.
+    if (existing && existing.lockedUntil && existing.lockedUntil <= now) {
+      this.failedAttempts.delete(email);
+      this.recordFailure(email);
+      return null;
+    }
+
+    if (existing) {
+      existing.count += 1;
+      if (existing.count >= MAX_LOGIN_FAILURES) {
+        existing.lockedUntil = now + LOCKOUT_MS;
+        existing.count = 0;
+        return existing.lockedUntil;
+      }
+      return null;
+    }
+
+    this.failedAttempts.set(email, {
+      count: 1,
+      firstAt: now,
+      lockedUntil: null,
+    });
+    return null;
+  }
+
+  /** Guard: throw 429 if `email` is currently locked out. */
+  private assertNotLocked(email: string): void {
+    const rec = this.failedAttempts.get(email);
+    if (rec?.lockedUntil && rec.lockedUntil > Date.now()) {
+      const minutes = Math.ceil((rec.lockedUntil - Date.now()) / 60000);
+      throw new HttpException(
+        `Too many failed sign-in attempts. Try again in ${minutes} minute(s).`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  /** Prune stale entries so this map cannot grow unbounded. */
+  private pruneStale(): void {
+    const cutoff = Date.now() - FAILURE_RETENTION_MS;
+    for (const [key, rec] of this.failedAttempts) {
+      const active = rec.lockedUntil && rec.lockedUntil > Date.now();
+      if (!active && rec.firstAt < cutoff) this.failedAttempts.delete(key);
+    }
+  }
 
   async register(dto: RegisterDto) {
     const exists = await this.prisma.user.findUnique({
@@ -69,13 +143,24 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, userAgent?: string, ip?: string) {
+    const email = dto.email.toLowerCase();
+    this.pruneStale();
+    this.assertNotLocked(email);
+
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
+      where: { email },
     });
-    if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');
-    if (!(await bcrypt.compare(dto.password, user.passwordHash))) {
+    if (!user || !user.isActive) {
+      this.recordFailure(email);
       throw new UnauthorizedException('Invalid credentials');
     }
+    if (!(await bcrypt.compare(dto.password, user.passwordHash))) {
+      this.recordFailure(email);
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Successful sign-in clears any accumulated failure count.
+    this.failedAttempts.delete(email);
 
     // Storefront restriction: accounts registered by the Admin Dashboard
     // (staff/team roles) can never sign in on the customer storefront — even

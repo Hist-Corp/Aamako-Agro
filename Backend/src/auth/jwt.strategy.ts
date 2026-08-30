@@ -7,10 +7,16 @@ import type { AuthPayload } from './auth.service';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor() {
+    const secret = process.env.JWT_ACCESS_SECRET;
+    // Fail fast if the signing secret is missing instead of silently falling
+    // back to a well-known value that would let anyone forge valid tokens.
+    if (!secret) {
+      throw new Error('JWT_ACCESS_SECRET is not set. Configure it before starting the API.');
+    }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_ACCESS_SECRET ?? 'dev-secret',
+      secretOrKey: secret,
     });
   }
 

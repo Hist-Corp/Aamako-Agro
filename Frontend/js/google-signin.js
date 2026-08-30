@@ -48,7 +48,9 @@
     }
     var base = (window.AamakoAPI && window.AamakoAPI.apiBase)
       ? window.AamakoAPI.apiBase()
-      : 'http://localhost:3000/api';
+      : (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+          ? '/api'
+          : 'http://localhost:3000/api');
     return fetch(base + '/auth/google-client-id')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {

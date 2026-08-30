@@ -5,9 +5,19 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
+
+/**
+ * Password policy for self-service accounts (storefront registration and
+ * change-password). Requires at least 8 characters containing both a letter
+ * and a number. Staff/seed accounts are hashed directly via bcrypt and are
+ * unaffected by this rule.
+ */
+const passwordMessage =
+  'Password must be 8-72 characters and contain at least one letter and one number';
 
 export class RegisterDto {
   @ApiProperty({ example: 'ram@example.com' })
@@ -18,6 +28,7 @@ export class RegisterDto {
   @IsString()
   @MinLength(8)
   @MaxLength(72)
+  @Matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, { message: passwordMessage })
   password!: string;
 
   @ApiProperty({ example: 'Ram' })
@@ -109,6 +120,7 @@ export class ChangePasswordDto {
   @IsString()
   @MinLength(8)
   @MaxLength(72)
+  @Matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, { message: passwordMessage })
   newPassword!: string;
 
   /** Current session's refresh token — kept alive when others are revoked. */

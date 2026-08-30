@@ -1,0 +1,40 @@
+# Render Blueprint — Aamako Agro API (NestJS + Prisma on Supabase Postgres)
+# Deploy via Render Dashboard → "New +" → "Blueprint" → select this repo.
+# Working directory is Backend/ so build/start run from the API package.
+
+services:
+  - type: web
+    name: aamako-api
+    runtime: node
+    plan: free
+    rootDir: Backend
+    buildCommand: npm ci && npm run build
+    startCommand: npx prisma migrate deploy && npm run start
+    healthCheckPath: /api
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # Supabase Postgres (see Backend/.env.supabase.example).
+      # Use the connection-pooled URL for serverless/Prisma best practice.
+      - key: DATABASE_URL
+        sync: false
+      # Generate strong ones, e.g. `openssl rand -hex 32` — never use defaults.
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_ACCESS_EXPIRES
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_DAYS
+        value: "30"
+      # Google Sign-In (storefront + dashboard) — leave empty to disable.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      # Comma-separated allowed frontend origins (no wildcards allowed by the API).
+      # With the Vercel /api proxy the apps are same-origin, so set this to the
+      # Vercel app URLs to be safe if any client calls Render directly.
+      - key: CORS_ORIGINS
+        sync: false
