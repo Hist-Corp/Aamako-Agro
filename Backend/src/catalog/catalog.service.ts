@@ -126,11 +126,17 @@ export class CatalogService {
     });
   }
 
-  /** Lightweight admin listing for pickers (id, name, imageUrl). */
+  /** Admin listing — everything the dashboard Products screen needs,
+   *  including publish state, category, variants and stock levels. */
   adminList() {
     return this.prisma.product.findMany({
-      select: { id: true, name: true, imageUrl: true, isPublished: true },
-      orderBy: { name: 'asc' },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        variants: {
+          include: { inventory: { select: { stockOnHand: true } } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

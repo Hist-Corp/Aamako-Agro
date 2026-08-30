@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -74,7 +74,7 @@ interface FormState {
 }
 const EMPTY_FORM: FormState = { title: '', shortDescription: '', longDescription: '', body: '' };
 
-/** Screen: Content Management — backed by the live content API.
+/** Screen: Content Management â€” backed by the live content API.
  *  CONTENT_MANAGER has full rights here: edit every existing page, create
  *  new pages and publish directly (writes land live with an APPROVED
  *  ContentRevision snapshot kept as an audit trail). */
@@ -110,7 +110,7 @@ export default function ContentPage() {
     void load();
   }, [load]);
 
-  // ── Moderation queue (pending revisions) ──
+  // â”€â”€ Moderation queue (pending revisions) â”€â”€
   interface PendingRevision {
     id: string;
     contentItemId: string;
@@ -130,7 +130,7 @@ export default function ContentPage() {
       const data = await apiClient.get<PendingRevision[]>('/content/revisions');
       setPending(data);
     } catch {
-      /* queue is optional UI — ignore load errors */
+      /* queue is optional UI â€” ignore load errors */
     }
   }, [canApprove]);
 
@@ -158,7 +158,7 @@ export default function ContentPage() {
     }
   };
 
-  // ── Edit dialog ──
+  // â”€â”€ Edit dialog â”€â”€
   const [editTarget, setEditTarget] = useState<CmsItem | null>(null);
   const [editForm, setEditForm] = useState<FormState>(EMPTY_FORM);
   const [isSaving, setIsSaving] = useState(false);
@@ -209,7 +209,7 @@ export default function ContentPage() {
     }
   };
 
-  // ── New page dialog ──
+  // â”€â”€ New page dialog â”€â”€
   const [newDialog, setNewDialog] = useState(false);
   const [newType, setNewType] = useState('PAGE');
   const [newTitle, setNewTitle] = useState('');
@@ -257,7 +257,7 @@ export default function ContentPage() {
       addToast(
         res?.live
           ? { type: 'success', title: 'Page created & published', description: key }
-          : { type: 'success', title: 'Page created — awaiting approval', description: res?.message ?? 'A Manager has been notified and must approve before it appears on the storefront.' },
+          : { type: 'success', title: 'Page created â€” awaiting approval', description: res?.message ?? 'A Manager has been notified and must approve before it appears on the storefront.' },
       );
       setNewDialog(false);
       await load();
@@ -273,7 +273,7 @@ export default function ContentPage() {
     }
   };
 
-  // ── Publish / unpublish ──
+  // â”€â”€ Publish / unpublish â”€â”€
   const [publishTarget, setPublishTarget] = useState<{ item: CmsItem; publish: boolean } | null>(null);
 
   const handleTogglePublish = async () => {
@@ -387,7 +387,7 @@ export default function ContentPage() {
     <div className="space-y-6">
       <PageHeader
         title="Content Management"
-        description="Edit every page, write rich long-form descriptions and create new pages — your changes publish immediately."
+        description="Edit every page, write rich long-form descriptions and create new pages â€” your changes publish immediately."
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Content' }]}
         actions={
           canCreate ? (
@@ -420,7 +420,7 @@ export default function ContentPage() {
         </button>
       </div>
 
-      {/* Pending approvals — Manager/Admin/Super Admin review Content Manager proposals */}
+      {/* Pending approvals â€” Manager/Admin/Super Admin review Content Manager proposals */}
       {canApprove && (
         <div className="rounded-lg border border-surface-200 bg-white p-5">
           <div className="flex items-center gap-2">
@@ -440,14 +440,14 @@ export default function ContentPage() {
                       {rev.proposedTitle} <span className="text-surface-400">({rev.contentItem.key})</span>
                     </p>
                     <p className="text-xs text-surface-500">
-                      Proposed {relativeTime(rev.createdAt)} — appears on the storefront only after approval.
+                      Proposed {relativeTime(rev.createdAt)} â€” appears on the storefront only after approval.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button size="sm" onClick={() => review(rev.id, true)}>
                       <CheckCircle2 className="h-3.5 w-3.5" /> Approve &amp; Publish
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => review(rev.id, false)}>
+                    <Button size="sm" variant="secondary" onClick={() => review(rev.id, false)}>
                       <XCircle className="h-3.5 w-3.5" /> Reject
                     </Button>
                   </div>
@@ -473,12 +473,12 @@ export default function ContentPage() {
         columns={columns}
         data={filtered}
         isLoading={isLoading}
-        searchPlaceholder="Search pages…"
+        searchPlaceholder="Search pagesâ€¦"
         emptyState={
           <EmptyState
             icon={FileText}
             title="No pages found"
-            description="Create your first page — it goes live on the website immediately."
+            description="Create your first page â€” it goes live on the website immediately."
           />
         }
       />
@@ -531,7 +531,7 @@ export default function ContentPage() {
                 onChange={(e) => setEditForm({ ...editForm, shortDescription: e.target.value })}
                 rows={2}
                 maxLength={500}
-                placeholder="One-line summary shown in listings and cards…"
+                placeholder="One-line summary shown in listings and cardsâ€¦"
                 className="mt-1 w-full rounded-lg border border-surface-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
               />
             </div>
@@ -539,14 +539,14 @@ export default function ContentPage() {
               label="Long description"
               value={editForm.longDescription}
               onChange={(html) => setEditForm({ ...editForm, longDescription: html })}
-              placeholder="Full rich-text description…"
+              placeholder="Full rich-text descriptionâ€¦"
               hint="Formatting supported: bold/italic, font family & size, headings, lists, alignment, links and image placement."
             />
             <RichTextEditor
               label="Custom section (body)"
               value={editForm.body}
               onChange={(html) => setEditForm({ ...editForm, body: html })}
-              placeholder="Custom page section content…"
+              placeholder="Custom page section contentâ€¦"
               minHeight={200}
             />
           </div>
@@ -595,7 +595,7 @@ export default function ContentPage() {
                 onChange={(e) => setNewForm({ ...newForm, shortDescription: e.target.value })}
                 rows={2}
                 maxLength={500}
-                placeholder="One-line summary shown in listings and cards…"
+                placeholder="One-line summary shown in listings and cardsâ€¦"
                 className="mt-1 w-full rounded-lg border border-surface-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
               />
             </div>
@@ -603,14 +603,14 @@ export default function ContentPage() {
               label="Long description"
               value={newForm.longDescription}
               onChange={(html) => setNewForm({ ...newForm, longDescription: html })}
-              placeholder="Full rich-text description…"
+              placeholder="Full rich-text descriptionâ€¦"
               hint="Formatting supported: bold/italic, font family & size, headings, lists, alignment, links and image placement."
             />
             <RichTextEditor
               label="Custom section (body)"
               value={newForm.body}
               onChange={(html) => setNewForm({ ...newForm, body: html })}
-              placeholder="Custom page section content…"
+              placeholder="Custom page section contentâ€¦"
               minHeight={200}
             />
           </div>

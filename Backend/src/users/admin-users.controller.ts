@@ -3,8 +3,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   IsEmail,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -12,6 +14,7 @@ import { Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
@@ -31,6 +34,24 @@ export class CreateStaffUserDto {
 
 export class UpdateRoleDto {
   @ApiProperty({ enum: Role }) @IsEnum(Role) role!: Role;
+}
+
+/** Fields an Admin / Super Admin may change on another dashboard user's
+ *  credentials. All optional — only provided fields are updated. */
+export class UpdateCredentialsDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() @IsNotEmpty() @MaxLength(60) firstName?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(60) lastName?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(24) phone?: string;
+  @ApiPropertyOptional() @IsEmail() @IsOptional() email?: string;
+
+  /** New password — stored as a bcrypt hash, so the previous password
+   *  immediately stops verifying. All sessions are revoked. */
+  @ApiPropertyOptional({ minLength: 8 })
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(72)
+  password?: string;
 }
 
 export const USER_MANAGEMENT_ROLES = [
@@ -136,6 +157,85 @@ export class AdminUsersController {
       },
       select: SELECT,
     });
+  }
+
+  /**
+   * Admin / Super Admin credential administration for dashboard users.
+   * Updates profile fields (name, email, phone) and/or sets a new password.
+   *
+   * Password safety guarantees:
+   *  - the new password is stored ONLY as a bcrypt hash, so the previous
+   *    password no longer verifies against the database (bcrypt compare of
+   *    the old password fails) — login is only possible with the new one;
+   *  - every active session of the target user is revoked, so their existing
+   *    access/refresh tokens stop working immediately.
+   */
+  @Roles(Role.STAFF_ADMIN, Role.SUPER_ADMIN)
+  @Patch(':id/credentials')
+  async updateCredentials(
+    @Param('id') id: string,
+    @Body() dto: UpdateCredentialsDto,
+    @CurrentUser() actor?: { id: string; role: Role },
+  ) {
+    if (id === actor!.id) {
+      throw new BadRequestException(
+        'Use your profile settings to change your own password (current password required)',
+      );
+    }
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+    // Only strictly lower-ranked dashboard users may be edited.
+    if (!outranks(actor!.role, target.role)) {
+      throw new ForbiddenException(
+        `A ${actor!.role} cannot manage the credentials of a user with the role ${target.role}`,
+      );
+    }
+    if (target.role === Role.SUPER_ADMIN) {
+      throw new ForbiddenException('Super Admin credentials cannot be changed here');
+    }
+
+    // Email uniqueness (case-insensitive, excluding the target user).
+    let email: string | undefined;
+    if (dto.email !== undefined) {
+      email = dto.email.toLowerCase().trim();
+      const clash = await this.prisma.user.findUnique({ where: { email } });
+      if (clash && clash.id !== id) {
+        throw new ConflictException('Email already registered');
+      }
+    }
+
+    const data: Record<string, unknown> = {};
+    if (dto.firstName !== undefined) data.firstName = dto.firstName.trim();
+    if (dto.lastName !== undefined) data.lastName = dto.lastName?.trim();
+    if (dto.phone !== undefined) data.phone = dto.phone?.trim();
+    if (email !== undefined) data.email = email;
+
+    let passwordChanged = false;
+    if (dto.password !== undefined) {
+      data.passwordHash = await bcrypt.hash(dto.password, 12);
+      passwordChanged = true;
+    }
+
+    const ops = [this.prisma.user.update({ where: { id }, data, select: SELECT })];
+    if (passwordChanged) {
+      // Kill every live session — refresh tokens become unusable at once and
+      // outstanding access tokens die with their (short) 15-minute expiry.
+      ops.unshift(
+        this.prisma.session.updateMany({
+          where: { userId: id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        }) as any,
+      );
+    }
+    const [_, updated] = await this.prisma.$transaction(ops as any);
+    return {
+      success: true,
+      user: updated,
+      passwordChanged,
+      message: passwordChanged
+        ? 'Credentials updated. The old password no longer works and all sessions were signed out.'
+        : 'Credentials updated.',
+    };
   }
 
   /** Load target and enforce rank > target for every mutation. */

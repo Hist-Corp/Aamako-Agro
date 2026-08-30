@@ -106,7 +106,7 @@ export default function StaffPage() {
     return (users ?? []).filter((u) => {
       if (u.role === 'SUPER_ADMIN') return false;
       if (isCustomerRole(u.role)) return false;
-      if (departmentFilter && ROLE_DEPARTMENT[u.role] !== departmentFilter) {
+      if (departmentFilter && ROLE_DEPARTMENT[u.role as Role] !== departmentFilter) {
         return false;
       }
       return true;

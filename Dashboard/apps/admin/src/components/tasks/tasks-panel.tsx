@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/config/auth-context';
@@ -36,7 +36,7 @@ interface AssignableUser {
 const TASK_ASSIGNER_ROLES = ['SUPER_ADMIN', 'STAFF_ADMIN', 'STAFF_MANAGER', 'STAFF_SALES'];
 
 /**
- * Tasks panel — shared by the Dashboard home page and the Users page.
+ * Tasks panel â€” shared by the Dashboard home page and the Users page.
  * Assignees see their task details here and mark them complete; users with a
  * rank above others can assign tasks to anyone strictly below their role.
  */
@@ -137,12 +137,12 @@ export function TasksPanel() {
                 {showAssignee
                   ? `Assigned to ${t.assignedTo.firstName} ${t.assignedTo.lastName ?? ''}`.trim()
                   : `Assigned by ${t.assignedBy.firstName} ${t.assignedBy.lastName ?? ''}`.trim()}
-                {t.dueDate ? ` · due ${new Date(t.dueDate).toLocaleDateString()}` : ''}
-                {t.description ? ` · ${t.description.replace(/<[^>]+>/g, '').slice(0, 90)}` : ''}
+                {t.dueDate ? ` Â· due ${new Date(t.dueDate).toLocaleDateString()}` : ''}
+                {t.description ? ` Â· ${t.description.replace(/<[^>]+>/g, '').slice(0, 90)}` : ''}
               </p>
             </div>
             {t.status === 'PENDING' && (
-              <Button size="sm" variant="outline" onClick={() => handleCompleteTask(t)}>
+              <Button size="sm" variant="secondary" onClick={() => handleCompleteTask(t)}>
                 <CheckCircle2 className="h-3.5 w-3.5" /> Mark Complete
               </Button>
             )}
@@ -213,7 +213,7 @@ return (
                 value={newTask.description}
                 onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                 rows={3}
-                placeholder="Task details, links, expectations…"
+                placeholder="Task details, links, expectationsâ€¦"
                 className="mt-1 w-full rounded-lg border border-surface-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
               />
             </div>

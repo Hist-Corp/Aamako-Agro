@@ -140,18 +140,22 @@
 
     // ---- orders ----
     checkout: function (details) {
-      details.idempotencyKey =
+      // The idempotency key travels ONLY in the header — putting it in the
+      // body trips the backend's forbidNonWhitelisted validation.
+      var key =
         details.idempotencyKey ||
         (crypto.randomUUID ? crypto.randomUUID() : 'ord-' + Date.now());
+      var body = Object.assign({}, details);
+      delete body.idempotencyKey;
       var headers = {};
       if (tokens && tokens.accessToken) headers['Authorization'] = 'Bearer ' + tokens.accessToken;
       headers['Content-Type'] = 'application/json';
-      headers['Idempotency-Key'] = details.idempotencyKey;
+      headers['Idempotency-Key'] = key;
       headers['X-Cart-Session'] = ensureCartSession();
       return fetch(API_BASE + '/orders', {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify(details),
+        body: JSON.stringify(body),
       }).then(async function (r) {
         var d = await r.json();
         if (!r.ok) throw new Error(d.error && d.error.message);

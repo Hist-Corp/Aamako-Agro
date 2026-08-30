@@ -21,6 +21,7 @@ import {
   ClipboardList,
   UserCircle,
   Truck,
+  KeyRound,
   Eye,
   DollarSign,
   MessageSquareQuote,
@@ -76,6 +77,13 @@ export const NAV_STRUCTURE: NavGroup[] = [
         href: '/staff',
         icon: UsersRound,
         permission: 'staff:view',
+      },
+      {
+        label: 'User Credentials',
+        href: '/credentials',
+        icon: KeyRound,
+        permission: 'staff:view',
+        roles: ['STAFF_ADMIN', 'SUPER_ADMIN'],
       },
       {
         label: 'Settings',

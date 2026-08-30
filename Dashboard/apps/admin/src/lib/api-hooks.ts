@@ -9,11 +9,13 @@ import type {
   ActivityFeedItem,
   FulfillmentPipeline,
   Order,
+  OrderItem,
   OrderStatus,
   PaymentStatus,
   OrderListParams,
   PaginatedResponse,
   Product,
+  ProductVariant,
   InventoryItem,
   InventoryAdjustmentRequest,
   InventoryListParams,
@@ -207,6 +209,80 @@ async function withFallback<T>(apiCall: () => Promise<T>, mockData: T): Promise<
   }
 }
 
+/** The backend list endpoints return plain arrays, but the dashboard consumes
+ *  PaginatedResponse<T> — normalize array responses so tables aren't empty. */
+function asPaginated<T>(raw: any): PaginatedResponse<T> {
+  if (raw && Array.isArray(raw.data)) return raw as PaginatedResponse<T>;
+  const arr = Array.isArray(raw) ? raw : [];
+  return { data: arr as T[], total: arr.length, page: 1, limit: arr.length || 20, totalPages: 1 };
+}
+
+/** Backend order statuses → dashboard display statuses. */
+function mapOrderStatus(s: string): OrderStatus {
+  switch (s) {
+    case 'PLACED': return 'PENDING';
+    case 'PAYMENT_PENDING': return 'CONFIRMED';
+    case 'PAID': return 'PROCESSING';
+    case 'FULFILLED': return 'READY_TO_SHIP';
+    default: return (['PENDING','CONFIRMED','PROCESSING','READY_TO_SHIP','SHIPPED','DELIVERED','CANCELLED','REFUNDED'].includes(s) ? s : 'PENDING') as OrderStatus;
+  }
+}
+
+/** Dashboard display statuses → backend order statuses (for transitions). */
+function mapOrderStatusToBackend(s: string): string {
+  switch (s) {
+    case 'PENDING': return 'PLACED';
+    case 'CONFIRMED': return 'PAYMENT_PENDING';
+    case 'PROCESSING': return 'PAID';
+    case 'READY_TO_SHIP': return 'FULFILLED';
+    default: return s;
+  }
+}
+
+/** Backend paymentStatus derived from order status. */
+function mapPaymentStatus(s: string): PaymentStatus {
+  switch (s) {
+    case 'PAID': case 'FULFILLED': case 'DELIVERED': return 'PAID';
+    case 'REFUNDED': case 'RETURNED': return 'REFUNDED';
+    default: return 'PENDING';
+  }
+}
+
+/** Map a raw backend Prisma order onto the dashboard Order shape. */
+function mapBackendOrder(o: any): Order {
+  const items: OrderItem[] = (o.items ?? []).map((it: any) => ({
+    id: it.id,
+    productId: it.variantId,
+    productName: it.variant?.name ?? 'Item',
+    variantId: it.variantId,
+    quantity: it.quantity,
+    unitPrice: (it.unitPriceCents ?? 0) / 100,
+    totalPrice: (it.lineTotalCents ?? 0) / 100,
+  }));
+  const itemCount = items.reduce((n, it) => n + it.quantity, 0);
+  return {
+    id: o.id,
+    orderNumber: o.orderNumber,
+    customerId: o.userId ?? '',
+    customerName: o.contactName ?? o.user?.email ?? 'Guest',
+    customerEmail: o.contactEmail ?? o.user?.email ?? '',
+    status: mapOrderStatus(o.status),
+    paymentStatus: mapPaymentStatus(o.status),
+    channel: o.user?.role === 'WHOLESALE_CUSTOMER' ? 'WHOLESALE' : 'RETAIL',
+    items,
+    itemCount,
+    subtotal: (o.subtotalCents ?? 0) / 100,
+    tax: 0,
+    shippingCost: 0,
+    total: (o.totalCents ?? 0) / 100,
+    currency: o.currency ?? 'NPR',
+    shippingAddress: { line1: o.shippingAddress ?? '', city: '', state: '', postalCode: '', country: 'Nepal' },
+    notes: o.notes,
+    createdAt: o.createdAt,
+    updatedAt: o.updatedAt ?? o.createdAt,
+  };
+}
+
 // ─── Overview / Dashboard ────────────────────────────────────────────
 export function useOverview() {
   return useQuery({
@@ -244,20 +320,24 @@ export function useFulfillmentPipeline() {
 export function useOrders(params?: OrderListParams) {
   return useQuery({
     queryKey: queryKeys.orders(params),
-    queryFn: () => withFallback(
-      () => apiClient.get<PaginatedResponse<Order>>('/admin/orders', { params: params as Record<string, string> }),
-      { data: MOCK_ORDERS, total: MOCK_ORDERS.length, page: 1, limit: 20, totalPages: 1 },
-    ),
+    queryFn: async () => {
+      const raw = await apiClient.get<Order[] | PaginatedResponse<Order>>('/admin/orders', { params: params as Record<string, string> });
+      const res = asPaginated<any>(raw);
+      return {
+        ...res,
+        data: res.data.map(mapBackendOrder) as Order[],
+      };
+    },
+    placeholderData: { data: MOCK_ORDERS, total: MOCK_ORDERS.length, page: 1, limit: 20, totalPages: 1 },
   });
 }
 
 export function useOrder(id: string) {
   return useQuery({
     queryKey: queryKeys.order(id),
-    queryFn: () => withFallback(
-      () => apiClient.get<Order>(`/admin/orders/${id}`),
-      MOCK_ORDERS.find(o => o.id === id) || MOCK_ORDERS[0],
-    ),
+    queryFn: () =>
+      apiClient.get<any>(`/admin/orders/${id}`).then((o) => mapBackendOrder(o)),
+    placeholderData: MOCK_ORDERS.find(o => o.id === id) || MOCK_ORDERS[0],
     enabled: !!id,
   });
 }
@@ -266,7 +346,7 @@ export function useAdvanceOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, to, reason }: { id: string; to: string; reason?: string }) =>
-      apiClient.patch(`/admin/orders/${id}`, { status: to, reason }),
+      apiClient.patch(`/admin/orders/${id}/status`, { status: mapOrderStatusToBackend(to) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'orders'] });
       qc.invalidateQueries({ queryKey: queryKeys.pipeline });
@@ -309,24 +389,67 @@ export function useRefundOrder() {
   });
 }
 
+/** Map a raw backend catalog product onto the dashboard Product shape. */
+function mapBackendProduct(p: any): Product {
+  const variants: ProductVariant[] = (p.variants ?? []).map((v: any) => ({
+    id: v.id,
+    name: v.name,
+    sku: v.sku,
+    price: (v.basePriceCents ?? 0) / 100,
+    isActive: v.isActive ?? true,
+    attributes: {},
+  }));
+  const activeVariants = variants.filter((v) => v.isActive);
+  const totalStock = (p.variants ?? []).reduce(
+    (n: number, v: any) => n + (v.inventory?.stockOnHand ?? 0),
+    0,
+  );
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    description: p.description ?? '',
+    status: p.isPublished ? 'ACTIVE' : 'DRAFT',
+    categoryId: p.categoryId ?? p.category?.id ?? '',
+    categoryName: p.category?.name ?? 'Uncategorised',
+    images: p.imageUrl
+      ? [{ id: `${p.id}-img`, url: p.imageUrl, alt: p.name, sortOrder: 0 }]
+      : [],
+    variants,
+    basePrice: activeVariants.length
+      ? Math.min(...activeVariants.map((v) => v.price))
+      : variants[0]?.price ?? 0,
+    unit: p.variants?.[0]?.unit ?? '',
+    origin: 'Nepal',
+    tags: [],
+    sku: p.variants?.[0]?.sku,
+    totalStock,
+    lowStockThreshold: p.variants?.[0]?.inventory?.lowStockThreshold ?? 20,
+    isFeatured: false,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt ?? p.createdAt,
+  };
+}
+
 // ─── Products ────────────────────────────────────────────────────────
 export function useProducts() {
   return useQuery({
     queryKey: queryKeys.products,
-    queryFn: () => withFallback(
-      () => apiClient.get<PaginatedResponse<Product>>('/admin/products'),
-      { data: MOCK_PRODUCTS, total: MOCK_PRODUCTS.length, page: 1, limit: 20, totalPages: 1 },
-    ),
+    queryFn: async () => {
+      const raw = await apiClient.get<Product[] | PaginatedResponse<Product>>('/admin/products');
+      const res = asPaginated<any>(raw);
+      return { ...res, data: res.data.map(mapBackendProduct) as Product[] };
+    },
+    placeholderData: { data: MOCK_PRODUCTS, total: MOCK_PRODUCTS.length, page: 1, limit: 20, totalPages: 1 },
   });
 }
 
 export function useProduct(id: string) {
   return useQuery({
     queryKey: queryKeys.product(id),
-    queryFn: () => withFallback(
-      () => apiClient.get<Product>(`/admin/products/${id}`),
-      MOCK_PRODUCTS.find(p => p.id === id) || MOCK_PRODUCTS[0],
-    ),
+    queryFn: () =>
+      apiClient.get<any>(`/admin/products/${id}`).then((p) => mapBackendProduct(p)),
+    placeholderData: MOCK_PRODUCTS.find(p => p.id === id) || MOCK_PRODUCTS[0],
     enabled: !!id,
   });
 }
@@ -497,10 +620,10 @@ export function useRespondToQuote() {
 export function useCustomers(params?: CustomerListParams) {
   return useQuery({
     queryKey: queryKeys.customers(params),
-    queryFn: () => withFallback(
-      () => apiClient.get<PaginatedResponse<Customer>>('/admin/customers', { params: params as Record<string, string> }),
-      { data: MOCK_CUSTOMERS, total: MOCK_CUSTOMERS.length, page: 1, limit: 20, totalPages: 1 },
+    queryFn: () => asPaginated<Customer>(
+      apiClient.get<Customer[] | PaginatedResponse<Customer>>('/admin/customers', { params: params as Record<string, string> }),
     ),
+    placeholderData: { data: MOCK_CUSTOMERS, total: MOCK_CUSTOMERS.length, page: 1, limit: 20, totalPages: 1 },
   });
 }
 
@@ -582,10 +705,29 @@ export function useUsers() {
           mfaEnabled: !!u.totpEnabled,
           lastLoginAt: u.createdAt,
           createdAt: u.createdAt,
-        }));
+          firstName: u.firstName as string | undefined,
+          lastName: u.lastName as string | undefined,
+          phone: u.phone as string | undefined,
+          isActive: u.isActive as boolean | undefined,
+        } as any));
       },
       MOCK_USERS,
     ),
+  });
+}
+
+/** Admin / Super Admin: update another dashboard user's credentials
+ *  (name, email, phone and/or password). Changing the password hashes it
+ *  server-side and revokes all of the user's sessions. */
+export function useUpdateCredentials() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, string> }) =>
+      apiClient.patch<{ success: boolean; passwordChanged: boolean; message: string }>(
+        `/admin/users/${id}/credentials`,
+        data,
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users }),
   });
 }
 
