@@ -29,3 +29,9 @@ Backend/.prisma/
 
 # Misc
 *.tsbuildinfo
+
+# local tool cache + test output logs
+.freebuff/
+*-out.txt
+run-*.log
+
