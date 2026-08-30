@@ -620,8 +620,10 @@ export function useRespondToQuote() {
 export function useCustomers(params?: CustomerListParams) {
   return useQuery({
     queryKey: queryKeys.customers(params),
-    queryFn: () => asPaginated<Customer>(
-      apiClient.get<Customer[] | PaginatedResponse<Customer>>('/admin/customers', { params: params as Record<string, string> }),
+    // IMPORTANT: await the request BEFORE normalizing — asPaginated called on
+    // the Promise itself would see a non-array and always yield {data: []}.
+    queryFn: async () => asPaginated<Customer>(
+      await apiClient.get<Customer[] | PaginatedResponse<Customer>>('/admin/customers', { params: params as Record<string, string> }),
     ),
     // No mock fallback: the People → Customers table must always reflect real
     // storefront registrations (including Google sign-ups), never demo rows.
