@@ -1,8 +1,13 @@
 // ─── API Client ───────────────────────────────────────────────────────
 // Single HTTP client for all admin dashboard API calls.
 // Uses JWT/refresh-token auth — same session as the customer platform.
+//
+// The backend serves routes under `/api` (no `/v1` version prefix).
+// When no absolute NEXT_PUBLIC_API_URL is provided we stay same-origin
+// (`/api`), and next.config.js rewrites those calls to the backend, so
+// local dev needs zero env files and no CORS.
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   params?: Record<string, string | number | boolean | undefined>;

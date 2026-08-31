@@ -13,7 +13,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY apps/admin ./apps/admin
 # Point the dashboard at the API (baked at build time by Next.js)
-ARG NEXT_PUBLIC_API_URL=/api/v1
+ARG NEXT_PUBLIC_API_URL=/api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm --filter @aamako/admin build
 

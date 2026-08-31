@@ -448,7 +448,11 @@ export class AuthService {
     const days = Number(process.env.JWT_REFRESH_EXPIRES_DAYS ?? 30);
     const expiresAt = new Date(Date.now() + days * 24 * 3600 * 1000);
     const refresh = await this.jwt.signAsync(
-      { sub: userId, email, role },
+      // `jti` (unique per issuance) keeps every refresh token distinct even
+      // when two logins for the same user land in the same second — HS256 is
+      // deterministic, so without it identical payloads+claims produce the
+      // same token and collide on the Session.refreshTokenHash unique column.
+      { sub: userId, email, role, jti: crypto.randomUUID() },
       { secret: process.env.JWT_REFRESH_SECRET, expiresIn: `${days}d` },
     );
 
