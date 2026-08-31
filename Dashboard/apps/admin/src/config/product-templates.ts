@@ -12,7 +12,7 @@ export interface ProductTemplateField {
   key: string;
   label: string;
   description: string;
-  type: 'text' | 'textarea' | 'richtext' | 'number' | 'url' | 'select';
+  type: 'text' | 'textarea' | 'richtext' | 'number' | 'url' | 'select' | 'image';
   required?: boolean;
   options?: { value: string; label: string }[];
   placeholder?: string;
@@ -33,6 +33,7 @@ export const PRODUCT_TEMPLATE_SECTIONS: ProductTemplateSection[] = [
       { key: 'slug', label: 'URL slug', description: 'Kebab-case identifier used in the product page URL.', type: 'text', required: true, placeholder: 'e.g. fd-mango' },
       { key: 'badge', label: 'Badge', description: 'Small tag shown on the product card (e.g. Best seller, New).', type: 'text', placeholder: 'e.g. Best seller' },
       { key: 'category', label: 'Category', description: 'Product category for the shop filter.', type: 'select', required: true, options: [{ value: 'fruits', label: 'Fruits' }, { value: 'vegetables', label: 'Vegetables' }, { value: 'spices', label: 'Spices & Powders' }, { value: 'meals', label: 'Ready Meals' }, { value: 'gifts', label: 'Gift Sets' }] },
+      { key: 'batch-no', label: 'Batch no', description: 'Production batch number for traceability (shown on the product page).', type: 'text', placeholder: 'e.g. BATCH-2026-014' },
     ],
   },
   {
@@ -57,7 +58,7 @@ export const PRODUCT_TEMPLATE_SECTIONS: ProductTemplateSection[] = [
     label: 'Product image',
     description: 'High-resolution product image (https:// required).',
     fields: [
-      { key: 'image-url', label: 'Image URL', description: 'Secure https:// link to a high-resolution product image (min 1000px wide).', type: 'url', required: true, placeholder: 'https://images.unsplash.com/...' },
+      { key: 'image-url', label: 'Product image', description: 'Paste a secure https:// image link OR upload one from your device — at least one is required.', type: 'image', required: true, placeholder: 'https://images.unsplash.com/...' },
     ],
   },
   {

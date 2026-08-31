@@ -26,13 +26,31 @@ import {
 
 const FONT_FAMILIES = ['Arial', 'Courier New', 'Georgia', 'Inter', 'Times New Roman', 'Verdana'];
 const FONT_SIZES = [
+  { label: 'Extra small', value: '1' },
   { label: 'Small', value: '2' },
   { label: 'Normal', value: '3' },
+  { label: 'Medium', value: '4' },
   { label: 'Large', value: '5' },
   { label: 'Huge', value: '6' },
+  { label: 'Extra huge', value: '7' },
+];
+const TEXT_COLORS = [
+  { label: 'Black', value: '#0f172a' },
+  { label: 'Grey', value: '#64748b' },
+  { label: 'Red', value: '#dc2626' },
+  { label: 'Orange', value: '#ea580c' },
+  { label: 'Green', value: '#16a34a' },
+  { label: 'Blue', value: '#2563eb' },
+];
+const HIGHLIGHTS = [
+  { label: 'Yellow', value: '#fef08a' },
+  { label: 'Green', value: '#bbf7d0' },
+  { label: 'Blue', value: '#bfdbfe' },
+  { label: 'Pink', value: '#fbcfe8' },
 ];
 const BLOCKS = [
   { label: 'Paragraph', tag: '<p>' },
+  { label: 'Heading 1', tag: '<h1>' },
   { label: 'Heading 2', tag: '<h2>' },
   { label: 'Heading 3', tag: '<h3>' },
 ];
@@ -45,6 +63,13 @@ interface RichTextEditorProps {
   placeholder?: string;
   minHeight?: number;
   hint?: string;
+  /**
+   * "block" (default): full toolbar + multi-line editing (long descriptions, bodies).
+   * "inline": single-line-ish editing for titles / one-line summaries — keeps
+   * character formatting (font, size, color, bold/italic/…) but hides
+   * block-level tools (headings, lists, alignment, quotes, images).
+   */
+  variant?: 'block' | 'inline';
 }
 
 export function RichTextEditor({
@@ -52,9 +77,11 @@ export function RichTextEditor({
   value,
   onChange,
   placeholder,
-  minHeight = 180,
+  minHeight,
   hint,
+  variant = 'block',
 }: RichTextEditorProps) {
+  const inline = variant === 'inline';
   const ref = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
   const [panel, setPanel] = useState<'none' | 'link' | 'image'>('none');
@@ -138,21 +165,40 @@ export function RichTextEditor({
             <option value="" disabled>Size</option>
             {FONT_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-          <select title="Paragraph style" className={selectCls} defaultValue="" onChange={resetThen((v) => exec('formatBlock', v))}>
-            <option value="" disabled>Style</option>
-            {BLOCKS.map((b) => <option key={b.tag} value={b.tag}>{b.label}</option>)}
+          {!inline && (
+            <>
+              <select title="Paragraph style" className={selectCls} defaultValue="" onChange={resetThen((v) => exec('formatBlock', v))}>
+                <option value="" disabled>Style</option>
+                {BLOCKS.map((b) => <option key={b.tag} value={b.tag}>{b.label}</option>)}
+              </select>
+              {divider}
+            </>
+          )}
+          <select title="Text color" className={selectCls} defaultValue="" onChange={resetThen((v) => exec('foreColor', v))}>
+            <option value="" disabled>Color</option>
+            {TEXT_COLORS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
-          {divider}
-          <button type="button" title="Bulleted list" className={btn} onClick={() => exec('insertUnorderedList')}><List className="h-4 w-4" /></button>
-          <button type="button" title="Numbered list" className={btn} onClick={() => exec('insertOrderedList')}><ListOrdered className="h-4 w-4" /></button>
-          <button type="button" title="Quote" className={btn} onClick={() => exec('formatBlock', '<blockquote>')}><Quote className="h-4 w-4" /></button>
-          {divider}
-          <button type="button" title="Align left" className={btn} onClick={() => exec('justifyLeft')}><AlignLeft className="h-4 w-4" /></button>
-          <button type="button" title="Align center" className={btn} onClick={() => exec('justifyCenter')}><AlignCenter className="h-4 w-4" /></button>
-          <button type="button" title="Align right" className={btn} onClick={() => exec('justifyRight')}><AlignRight className="h-4 w-4" /></button>
-          {divider}
+          <select title="Highlight" className={selectCls} defaultValue="" onChange={resetThen((v) => exec('hiliteColor', v))}>
+            <option value="" disabled>Highlight</option>
+            {HIGHLIGHTS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+          {!inline && divider}
+          {!inline && (
+            <>
+              <button type="button" title="Bulleted list" className={btn} onClick={() => exec('insertUnorderedList')}><List className="h-4 w-4" /></button>
+              <button type="button" title="Numbered list" className={btn} onClick={() => exec('insertOrderedList')}><ListOrdered className="h-4 w-4" /></button>
+              <button type="button" title="Quote" className={btn} onClick={() => exec('formatBlock', '<blockquote>')}><Quote className="h-4 w-4" /></button>
+              {divider}
+              <button type="button" title="Align left" className={btn} onClick={() => exec('justifyLeft')}><AlignLeft className="h-4 w-4" /></button>
+              <button type="button" title="Align center" className={btn} onClick={() => exec('justifyCenter')}><AlignCenter className="h-4 w-4" /></button>
+              <button type="button" title="Align right" className={btn} onClick={() => exec('justifyRight')}><AlignRight className="h-4 w-4" /></button>
+              {divider}
+            </>
+          )}
           <button type="button" title="Insert link" className={btn} onClick={() => openPanel('link')}><Link2 className="h-4 w-4" /></button>
-          <button type="button" title="Place image" className={btn} onClick={() => openPanel('image')}><ImagePlus className="h-4 w-4" /></button>
+          {!inline && (
+            <button type="button" title="Place image" className={btn} onClick={() => openPanel('image')}><ImagePlus className="h-4 w-4" /></button>
+          )}
           {divider}
           <button type="button" title="Clear formatting" className={btn} onClick={() => exec('removeFormat')}><RemoveFormatting className="h-4 w-4" /></button>
           <button type="button" title="Undo" className={btn} onClick={() => exec('undo')}><Undo2 className="h-4 w-4" /></button>
@@ -201,8 +247,11 @@ export function RichTextEditor({
           data-placeholder={placeholder}
           onInput={push}
           onBlur={push}
+          onKeyDown={(e) => {
+            if (inline && e.key === 'Enter') e.preventDefault();
+          }}
           className="rte-content w-full overflow-auto px-3 py-2.5 text-sm leading-relaxed text-surface-900 outline-none"
-          style={{ minHeight }}
+          style={{ minHeight: minHeight ?? (inline ? 44 : 180) }}
         />
       </div>
       {hint && <p className="text-xs text-surface-500">{hint}</p>}

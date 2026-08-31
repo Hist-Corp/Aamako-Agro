@@ -16,7 +16,6 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
@@ -41,6 +40,15 @@ interface CmsItem {
   body: string;
   isPublished: boolean;
   updatedAt: string;
+}
+
+interface PendingRevision {
+  id: string;
+  contentItemId: string;
+  proposedTitle: string;
+  status: string;
+  createdAt: string;
+  contentItem: { key: string; title: string };
 }
 
 interface FormState {
@@ -76,7 +84,12 @@ export default function PageEditor() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [isSaving, setIsSaving] = useState(false);
+  const [pending, setPending] = useState<PendingRevision[]>([]);
   const [frameTick, setFrameTick] = useState(0);
+
+  // Content Managers always go through the moderation queue — their save
+  // button submits for Manager approval rather than publishing directly.
+  const isContentManager = user?.role === 'CONTENT_MANAGER';
 
   const allowed = !!user && canAct(user.role, 'pages:view');
 
@@ -93,6 +106,12 @@ export default function PageEditor() {
       try {
         const data = await apiClient.get<CmsItem[]>('/content/manage');
         setItems(data);
+        try {
+          const revs = await apiClient.get<PendingRevision[]>('/content/revisions');
+          setPending(revs);
+        } catch {
+          /* queue visibility is best-effort */
+        }
         const firstKey = page.sections[0]?.key ?? null;
         setActiveKey(firstKey);
         if (firstKey) {
@@ -117,6 +136,24 @@ export default function PageEditor() {
     setForm(loaded ? toForm(loaded) : EMPTY_FORM);
   };
 
+  // Click-to-select: the storefront preview page runs the CMS editor bridge
+  // (js/content.js) which postMessages the content key of any [data-cms]
+  // element the user clicks in the live preview. Select that section here so
+  // EVERY section of the page is reachable — including ones far down the page
+  // that are inconvenient to pick from the chip list.
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data as { source?: string; type?: string; key?: string } | null;
+      if (!d || d.source !== 'aamako-cms-bridge' || d.type !== 'section-click') return;
+      const key = String(d.key ?? '');
+      const section = page?.sections.find((s) => s.key === key);
+      if (section) selectSection(section);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, items]);
+
   const foundItem = useMemo(
     () => items.find((i) => i.key === activeKey) ?? null,
     [items, activeKey],
@@ -126,10 +163,14 @@ export default function PageEditor() {
     [page, activeKey],
   );
   const isNew = activeKey != null && !foundItem;
+  const activePending = useMemo(
+    () => pending.filter((r) => r.contentItem.key === activeKey),
+    [pending, activeKey],
+  );
 
   const handleSave = async () => {
     if (!activeKey) return;
-    if (!form.title.trim()) {
+    if (!form.title.replace(/<[^>]*>/g, '').trim()) {
       addToast({ type: 'error', title: 'Title required', description: 'Give this section a title.' });
       return;
     }
@@ -159,6 +200,15 @@ export default function PageEditor() {
       );
       const data = await apiClient.get<CmsItem[]>('/content/manage');
       setItems(data);
+      try {
+        const revs = await apiClient.get<PendingRevision[]>('/content/revisions');
+        setPending(revs);
+      } catch {
+        /* best-effort */
+      }
+      // Refresh the live preview so approved/published changes are visible
+      // immediately without the user having to hit "Reload preview".
+      setFrameTick((t) => t + 1);
     } catch (err) {
       addToast({
         type: 'error',
@@ -178,6 +228,8 @@ export default function PageEditor() {
       addToast({ type: 'success', title: 'Section published', description: activeKey });
       const data = await apiClient.get<CmsItem[]>('/content/manage');
       setItems(data);
+      // Refresh the live preview so the newly published content shows up right away
+      setFrameTick((t) => t + 1);
     } catch (err) {
       addToast({
         type: 'error',
@@ -214,7 +266,7 @@ export default function PageEditor() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       <PageHeader
         title={page.name}
         description={`Editing the "${page.name}" website page template — changes are previewed against the real page.`}
@@ -241,20 +293,28 @@ export default function PageEditor() {
           </div>
         }
       />
-<div className="grid flex-1 gap-4 overflow-hidden min-h-0 lg:grid-cols-2">
+<div className="grid flex-1 gap-4 items-start lg:grid-cols-2">
         {/* ── Left: editable template ── */}
-        <div className="flex flex-col min-h-0">
+        <div className="flex flex-col min-w-0">
           <Card className="mb-4 flex-shrink-0" padding="sm">
             <div className="mb-3 px-1 text-xs font-semibold uppercase tracking-wider text-surface-500">
               Template sections
             </div>
+            <div className="max-h-64 overflow-y-auto">
             <div className="flex flex-wrap gap-2">
-              {page.sections.map((section) => {
+              {page.sections.map((section, idx) => {
                 const exists = items.some((i) => i.key === section.key);
+                const hasPending = pending.some((r) => r.contentItem.key === section.key);
                 const isActive = section.key === activeKey;
+                const showGroup = !!section.group && page.sections[idx - 1]?.group !== section.group;
                 return (
-                  <button
-                    key={section.key}
+                  <React.Fragment key={section.key}>
+                    {showGroup && (
+                      <div className="mt-1 w-full border-t border-surface-100 pt-2 text-2xs font-semibold uppercase tracking-wider text-surface-400 first:border-0 first:pt-0">
+                        {section.group}
+                      </div>
+                    )}
+                    <button
                     onClick={() => selectSection(section)}
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
@@ -266,16 +326,27 @@ export default function PageEditor() {
                     <span
                       className={cn(
                         'h-1.5 w-1.5 rounded-full',
-                        exists ? 'bg-green-500' : 'bg-surface-300',
+                        hasPending
+                          ? 'bg-amber-500'
+                          : exists
+                            ? 'bg-green-500'
+                            : 'bg-surface-300',
                       )}
                     />
                     {section.label}
+                    {hasPending && (
+                      <span className="rounded bg-amber-100 px-1 text-2xs font-semibold text-amber-700">
+                        pending
+                      </span>
+                    )}
                   </button>
+                  </React.Fragment>
                 );
               })}
             </div>
+            </div>
           </Card>
-<Card className="flex-1 min-h-0 overflow-y-auto">
+          <Card>
             {isLoading ? (
               <div className="space-y-3 p-5">
                 <Skeleton className="h-5 w-40 rounded" />
@@ -306,29 +377,51 @@ export default function PageEditor() {
                   )}
                 </div>
 
+                {activePending.length > 0 && (
+                  <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    <span className="font-medium">
+                      {activePending.length} change{activePending.length > 1 ? 's' : ''} awaiting
+                      Manager approval.
+                    </span>
+                    The live site keeps showing the previously approved version until a Manager
+                    approves
+                    {user?.role === 'CONTENT_MANAGER' ? (
+                      <> — you will be notified of the decision.</>
+                    ) : (
+                      <>
+                        {' '}
+                        — review it in{' '}
+                        <Link href="/content" className="underline font-semibold">
+                          Content review queue
+                        </Link>
+                        .
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
                   <p className="text-2xs font-mono text-surface-500">
                     Content key: <span className="text-surface-700">{activeKey}</span>
                   </p>
                 </div>
 
-                <Input
+                <RichTextEditor
+                  variant="inline"
                   label="Section title *"
                   value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  onChange={(html) => setForm({ ...form, title: html })}
                   placeholder={`e.g. ${activeSection.label}`}
+                  hint="Fonts, sizes, colors and emphasis supported — same controls as the descriptions."
                 />
-                <div>
-                  <label className="text-sm font-medium text-surface-700">Short description</label>
-                  <textarea
-                    value={form.shortDescription}
-                    onChange={(e) => setForm({ ...form, shortDescription: e.target.value })}
-                    rows={2}
-                    maxLength={500}
-                    placeholder="One-line summary shown in the section…"
-                    className="mt-1 w-full rounded-lg border border-surface-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
-                  />
-                </div>
+                <RichTextEditor
+                  variant="inline"
+                  label="Short description"
+                  value={form.shortDescription}
+                  onChange={(html) => setForm({ ...form, shortDescription: html })}
+                  placeholder="One-line summary shown in the section…"
+                  minHeight={64}
+                />
                 <RichTextEditor
                   label="Long description"
                   value={form.longDescription}
@@ -347,7 +440,13 @@ export default function PageEditor() {
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <Button onClick={handleSave} isLoading={isSaving}>
                     <Save className="h-4 w-4" />
-                    {isNew ? 'Create & publish section' : 'Save & publish section'}
+                    {isNew
+                      ? isContentManager
+                        ? 'Create & submit for approval'
+                        : 'Create & publish section'
+                      : isContentManager
+                        ? 'Submit for approval'
+                        : 'Save & publish section'}
                   </Button>
                   {foundItem && !foundItem.isPublished && (
                     <Button variant="secondary" onClick={handlePublish} isLoading={isSaving}>
@@ -360,13 +459,18 @@ export default function PageEditor() {
           </Card>
         </div>
 {/* ── Right: live website preview ── */}
-        <Card className="flex min-h-0 flex-col" padding="none">
+        <Card className="flex flex-col lg:sticky lg:top-4 h-[75vh] lg:h-[calc(100vh-2rem)]" padding="none">
           <div className="flex items-center justify-between gap-2 border-b border-surface-200 px-3 py-2">
             <div className="flex items-center gap-2 min-w-0">
               <Globe className="h-4 w-4 flex-shrink-0 text-surface-400" />
               <span className="truncate text-xs text-surface-500">{previewUrl}</span>
             </div>
-            <Badge variant="info">Live preview</Badge>
+            <div className="flex items-center gap-2">
+              <span className="hidden text-2xs text-surface-400 sm:inline">
+                Tip: click any section in the preview to edit it
+              </span>
+              <Badge variant="info">Live preview</Badge>
+            </div>
           </div>
           <div className="relative flex-1 min-h-0">
             <iframe

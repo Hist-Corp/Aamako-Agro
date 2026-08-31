@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
@@ -63,6 +64,40 @@ export class MediaController {
   @Post()
   create(@Body() dto: CreateMediaDto, @CurrentUser() actor?: { id: string }) {
     return this.media.create(dto as Required<Pick<MediaPayload, 'name' | 'url'>> & MediaPayload, actor?.id);
+  }
+
+  /** Upload an image straight from the user's device. Stores the file under
+   *  /uploads and returns its public URL (usable as a product imageUrl). */
+  @Roles(Role.CONTENT_MANAGER, Role.STAFF_MANAGER, Role.STAFF_ADMIN, Role.SUPER_ADMIN)
+  @Post('upload')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new Error('Only image files are allowed'), false);
+      },
+    }),
+  )
+  upload(
+    @UploadedFile()
+    file?: { originalname?: string; mimetype: string; size: number; buffer: Buffer },
+  ) {
+    if (!file) {
+      throw new BadRequestException('No image file provided');
+    }
+    const fs = require('fs') as typeof import('fs');
+    const path = require('path') as typeof import('path');
+    const crypto = require('crypto') as typeof import('crypto');
+    const uploadsDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+    const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+    fs.writeFileSync(path.join(uploadsDir, filename), file.buffer);
+    const baseUrl =
+      process.env.PUBLIC_API_URL ?? `http://localhost:${process.env.PORT ?? 3000}/api`;
+    return { url: `${baseUrl.replace(/\/$/, '')}/uploads/${filename}`, name: file.originalname, size: file.size };
   }
 
   /** Edit / customize an asset's name, alt text, category or URL. */

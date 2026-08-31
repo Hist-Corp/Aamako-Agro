@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Lock,
   CheckCircle,
+  Upload,
 } from 'lucide-react';
 import { PRODUCT_TEMPLATE_SECTIONS, productFieldKey, ALL_PRODUCT_FIELD_KEYS } from '@/config/product-templates';
 
@@ -151,6 +152,34 @@ export default function ProductTemplateEditorPage({
   };
 
   const handlePublish = async () => {
+    // Validate required fields before publishing — most importantly the
+    // product image, which can come from either an https URL or a device upload.
+    const missing: string[] = [];
+    for (const section of PRODUCT_TEMPLATE_SECTIONS) {
+      for (const field of section.fields) {
+        if (!field.required) continue;
+        const existing = items[field.key];
+        const value = (existing?.title || existing?.body || '').trim();
+        if (!value) missing.push(field.label);
+        if (field.key === 'image-url' && value && !/^https?:\/\/.+/i.test(value)) {
+          addToast({
+            type: 'error',
+            title: 'Invalid product image',
+            description: 'The product image must be an https:// URL (paste a link or upload from your device).',
+          });
+          return;
+        }
+      }
+    }
+    if (missing.length > 0) {
+      addToast({
+        type: 'error',
+        title: 'Required fields missing',
+        description: `Please fill in: ${missing.join(', ')}. For the product image, paste a URL or upload one from your device.`,
+      });
+      setActiveSection(0);
+      return;
+    }
     setIsSaving(true);
     try {
       for (const field of ALL_PRODUCT_FIELD_KEYS) {
@@ -269,6 +298,18 @@ function renderField(
   const existing = items[field.key];
   const fieldKey = productFieldKey(slug, field.key);
 
+  if (field.type === 'image') {
+    return (
+      <ImageField
+        key={field.key}
+        field={field}
+        value={(existing?.title ?? '').trim()}
+        fieldKey={fieldKey}
+        onSave={onSave}
+      />
+    );
+  }
+
   if (field.type === 'textarea' || field.type === 'richtext') {
     return (
       <div key={field.key} className="mb-4">
@@ -317,4 +358,98 @@ function renderField(
   }
 
   return null;
+}
+
+/** Product image field: paste an https:// URL OR upload an image straight
+ *  from the device. Either one fills the same required image-url field. */
+function ImageField({
+  field,
+  value,
+  fieldKey,
+  onSave,
+}: {
+  field: any;
+  value: string;
+  fieldKey: string;
+  onSave: (field: string, value: string, isTitle: boolean) => void;
+}) {
+  const { addToast } = useToast();
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File) => {
+    setError(null);
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file (JPG, PNG, WebP…).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image is too large — maximum size is 5 MB.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const res = await apiClient.upload<{ url: string }>('/admin/media/upload', file);
+      onSave(field.key, res.url, true);
+      addToast({ type: 'success', title: 'Image uploaded', description: 'Saved as the product image.' });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Upload failed — please try again.');
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="mb-4">
+      <label className="block text-xs font-medium text-surface-600 mb-1">
+        {field.label} {field.required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="flex flex-wrap items-start gap-3">
+        {value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={value}
+            alt="Product preview"
+            className="h-24 w-24 flex-shrink-0 rounded-lg border border-surface-200 object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
+          />
+        ) : (
+          <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-surface-300 text-2xs text-surface-400">
+            No image
+          </div>
+        )}
+        <div className="min-w-[240px] flex-1 space-y-2">
+          <input
+            type="url"
+            className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            placeholder={field.placeholder}
+            value={value}
+            onChange={(e) => onSave(field.key, e.target.value, true)}
+          />
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" disabled={uploading} onClick={() => inputRef.current?.click()}>
+              <Upload className="h-4 w-4" />
+              {uploading ? 'Uploading…' : 'Insert from device'}
+            </Button>
+            <span className="text-2xs text-surface-400">URL or device image — one is required</span>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleFile(f);
+            }}
+          />
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+        </div>
+      </div>
+      <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
+      <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
+    </div>
+  );
 }

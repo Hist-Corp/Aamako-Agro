@@ -4,6 +4,8 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { WsAdapter } from '@nestjs/platform-ws';
+import * as express from 'express';
+import * as path from 'path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -46,6 +48,10 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.setGlobalPrefix('api');
+
+  // Serve uploaded product/media images at /api/uploads/<file>
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  app.use('/api/uploads', express.static(uploadsDir, { maxAge: '7d', immutable: true }));
   app.useWebSocketAdapter(new WsAdapter(app));
 
   const config = new DocumentBuilder()

@@ -40,18 +40,11 @@
 
   /** Load (and cache) published content items. Returns a promise of the array. */
   function load(force) {
-    if (content) return Promise.resolve(content);
+    if (content && !force) return Promise.resolve(content);
 
-    if (!force) {
-      try {
-        var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-        if (cached && Array.isArray(cached)) {
-          content = cached;
-          return Promise.resolve(content);
-        }
-      } catch (_) { /* ignore corrupt cache */ }
-    }
-
+    // Always fetch fresh from the API — the localStorage cache is only a
+    // fallback for offline / API-down situations, never a source of truth.
+    // (A cache-first strategy made approved edits invisible in the browser.)
     return fetch(API_BASE + '/content')
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (data) {
@@ -60,7 +53,14 @@
         return content;
       })
       .catch(function () {
-        content = [];
+        try {
+          var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+          if (cached && Array.isArray(cached)) {
+            content = cached;
+            return content;
+          }
+        } catch (_) { /* ignore corrupt cache */ }
+        content = content || [];
         return content;
       });
   }
@@ -93,8 +93,9 @@
   function apply(el, item, field) {
     var val = fieldValue(item, field);
     if (val === null || val === undefined || val === '') return; // keep default
+    var looksHtml = typeof val === 'string' && /<[a-z][\s\S]*>/i.test(val);
     var asHtml = el.hasAttribute('data-cms-html') ||
-      field === 'body' || field === 'long';
+      field === 'body' || field === 'long' || looksHtml;
     if (asHtml) {
       el.innerHTML = val;
     } else {
@@ -122,10 +123,46 @@
     });
   }
 
+  /**
+   * Editor bridge — active ONLY when the storefront page is loaded inside the
+   * dashboard's live-preview iframe. Hovering outlines every editable section
+   * ([data-cms]); clicking one stops the click and postMessages its content
+   * key up to the parent, which selects that template section for editing.
+   * Regular visitors never run this (window.parent === window for them).
+   */
+  function initEditorBridge() {
+    var inIframe = false;
+    try { inIframe = window.parent && window.parent !== window; } catch (_) { inIframe = false; }
+    if (!inIframe) return;
+
+    var style = document.createElement('style');
+    style.textContent =
+      '[data-cms]{cursor:pointer !important;transition:outline-color .12s;}' +
+      '[data-cms]:hover{outline:2px dashed #22c55e !important;outline-offset:3px;border-radius:4px;}';
+    document.head.appendChild(style);
+
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      var el = t && t.closest ? t.closest('[data-cms]') : null;
+      if (!el) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var key = el.getAttribute('data-cms');
+      if (!key) return;
+      try {
+        window.parent.postMessage(
+          { source: 'aamako-cms-bridge', type: 'section-click', key: key },
+          '*'
+        );
+      } catch (_) { /* parent messaging must never break the page */ }
+    }, true);
+  }
+
   // Auto-hydrate after the DOM is ready, unless explicitly deferred via
   // window.AAMAKO_CONTENT_DEFER = true before this script runs.
   if (typeof window !== 'undefined') {
     window.AamakoContent = { load: load, get: get, all: all, hydrate: hydrate };
+    initEditorBridge();
     if (!window.AAMAKO_CONTENT_DEFER) {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () { hydrate(); });

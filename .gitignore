@@ -35,3 +35,6 @@ Backend/.prisma/
 *-out.txt
 run-*.log
 
+
+# Runtime image uploads
+Backend/uploads/

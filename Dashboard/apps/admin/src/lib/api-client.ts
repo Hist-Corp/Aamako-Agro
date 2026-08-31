@@ -76,6 +76,31 @@ class ApiClient {
     return response.json();
   }
 
+  /** Multipart file upload (image from device). `file` is sent as "file". */
+  async upload<T>(endpoint: string, file: File): Promise<T> {
+    const url = new URL(`${API_BASE}${endpoint}`, window.location.origin);
+    const form = new FormData();
+    form.append('file', file);
+    const headers: Record<string, string> = {};
+    if (this.accessToken) headers['Authorization'] = `Bearer ${this.accessToken}`;
+    const response = await fetch(url.toString(), { method: 'POST', headers, body: form });
+    if (!response.ok) {
+      if (response.status === 401) {
+        const refreshed = await this.refreshToken();
+        if (refreshed) {
+          headers['Authorization'] = `Bearer ${this.accessToken}`;
+          const retry = await fetch(url.toString(), { method: 'POST', headers, body: form });
+          if (!retry.ok) throw new ApiError(retry.status, await retry.json());
+          return retry.json();
+        }
+        window.location.href = '/login';
+        throw new ApiError(401, { message: 'Session expired' });
+      }
+      throw new ApiError(response.status, await response.json().catch(() => ({})));
+    }
+    return response.json();
+  }
+
   private async refreshToken(): Promise<boolean> {
     try {
       const storedRefresh = localStorage.getItem('refresh_token');
