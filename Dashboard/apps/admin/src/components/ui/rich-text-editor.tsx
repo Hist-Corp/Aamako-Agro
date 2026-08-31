@@ -3,6 +3,9 @@
 // Lightweight formatting toolbar (bold/italic/underline/strikethrough,
 // font family + size, heading styles, lists, alignment, links and image
 // placement) built on document.execCommand over a contentEditable area.
+// Font / size / colour controls are editable comboboxes: pick a preset OR
+// type a custom font name, any size (`24`, `24px`, `1.5rem`) and any
+// colour as hex code or CSS name — then press Enter to apply.
 // No external dependencies.
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -11,6 +14,7 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  ChevronDown,
   ImagePlus,
   Italic,
   Link2,
@@ -24,29 +28,75 @@ import {
   Undo2,
 } from 'lucide-react';
 
-const FONT_FAMILIES = ['Arial', 'Courier New', 'Georgia', 'Inter', 'Times New Roman', 'Verdana'];
+/** Presets shown in the font dropdown — storefront brand families first. */
+const FONT_FAMILIES = [
+  'Inter',
+  'Playfair Display',
+  'JetBrains Mono',
+  'Fraunces',
+  'Work Sans',
+  'Arial',
+  'Helvetica',
+  'Georgia',
+  'Times New Roman',
+  'Courier New',
+  'Verdana',
+  'Tahoma',
+  'system-ui',
+  'sans-serif',
+  'serif',
+  'monospace',
+];
 const FONT_SIZES = [
-  { label: 'Extra small', value: '1' },
-  { label: 'Small', value: '2' },
-  { label: 'Normal', value: '3' },
-  { label: 'Medium', value: '4' },
-  { label: 'Large', value: '5' },
-  { label: 'Huge', value: '6' },
-  { label: 'Extra huge', value: '7' },
+  { label: 'Extra small (1)', value: '1' },
+  { label: 'Small (2)', value: '2' },
+  { label: 'Normal (3)', value: '3' },
+  { label: 'Medium (4)', value: '4' },
+  { label: 'Large (5)', value: '5' },
+  { label: 'Huge (6)', value: '6' },
+  { label: 'Extra huge (7)', value: '7' },
+  { label: '10px', value: '10px' },
+  { label: '12px', value: '12px' },
+  { label: '14px', value: '14px' },
+  { label: '16px', value: '16px' },
+  { label: '18px', value: '18px' },
+  { label: '20px', value: '20px' },
+  { label: '24px', value: '24px' },
+  { label: '28px', value: '28px' },
+  { label: '32px', value: '32px' },
+  { label: '36px', value: '36px' },
+  { label: '40px', value: '40px' },
+  { label: '48px', value: '48px' },
+  { label: '60px', value: '60px' },
+  { label: '72px', value: '72px' },
+  { label: '1rem', value: '1rem' },
+  { label: '1.25rem', value: '1.25rem' },
+  { label: '1.5rem', value: '1.5rem' },
+  { label: '2rem', value: '2rem' },
+  { label: '2.5rem', value: '2.5rem' },
 ];
-const TEXT_COLORS = [
-  { label: 'Black', value: '#0f172a' },
-  { label: 'Grey', value: '#64748b' },
-  { label: 'Red', value: '#dc2626' },
-  { label: 'Orange', value: '#ea580c' },
-  { label: 'Green', value: '#16a34a' },
-  { label: 'Blue', value: '#2563eb' },
+/** Brand palette from the storefront (Frontend/styles.css :root) + basics. */
+const TEXT_COLORS: ComboOption[] = [
+  { label: 'Ink', value: '#211F17', swatch: '#211F17' },
+  { label: 'Ink soft', value: '#55503F', swatch: '#55503F' },
+  { label: 'Sage', value: '#5C6B3E', swatch: '#5C6B3E' },
+  { label: 'Sage deep', value: '#38401F', swatch: '#38401F' },
+  { label: 'Gold', value: '#BE8A2A', swatch: '#BE8A2A' },
+  { label: 'Clay', value: '#9C4E30', swatch: '#9C4E30' },
+  { label: 'Rust', value: '#7A3820', swatch: '#7A3820' },
+  { label: 'Black', value: '#0f172a', swatch: '#0f172a' },
+  { label: 'Grey', value: '#64748b', swatch: '#64748b' },
+  { label: 'Red', value: '#dc2626', swatch: '#dc2626' },
+  { label: 'Orange', value: '#ea580c', swatch: '#ea580c' },
+  { label: 'Green', value: '#16a34a', swatch: '#16a34a' },
+  { label: 'Blue', value: '#2563eb', swatch: '#2563eb' },
 ];
-const HIGHLIGHTS = [
-  { label: 'Yellow', value: '#fef08a' },
-  { label: 'Green', value: '#bbf7d0' },
-  { label: 'Blue', value: '#bfdbfe' },
-  { label: 'Pink', value: '#fbcfe8' },
+const HIGHLIGHTS: ComboOption[] = [
+  { label: 'Paper', value: '#F7F1E4', swatch: '#F7F1E4' },
+  { label: 'Yellow', value: '#fef08a', swatch: '#fef08a' },
+  { label: 'Green', value: '#bbf7d0', swatch: '#bbf7d0' },
+  { label: 'Blue', value: '#bfdbfe', swatch: '#bfdbfe' },
+  { label: 'Pink', value: '#fbcfe8', swatch: '#fbcfe8' },
 ];
 const BLOCKS = [
   { label: 'Paragraph', tag: '<p>' },
@@ -54,6 +104,145 @@ const BLOCKS = [
   { label: 'Heading 2', tag: '<h2>' },
   { label: 'Heading 3', tag: '<h3>' },
 ];
+
+/** Detect valid CSS colours (hex, rgb()/hsl(), named) for the swatch preview. */
+function isValidColor(value: string): boolean {
+  if (!value.trim()) return false;
+  try {
+    return typeof CSS !== 'undefined' && CSS.supports('color', value.trim());
+  } catch {
+    return false;
+  }
+}
+
+interface ComboOption {
+  label: string;
+  value: string;
+  swatch?: string;
+}
+
+interface FormatComboProps {
+  title: string;
+  placeholder: string;
+  /** Preset list shown in the dropdown. */
+  options: ComboOption[];
+  /** Show a live colour swatch of the typed value. */
+  color?: boolean;
+  width?: string;
+  onApply: (value: string) => void;
+  /** Called on mousedown so the contenteditable selection is preserved. */
+  onCaptureSelection: () => void;
+}
+
+/**
+ * Editable combobox: dropdown of presets + free-text input. Typing a custom
+ * font name, size (`16`, `24px`, `1.5rem`) or colour (hex / named) and
+ * pressing Enter (or picking a preset) applies it to the selected text.
+ */
+function FormatCombo({ title, placeholder, options, color, width = 'w-24', onApply, onCaptureSelection }: FormatComboProps) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const wrapRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const apply = (value: string) => {
+    if (!value.trim()) {
+      setOpen(false);
+      return;
+    }
+    onApply(value.trim());
+    setText('');
+    setOpen(false);
+  };
+
+  const q = text.trim().toLowerCase();
+  const shown = q
+    ? options.filter((o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q))
+    : options;
+  const preview = color && isValidColor(text) ? text.trim() : null;
+
+  return (
+    <span
+      ref={wrapRef}
+      className="relative inline-flex items-center"
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        onCaptureSelection();
+      }}
+    >
+      {preview && (
+        <span
+          className="pointer-events-none absolute left-1 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 rounded-sm border border-surface-200"
+          style={{ backgroundColor: preview }}
+        />
+      )}
+      <input
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            apply(text);
+          }
+          if (e.key === 'Escape') setOpen(false);
+        }}
+        placeholder={placeholder}
+        title={title}
+        className={`h-7 ${width} rounded-md border border-surface-200 bg-white px-1.5 text-xs text-surface-700 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40 ${preview ? 'pl-6' : ''}`}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        title={`${title} — pick a preset or type your own`}
+        className="pointer-events-none absolute right-0.5 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-surface-400"
+        aria-hidden="true"
+      >
+        <ChevronDown className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <span className="absolute left-0 top-full z-40 mt-0.5 w-56 overflow-hidden rounded-lg border border-surface-200 bg-white p-1 shadow-lg">
+          <span className="flex items-center justify-between border-b border-surface-100 px-2 py-1">
+            <span className="text-2xs font-semibold uppercase tracking-wider text-surface-400">{title}</span>
+            <span className="text-2xs text-surface-300">Enter applies</span>
+          </span>
+          <span className="block max-h-44 overflow-y-auto">
+            {shown.length === 0 && (
+              <span className="block px-2 py-1.5 text-xs text-surface-400">
+                No preset — press Enter to apply {text.trim() || 'your value'}
+              </span>
+            )}
+            {shown.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => apply(o.value)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-surface-700 hover:bg-surface-100"
+              >
+                {o.swatch && (
+                  <span className="h-3.5 w-3.5 shrink-0 rounded-sm border border-surface-200" style={{ backgroundColor: o.swatch }} />
+                )}
+                <span className="min-w-0 truncate">{o.label}</span>
+              </button>
+            ))}
+          </span>
+        </span>
+      )}
+    </span>
+  );
+}
 
 interface RichTextEditorProps {
   label?: string;
@@ -132,6 +321,57 @@ export function RichTextEditor({
     setPanel('none');
   };
 
+  /** Remember the current selection so comboboxes can restore it before applying. */
+  const captureSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && ref.current?.contains(sel.anchorNode)) {
+      savedRange.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+
+  /** Restore the captured selection into the editable field. */
+  const restoreSelection = () => {
+    ref.current?.focus();
+    const sel = window.getSelection();
+    if (savedRange.current && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRange.current);
+    }
+  };
+
+  /** Run an execCommand against the captured selection (for combo "apply"). */
+  const execOnSelection = (command: string, arg?: string) => {
+    restoreSelection();
+    document.execCommand(command, false, arg);
+    push();
+  };
+
+  /** Apply a font size — HTML sizes 1-7 or any CSS size (`16`, `24px`, `1.5rem`). */
+  const applySize = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    if (/^[1-7]$/.test(trimmed)) {
+      execOnSelection('fontSize', trimmed);
+      return;
+    }
+    let size = trimmed;
+    // Treat a bare number as pixels.
+    if (/^\d+(\.\d+)?$/.test(size)) size = `${size}px`;
+    if (!/^\d+(\.\d+)?(px|em|rem|pt|%)$/.test(size)) return;
+    // execCommand only understands sizes 1-7, so mark with 7 then replace each
+    // generated <font size="7"> with a span carrying the exact CSS font-size.
+    restoreSelection();
+    document.execCommand('fontSize', false, '7');
+    const fonts = ref.current?.querySelectorAll<HTMLElement>('font[size="7"], font[Size="7"]') ?? [];
+    fonts.forEach((f) => {
+      const span = document.createElement('span');
+      span.style.fontSize = size;
+      while (f.firstChild) span.appendChild(f.firstChild);
+      f.replaceWith(span);
+    });
+    push();
+  };
+
   const btn =
     'inline-flex h-7 w-7 items-center justify-center rounded-md text-surface-600 hover:bg-surface-100 hover:text-surface-900';
   const divider = <span className="mx-1 h-5 w-px bg-surface-200" aria-hidden="true" />;
@@ -157,14 +397,22 @@ export function RichTextEditor({
           <button type="button" title="Underline" className={btn} onClick={() => exec('underline')}><Underline className="h-4 w-4" /></button>
           <button type="button" title="Strikethrough" className={btn} onClick={() => exec('strikeThrough')}><Strikethrough className="h-4 w-4" /></button>
           {divider}
-          <select title="Font family" className={selectCls} defaultValue="" onChange={resetThen((v) => exec('fontName', v))}>
-            <option value="" disabled>Font</option>
-            {FONT_FAMILIES.map((f) => <option key={f} value={f}>{f}</option>)}
-          </select>
-          <select title="Font size" className={selectCls} defaultValue="" onChange={resetThen((v) => exec('fontSize', v))}>
-            <option value="" disabled>Size</option>
-            {FONT_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
+          <FormatCombo
+            title="Font family"
+            placeholder="Font"
+            width="w-24"
+            options={FONT_FAMILIES.map((f) => ({ label: f, value: f }))}
+            onCaptureSelection={captureSelection}
+            onApply={(v) => execOnSelection('fontName', v)}
+          />
+          <FormatCombo
+            title="Font size — 1-7 or any CSS size (px/rem)"
+            placeholder="Size"
+            width="w-16"
+            options={FONT_SIZES}
+            onCaptureSelection={captureSelection}
+            onApply={applySize}
+          />
           {!inline && (
             <>
               <select title="Paragraph style" className={selectCls} defaultValue="" onChange={resetThen((v) => exec('formatBlock', v))}>
@@ -174,14 +422,24 @@ export function RichTextEditor({
               {divider}
             </>
           )}
-          <select title="Text color" className={selectCls} defaultValue="" onChange={resetThen((v) => exec('foreColor', v))}>
-            <option value="" disabled>Color</option>
-            {TEXT_COLORS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-          <select title="Highlight" className={selectCls} defaultValue="" onChange={resetThen((v) => exec('hiliteColor', v))}>
-            <option value="" disabled>Highlight</option>
-            {HIGHLIGHTS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
+          <FormatCombo
+            title="Text color — hex code or CSS colour name"
+            placeholder="Color"
+            width="w-20"
+            color
+            options={TEXT_COLORS}
+            onCaptureSelection={captureSelection}
+            onApply={(v) => execOnSelection('foreColor', v)}
+          />
+          <FormatCombo
+            title="Highlight — hex code or CSS colour name"
+            placeholder="Highlight"
+            width="w-20"
+            color
+            options={HIGHLIGHTS}
+            onCaptureSelection={captureSelection}
+            onApply={(v) => execOnSelection('hiliteColor', v)}
+          />
           {!inline && divider}
           {!inline && (
             <>
