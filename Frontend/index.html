@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="js/content.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
 <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
@@ -57,9 +58,9 @@
   </div>
   <div class="wrap hero-grid">
     <div class="hero-content">
-      <div class="eyebrow">Freeze-dried, since [placeholder year]</div>
-      <h1>What Aama would pack, <em>kept honest.</em></h1>
-      <p class="hero-sub">Real fruit, vegetables and Himalayan spice — flash-frozen and dried within hours of harvest, so nothing but the water leaves. No preservatives. Full batch traceability, back to the farm.</p>
+      <div class="eyebrow" data-cms="home.hero.eyebrow">Freeze-dried, since [placeholder year]</div>
+      <h1 data-cms="home.hero">What Aama would pack, <em>kept honest.</em></h1>
+      <p class="hero-sub" data-cms="home.hero" data-cms-field="short">Real fruit, vegetables and Himalayan spice — flash-frozen and dried within hours of harvest, so nothing but the water leaves. No preservatives. Full batch traceability, back to the farm.</p>
       <div class="hero-cta">
         <a href="shop.html" class="btn btn-primary">Shop the range</a>
         <a href="wholesale.html" class="btn btn-outline-dark">Wholesale &amp; bulk →</a>
@@ -81,8 +82,8 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <h2 class="section-title">With love, from Aama's kitchen</h2>
-        <p class="section-desc">Six ranges, one standard: picked ripe, processed fast, nothing added.</p>
+        <h2 class="section-title" data-cms="home.categories.title">With love, from Aama's kitchen</h2>
+        <p class="section-desc" data-cms="home.categories" data-cms-field="short">Six ranges, one standard: picked ripe, processed fast, nothing added.</p>
       </div>
       <a href="shop.html" class="link-arrow">View all products</a>
     </div>
@@ -116,13 +117,13 @@
     <div class="why-wrap">
       <div class="why-grid">
         <div>
-          <div class="eyebrow">Why freeze-dried</div>
-          <h2 class="section-title" style="max-width:12ch;">Less water. Same food.</h2>
-          <p class="section-desc" style="margin-top:12px;">Freeze-drying removes moisture at sub-zero temperatures, so flavour, nutrients and shape survive — unlike sun-dried or heat-dried alternatives.</p>
+          <div class="eyebrow" data-cms="home.why.eyebrow">Why freeze-dried</div>
+          <h2 class="section-title" data-cms="home.why" style="max-width:12ch;">Less water. Same food.</h2>
+          <p class="section-desc" data-cms="home.why" data-cms-field="short" style="margin-top:12px;">Freeze-drying removes moisture at sub-zero temperatures, so flavour, nutrients and shape survive — unlike sun-dried or heat-dried alternatives.</p>
           <div class="stat-row">
-            <div class="stat"><div class="stat-num">[N]</div><div class="stat-label">Farmers sourced from</div></div>
-            <div class="stat"><div class="stat-num">[N]</div><div class="stat-label">Months shelf life</div></div>
-            <div class="stat"><div class="stat-num">[N]%</div><div class="stat-label">Nutrient retention</div></div>
+            <div class="stat"><div class="stat-num" data-cms="home.why.farmers">[N]</div><div class="stat-label">Farmers sourced from</div></div>
+            <div class="stat"><div class="stat-num" data-cms="home.why.shelf">[N]</div><div class="stat-label">Months shelf life</div></div>
+            <div class="stat"><div class="stat-num" data-cms="home.why.nutrients">[N]%</div><div class="stat-label">Nutrient retention</div></div>
           </div>
           <a href="process.html" class="link-arrow" style="display:inline-block; margin-top:24px;">See the full process</a>
         </div>
@@ -137,8 +138,8 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <h2 class="section-title">Our best sellers</h2>
-        <p class="section-desc">The ones people reorder without thinking twice.</p>
+        <h2 class="section-title" data-cms="home.bestsellers.title">Our best sellers</h2>
+        <p class="section-desc" data-cms="home.bestsellers" data-cms-field="short">The ones people reorder without thinking twice.</p>
       </div>
       <a href="shop.html" class="link-arrow">Shop best sellers</a>
     </div>
@@ -180,8 +181,8 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <h2 class="section-title">From farm to your hands</h2>
-        <p class="section-desc">A glimpse into our journey — from Nepali farms to freeze-dried perfection.</p>
+        <h2 class="section-title" data-cms="home.gallery.title">From farm to your hands</h2>
+        <p class="section-desc" data-cms="home.gallery" data-cms-field="short">A glimpse into our journey — from Nepali farms to freeze-dried perfection.</p>
       </div>
     </div>
     <div class="gallery-grid">
@@ -214,9 +215,9 @@
   <div class="wrap">
     <div class="wholesale">
       <div>
-        <div class="eyebrow" style="color:var(--gold);">For retailers &amp; distributors</div>
-        <h2>Built for shelves, kitchens and growing brands.</h2>
-        <p>Tiered wholesale pricing, sample requests and private-label production — the part of the business most suppliers make you call a phone number to find out about.</p>
+        <div class="eyebrow" data-cms="home.wholesale.eyebrow" style="color:var(--gold);">For retailers &amp; distributors</div>
+        <h2 data-cms="home.wholesale">Built for shelves, kitchens and growing brands.</h2>
+        <p data-cms="home.wholesale" data-cms-field="short">Tiered wholesale pricing, sample requests and private-label production — the part of the business most suppliers make you call a phone number to find out about.</p>
         <div class="wholesale-list">
           <div>Wholesale pricing by volume tier</div>
           <div>Sample kits before you commit</div>
@@ -237,9 +238,9 @@
   <div class="wrap trace">
     <div class="photo" style="height:360px;"><img draggable="false" src="https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=800&q=80" alt="Batch traceability"></div>
     <div>
-      <div class="eyebrow">Traceability</div>
-      <h2 class="section-title" style="max-width:14ch;">Proof in every pack, not just promises.</h2>
-      <p class="section-desc" style="margin:16px 0 24px;">Every product carries a batch code that traces back to the farm it came from, the day it was processed, and the quality check it passed.</p>
+      <div class="eyebrow" data-cms="home.trace.eyebrow">Traceability</div>
+      <h2 class="section-title" data-cms="home.trace" style="max-width:14ch;">Proof in every pack, not just promises.</h2>
+      <p class="section-desc" data-cms="home.trace" data-cms-field="short" style="margin:16px 0 24px;">Every product carries a batch code that traces back to the farm it came from, the day it was processed, and the quality check it passed.</p>
       <div class="batch-tag">
         <div><span>Batch</span><span>AKA-2601-047</span></div>
         <div><span>Source</span><span>[Region], Nepal</span></div>
@@ -254,7 +255,7 @@
 <!-- REVIEWS -->
 <section class="reveal">
   <div class="wrap">
-    <div class="section-head"><div><h2 class="section-title">What people say</h2></div></div>
+    <div class="section-head"><div><h2 class="section-title" data-cms="home.reviews.title">What people say</h2></div></div>
     <div class="review-grid">
       <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"The mango slices taste like they were just picked from the tree. My kids finish a pack in minutes!"</p><div class="review-name">Priya Sharma</div><div class="review-loc">Kathmandu, Nepal · Verified purchase</div></div>
       <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-quote">"Perfect for my café's smoothie bowls. The quality is consistent and my customers love the vibrant colors."</p><div class="review-name">Rajesh Thapa</div><div class="review-loc">Pokhara, Nepal · Verified purchase</div></div>
@@ -267,8 +268,8 @@
 <section class="reveal">
   <div class="wrap">
     <div class="newsletter">
-      <h2>Recipes, straight from Aama's notebook</h2>
-      <p>One email a month — a rehydration trick, a seasonal recipe, and what's new from the facility.</p>
+      <h2 data-cms="home.newsletter">Recipes, straight from Aama's notebook</h2>
+      <p data-cms="home.newsletter" data-cms-field="short">One email a month — a rehydration trick, a seasonal recipe, and what's new from the facility.</p>
       <form class="nl-form" onsubmit="return false;">
         <input type="email" placeholder="you@email.com" aria-label="Email address" required>
         <button type="submit" class="btn btn-primary">Subscribe</button>

@@ -123,6 +123,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'customers:view', 'customers:suspend', 'customers:edit',
     // Content
     'content:view', 'content:edit', 'content:publish', 'content:approve',
+    'pages:view', 'pages:edit', 'pages:publish',
+    'product-templates:view', 'product-templates:edit', 'product-templates:create', 'product-templates:publish',
     'journal:view', 'journal:edit', 'journal:publish',
     'media:view', 'media:upload', 'media:delete',
     // Support
@@ -163,6 +165,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'customers:view', 'customers:suspend', 'customers:edit',
     // Content
     'content:view', 'content:edit', 'content:publish', 'content:approve',
+    'pages:view', 'pages:edit', 'pages:publish',
+    'product-templates:view', 'product-templates:edit', 'product-templates:create', 'product-templates:publish',
     'journal:view', 'journal:edit', 'journal:publish',
     'media:view', 'media:upload',
     // Support
@@ -202,6 +206,9 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'customers:view', 'customers:edit',
     // Customer Support — Manager oversees the support queue
     'support:view', 'support:manage',
+    // Website Pages — Manager may edit & publish storefront page templates
+    'pages:view', 'pages:edit', 'pages:publish',
+    'product-templates:view', 'product-templates:edit', 'product-templates:create', 'product-templates:publish',
     // Reports & Analytics
     'reports:view',
     'analytics:view',
@@ -252,6 +259,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     // Content — Content Manager may fully edit all existing pages and create
     // new pages, publishing directly without waiting for approval.
     'content:view', 'content:create', 'content:edit', 'content:publish', 'content:approve',
+    'pages:view', 'pages:edit', 'pages:publish',
+    'product-templates:view', 'product-templates:edit', 'product-templates:create', 'product-templates:publish',
     'journal:view', 'journal:edit', 'journal:publish',
     'media:view', 'media:upload', 'media:edit', 'media:publish', 'media:delete',
     // Reviews
@@ -301,6 +310,8 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'customers:view', 'customers:suspend', 'customers:edit',
     // Content
     'content:view', 'content:edit', 'content:publish', 'content:approve',
+    'pages:view', 'pages:edit', 'pages:publish',
+    'product-templates:view', 'product-templates:edit', 'product-templates:create', 'product-templates:publish',
     'journal:view', 'journal:edit', 'journal:publish',
     'media:view', 'media:upload',
     // Support
@@ -349,6 +360,9 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'support:view', 'support:manage',
     // Content management — Manager reviews & approves Content Manager changes
     'content:view', 'content:edit', 'content:publish', 'content:approve',
+    // Website Pages — Manager may edit & publish storefront page templates
+    'pages:view', 'pages:edit', 'pages:publish',
+    'product-templates:view', 'product-templates:edit', 'product-templates:create', 'product-templates:publish',
     // Notifications (content approval requests arrive here)
     'notifications:view',
     // Reports & Analytics

@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="js/content.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 </head>
 <body>
@@ -42,13 +43,13 @@
     </div>
 
     <div>
-      <div class="prod-badge">Best seller</div>
-      <h1 class="page-title" id="pdpTitle" style="font-size:clamp(1.8rem,3.4vw,2.6rem); margin-top:8px;">Freeze-Dried Mango</h1>
-      <p class="section-desc" id="pdpDesc" style="margin-top:10px;">Ripe mango, sliced and freeze-dried within hours of harvest. Crisp, intensely sweet, nothing added.</p>
-      <div class="pdp-price" id="pdpPrice">Rs 450</div>
-      <div class="spec-row"><span>Pack size</span><span id="pdpPack">50g pouch</span></div>
-      <div class="spec-row"><span>Availability</span><span id="pdpAvailability">In stock</span></div>
-      <div class="spec-row"><span>Shelf life</span><span>[N] months, unopened</span></div>
+      <div class="prod-badge" data-cms="product-page.badge">Best seller</div>
+      <h1 class="page-title" id="pdpTitle" data-cms="product-page.title" style="font-size:clamp(1.8rem,3.4vw,2.6rem); margin-top:8px;">Freeze-Dried Mango</h1>
+      <p class="section-desc" id="pdpDesc" data-cms="product-page.description" style="margin-top:10px;">Ripe mango, sliced and freeze-dried within hours of harvest. Crisp, intensely sweet, nothing added.</p>
+      <div class="pdp-price" id="pdpPrice" data-cms="product-page.price">Rs 450</div>
+      <div class="spec-row"><span>Pack size</span><span id="pdpPack" data-cms="product-page.pack">50g pouch</span></div>
+      <div class="spec-row"><span>Availability</span><span id="pdpAvailability" data-cms="product-page.availability">In stock</span></div>
+      <div class="spec-row"><span>Shelf life</span><span data-cms="product-page.shelf-life">[N] months, unopened</span></div>
       <div class="qty-row">
         <div class="qty-stepper"><button type="button" id="qtyDec" aria-label="Decrease quantity">−</button><span id="qtyValue">1</span><button type="button" id="qtyInc" aria-label="Increase quantity">+</button></div>
         <span style="font-family:var(--mono); font-size:12px; color:var(--ink-soft);">SKU: AKA-MNG-050</span>
@@ -66,11 +67,11 @@
         <div><span>Quality check</span><span>Passed</span></div>
       </div>
       <div class="accordion">
-        <div class="acc-item"><div class="acc-head">Ingredients &amp; allergens<span>+</span></div><div class="acc-body">100% freeze-dried mango. No added sugar, preservatives or colouring. [Placeholder — confirm allergen statement.]</div></div>
-        <div class="acc-item"><div class="acc-head">Nutrition (per 100g)<span>+</span></div><div class="acc-body">[Placeholder — energy, carbs, sugar, fibre, protein, fat figures pending lab data.]</div></div>
-        <div class="acc-item"><div class="acc-head">Origin &amp; sourcing<span>+</span></div><div class="acc-body">Sourced from partner growers in [region, Nepal]. See our <a href="story.html" style="text-decoration:underline;">story page</a> for more.</div></div>
-        <div class="acc-item"><div class="acc-head">Storage &amp; shelf life<span>+</span></div><div class="acc-body">Store in a cool, dry place. Reseal after opening. Best consumed within [N] weeks of opening.</div></div>
-        <div class="acc-item"><div class="acc-head">How to rehydrate<span>+</span></div><div class="acc-body"><div class="rehydrate-steps"><div class="rstep"><div class="rstep-num">01</div>Cover with hot water</div><div class="rstep"><div class="rstep-num">02</div>Wait 5–10 minutes</div><div class="rstep"><div class="rstep-num">03</div>Drain and enjoy — or eat straight from the pack</div></div></div></div>
+        <div class="acc-item"><div class="acc-head">Ingredients &amp; allergens<span>+</span></div><div class="acc-body" data-cms="product-page.ingredients">100% freeze-dried mango. No added sugar, preservatives or colouring. [Placeholder — confirm allergen statement.]</div></div>
+        <div class="acc-item"><div class="acc-head">Nutrition (per 100g)<span>+</span></div><div class="acc-body" data-cms="product-page.nutrition">[Placeholder — energy, carbs, sugar, fibre, protein, fat figures pending lab data.]</div></div>
+        <div class="acc-item"><div class="acc-head">Origin &amp; sourcing<span>+</span></div><div class="acc-body" data-cms="product-page.origin">Sourced from partner growers in [region, Nepal]. See our <a href="story.html" style="text-decoration:underline;">story page</a> for more.</div></div>
+        <div class="acc-item"><div class="acc-head">Storage &amp; shelf life<span>+</span></div><div class="acc-body" data-cms="product-page.storage">Store in a cool, dry place. Reseal after opening. Best consumed within [N] weeks of opening.</div></div>
+        <div class="acc-item"><div class="acc-head">How to rehydrate<span>+</span></div><div class="acc-body" data-cms="product-page.rehydrate"><div class="rehydrate-steps"><div class="rstep"><div class="rstep-num">01</div>Cover with hot water</div><div class="rstep"><div class="rstep-num">02</div>Wait 5–10 minutes</div><div class="rstep"><div class="rstep-num">03</div>Drain and enjoy — or eat straight from the pack</div></div></div></div>
       </div>
     </div>
   </div>

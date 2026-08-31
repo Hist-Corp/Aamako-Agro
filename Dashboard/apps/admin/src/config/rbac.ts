@@ -34,6 +34,8 @@ import {
   Activity,
   MapPin,
   FolderOpen,
+  LayoutTemplate,
+  LayoutList,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -188,6 +190,24 @@ export const NAV_STRUCTURE: NavGroup[] = [
         href: '/content',
         icon: FileText,
         permission: 'content:view',
+      },
+      {
+        label: 'Pages',
+        href: '/pages',
+        icon: LayoutTemplate,
+        permission: 'pages:view',
+        // Only Manager, Content Manager, Admin and Super Admin can manage
+        // website page templates (covers both legacy + real backend role names).
+        roles: ['MANAGER', 'STAFF_MANAGER', 'CONTENT_MANAGER', 'ADMIN', 'STAFF_ADMIN', 'SUPER_ADMIN'],
+      },
+      {
+        label: 'Product Templates',
+        href: '/product-templates',
+        icon: LayoutList,
+        permission: 'product-templates:view',
+        // Only Manager, Content Manager, Admin and Super Admin can manage
+        // product templates (covers both legacy + real backend role names).
+        roles: ['MANAGER', 'STAFF_MANAGER', 'CONTENT_MANAGER', 'ADMIN', 'STAFF_ADMIN', 'SUPER_ADMIN'],
       },
       {
         label: 'Journal / Blog',
