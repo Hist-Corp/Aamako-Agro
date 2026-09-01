@@ -351,12 +351,28 @@
         btn.classList.toggle('is-open',o);
         btn.setAttribute('aria-expanded',o?'true':'false');
         document.body.style.overflow=o?'hidden':'';
+        document.body.classList.toggle('drawer-open',o);
         var hdr=document.querySelector('header');
         if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}
         else drawer.style.removeProperty('--drawer-top');
       });
-      drawer.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){drawer.classList.remove('is-open');btn.classList.remove('is-open');document.body.style.overflow='';});});
+      drawer.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){drawer.classList.remove('is-open');btn.classList.remove('is-open');document.body.style.overflow='';document.body.classList.remove('drawer-open');});});
     }
+  })();
+
+  /* ---------- hide header on scroll down, show on scroll up (site-wide) ---------- */
+  (function(){
+    var header=document.querySelector('header');
+    if(!header)return;
+    var drawer=document.getElementById('mobileDrawer');
+    var lastY=0;
+    window.addEventListener('scroll',function(){
+      var y=window.pageYOffset||document.documentElement.scrollTop;
+      if(y>80&&y>lastY&&(!drawer||!drawer.classList.contains('is-open'))){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}
+      else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}
+      if(y<=80){header.classList.remove('is-hidden','is-scrolled');}
+      lastY=y;
+    },{passive:true});
   })();
 
   /* ---------- mini cart (aka-cart, shared shape) ---------- */

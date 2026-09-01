@@ -269,6 +269,41 @@
   </div>
 </section>
 
+<!-- CATEGORY BANNERS (milled powders / freeze-dried / dehydrated) -->
+<section class="omsec ombanners" id="categoryBanners">
+  <div class="wrap">
+    <div class="ombanner-grid">
+      <a class="ombanner-card" href="collection.html?cat=powders">
+        <div class="ombanner-imgwrap">
+          <img src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=900&q=80" alt="Milled Powders Banner" loading="lazy">
+          <div class="ombanner-content">
+            <h4 class="ombanner-title">Stone-milled powders to start your day the honest way</h4>
+            <span class="ombanner-btn"><span class="ombanner-btntext">Order Now</span><span class="ombanner-btnicon"><svg viewBox="0 0 14 10"><path fill-rule="evenodd" clip-rule="evenodd" d="M8.537.808a.5.5 0 01.817-.162l4 4a.5.5 0 010 .708l-4 4a.5.5 0 11-.708-.708L11.793 5.5H1a.5.5 0 010-1h10.793L8.646 1.354a.5.5 0 01-.109-.546z"/></svg></span></span>
+          </div>
+        </div>
+      </a>
+      <a class="ombanner-card" href="collection.html?cat=freeze-dried-fruits">
+        <div class="ombanner-imgwrap">
+          <img src="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=900&q=80" alt="Freeze-Dried Fruits Banner" loading="lazy">
+          <div class="ombanner-content">
+            <h4 class="ombanner-title">Freeze-dried fruits &amp; vegetables, picked at their peak and kept bright</h4>
+            <span class="ombanner-btn"><span class="ombanner-btntext">Order Now</span><span class="ombanner-btnicon"><svg viewBox="0 0 14 10"><path fill-rule="evenodd" clip-rule="evenodd" d="M8.537.808a.5.5 0 01.817-.162l4 4a.5.5 0 010 .708l-4 4a.5.5 0 11-.708-.708L11.793 5.5H1a.5.5 0 010-1h10.793L8.646 1.354a.5.5 0 01-.109-.546z"/></svg></span></span>
+          </div>
+        </div>
+      </a>
+      <a class="ombanner-card" href="collection.html?cat=dehydrated">
+        <div class="ombanner-imgwrap">
+          <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=900&q=80" alt="Dehydrated Banner" loading="lazy">
+          <div class="ombanner-content">
+            <h4 class="ombanner-title">Dehydrated fruits &amp; vegetables for every kitchen, the patient way</h4>
+            <span class="ombanner-btn"><span class="ombanner-btntext">Order Now</span><span class="ombanner-btnicon"><svg viewBox="0 0 14 10"><path fill-rule="evenodd" clip-rule="evenodd" d="M8.537.808a.5.5 0 01.817-.162l4 4a.5.5 0 010 .708l-4 4a.5.5 0 11-.708-.708L11.793 5.5H1a.5.5 0 010-1h10.793L8.646 1.354a.5.5 0 01-.109-.546z"/></svg></span></span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- WHOLESOME DEHYDRATED CHOICES -->
 <section class="omsec" id="wholesomeShowcase">
   <div class="wrap">
@@ -325,12 +360,28 @@
         btn.classList.toggle('is-open',o);
         btn.setAttribute('aria-expanded',o?'true':'false');
         document.body.style.overflow=o?'hidden':'';
+        document.body.classList.toggle('drawer-open',o);
         var hdr=document.querySelector('header');
         if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}
         else drawer.style.removeProperty('--drawer-top');
       });
-      drawer.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){drawer.classList.remove('is-open');btn.classList.remove('is-open');document.body.style.overflow='';});});
+      drawer.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){drawer.classList.remove('is-open');btn.classList.remove('is-open');document.body.style.overflow='';document.body.classList.remove('drawer-open');});});
     }
+  })();
+
+  /* ---------- hide header on scroll down, show on scroll up (site-wide) ---------- */
+  (function(){
+    var header=document.querySelector('header');
+    if(!header)return;
+    var drawer=document.getElementById('mobileDrawer');
+    var lastY=0;
+    window.addEventListener('scroll',function(){
+      var y=window.pageYOffset||document.documentElement.scrollTop;
+      if(y>80&&y>lastY&&(!drawer||!drawer.classList.contains('is-open'))){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}
+      else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}
+      if(y<=80){header.classList.remove('is-hidden','is-scrolled');}
+      lastY=y;
+    },{passive:true});
   })();
 
   /* ---------- hero split slider (autoplay 3s, pause on hover) ---------- */
