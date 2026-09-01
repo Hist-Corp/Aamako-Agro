@@ -117,7 +117,7 @@
 </section>
 
 <!-- SEARCH -->
-<section class="omsec" style="padding-top:34px;padding-bottom:10px;">
+<section class="omsec omsearch-bar" id="omSearchBar" style="padding-top:34px;padding-bottom:10px;">
   <div class="wrap omsearch-wrap">
     <form class="omsearch-form" id="omSearchForm" role="search">
       <select id="omSearchCat" aria-label="All categories">
@@ -372,16 +372,31 @@
   /* ---------- hide header on scroll down, show on scroll up (site-wide) ---------- */
   (function(){
     var header=document.querySelector('header');
+    var searchBar=document.getElementById('omSearchBar');
     if(!header)return;
     var drawer=document.getElementById('mobileDrawer');
     var lastY=0;
+    /* keep the search bar attached to the header while scrolling:
+       - header visible → search bar sticks right below it (top = header height)
+       - header hidden (scrolled down) → search bar takes over the top (top = 0) */
+    function syncSearchStick(){
+      if(!searchBar)return;
+      var hidden=header.classList.contains('is-hidden');
+      var top=hidden?0:(header.getBoundingClientRect().bottom||0);
+      searchBar.style.setProperty('--search-top',top+'px');
+      var y=window.pageYOffset||document.documentElement.scrollTop;
+      searchBar.classList.toggle('is-pinned',y>96);
+    }
     window.addEventListener('scroll',function(){
       var y=window.pageYOffset||document.documentElement.scrollTop;
       if(y>80&&y>lastY&&(!drawer||!drawer.classList.contains('is-open'))){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}
       else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}
       if(y<=80){header.classList.remove('is-hidden','is-scrolled');}
+      syncSearchStick();
       lastY=y;
     },{passive:true});
+    window.addEventListener('resize',syncSearchStick);
+    syncSearchStick();
   })();
 
   /* ---------- hero split slider (autoplay 3s, pause on hover) ---------- */
