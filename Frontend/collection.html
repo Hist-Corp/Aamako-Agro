@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<link rel="icon" type="image/png" href="favicon.png?v=2">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collection — Aama ko Agro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="shop-om.css">
+</head>
+<body>
+
+<div class="trust-strip">
+  <span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span>
+  <span>MADE IN NEPAL</span>
+  <span>NO ADDED PRESERVATIVES</span>
+</div>
+
+<header>
+  <nav class="wrap">
+    <a href="index.html" class="logo"><img draggable="false" src="logo.png" alt="Aama ko Agro"></a>
+    <div class="nav-links">
+      <a href="shop.html" class="active">Shop</a>
+      <a href="process.html">Why Freeze-Dried</a>
+      <a href="story.html">Our Story</a>
+      <a href="wholesale.html">Wholesale</a>
+      <a href="journal.html">Learn</a>
+    </div>
+    <div class="nav-actions">
+      <a href="signin.html" class="btn btn-ghost">Sign in</a>
+      <div class="cart-btn-wrap">
+        <a href="#" class="btn btn-primary" id="cartToggle">Cart<span class="cart-badge" id="cartBadge" style="display:none;">0</span></a>
+      </div>
+    </div>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+<div class="mobile-drawer" id="mobileDrawer">
+  <a href="index.html">Home</a><a href="shop.html">Shop</a><a href="process.html">Why Freeze-Dried</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a>
+  <a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a>
+</div>
+
+<section style="padding-top:6px;">
+  <div class="wrap">
+    <nav class="ombreadcrumb" id="crumbs">
+      <a href="index.html">Home</a><span class="sep">/</span><a href="shop.html">Collections</a><span class="sep">/</span><span class="current" id="crumbCat">Collection</span>
+    </nav>
+
+    <div class="omcoll-banner">
+      <h1 id="collTitle">Loading collection…</h1>
+      <div id="collDesc"><p>Hand-picked foods from our partner farms, processed gently and shipped fresh from the facility.</p></div>
+    </div>
+    <div class="omcoll-cats" id="collCats"></div>
+
+    <div class="omcoll-titlebar">
+      <h2 id="collHeading2">Collection</h2>
+      <span class="omcoll-count" id="collCount">0 products</span>
+    </div>
+
+    <div class="omcoll-layout">
+      <aside class="omcoll-side">
+        <h3>Category</h3>
+        <nav class="omcoll-sidecats" id="sideCats"></nav>
+      </aside>
+
+      <div>
+        <div class="omcoll-toolbar">
+          <div class="group">
+            <label for="perPage">Display</label>
+            <select id="perPage">
+              <option value="8" selected>8 per page</option>
+              <option value="12">12 per page</option>
+              <option value="16">16 per page</option>
+              <option value="999">All</option>
+            </select>
+          </div>
+          <div class="group">
+            <label for="sortBy">Sort by</label>
+            <select id="sortBy">
+              <option value="featured" selected>Featured</option>
+              <option value="price-asc">Price, low to high</option>
+              <option value="price-desc">Price, high to low</option>
+              <option value="alpha-asc">Alphabetically, A-Z</option>
+              <option value="alpha-desc">Alphabetically, Z-A</option>
+              <option value="newest">Date, new to old</option>
+            </select>
+          </div>
+        </div>
+        <p class="omcoll-showing" id="showing">Showing products…</p>
+        <div class="omfp-grid" id="collGrid" style="margin-top:0;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-drawer-head"><h3>Your cart<span class="cart-count-label" id="cartCountLabel"></span></h3><button class="cart-close-btn" id="cartClose" aria-label="Close cart">×</button></div>
+  <div class="cart-items" id="cartItems"><div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you'll love.</div></div></div>
+  <div class="cart-drawer-foot">
+    <div class="cart-subtotal-row"><span>Subtotal</span><span id="cartSubtotal">Rs 0</span></div>
+    <div class="cart-total-row"><span class="cart-total-label">Total</span><span class="cart-total-price" id="cartTotal">Rs 0</span></div>
+    <button class="cart-checkout-btn" onclick="window.location.href='cart.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Proceed to checkout</button>
+    <a href="shop.html" class="cart-continue">← Continue shopping</a>
+    <div class="cart-secure">🔒 Secure checkout · SSL encrypted</div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-col"><a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img draggable="false" src="logo-footer.png" alt="Aama ko Agro" style="height:88px;"></a><p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p></div>
+      <div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="collection.html?cat=freeze-dried-fruits">Freeze-dried fruits &amp; vegetables</a><a href="collection.html?cat=dehydrated">Dehydrated fruits &amp; vegetables</a><a href="collection.html?cat=powders">Milled powders</a></div>
+      <div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div>
+      <div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div>
+      <div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div>
+    </div>
+    <div class="foot-bottom"><span>© 2026 Aama ko Agro. All rights reserved.</span><span>DFTQC registration — [placeholder]</span></div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/account-menu.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  var MEMBER_RATE=0.10;
+  function fmt(n){n=Math.round(n);return 'Rs '+n.toLocaleString('en-IN');}
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  /* ---------- hamburger (site-wide pattern) ---------- */
+  (function(){
+    var btn=document.getElementById('hamburgerBtn'),drawer=document.getElementById('mobileDrawer');
+    if(btn&&drawer){
+      btn.addEventListener('click',function(){
+        var o=drawer.classList.toggle('is-open');
+        btn.classList.toggle('is-open',o);
+        btn.setAttribute('aria-expanded',o?'true':'false');
+        document.body.style.overflow=o?'hidden':'';
+        var hdr=document.querySelector('header');
+        if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}
+        else drawer.style.removeProperty('--drawer-top');
+      });
+      drawer.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){drawer.classList.remove('is-open');btn.classList.remove('is-open');document.body.style.overflow='';});});
+    }
+  })();
+
+  /* ---------- mini cart (aka-cart, shared shape) ---------- */
+  var cart=JSON.parse(localStorage.getItem('aka-cart')||'[]');
+  function saveCart(){localStorage.setItem('aka-cart',JSON.stringify(cart));}
+  function unitPriceOf(i){return (i.unitPrice!=null?i.unitPrice:i.price)||0;}
+  var overlay=document.getElementById('cartOverlay'),cartDrawer=document.getElementById('cartDrawer'),cartClose=document.getElementById('cartClose'),cartToggle=document.getElementById('cartToggle'),cartBadge=document.getElementById('cartBadge'),cartItems=document.getElementById('cartItems'),cartTotal=document.getElementById('cartTotal'),cartSubtotal=document.getElementById('cartSubtotal'),cartCountLabel=document.getElementById('cartCountLabel');
+  function openCart(){overlay.classList.add('is-open');cartDrawer.classList.add('is-open');document.body.style.overflow='hidden';}
+  function closeCart(){overlay.classList.remove('is-open');cartDrawer.classList.remove('is-open');document.body.style.overflow='';}
+  function updateBadge(){
+    var count=cart.reduce(function(s,i){return s+i.qty;},0);
+    var total=cart.reduce(function(s,i){return s+unitPriceOf(i)*i.qty;},0);
+    if(count>0){cartBadge.textContent=count;cartBadge.style.display='inline-flex';}
+    else{cartBadge.style.display='none';}
+    if(cartTotal)cartTotal.textContent=fmt(total);
+    if(cartSubtotal)cartSubtotal.textContent=fmt(total);
+    if(cartCountLabel)cartCountLabel.textContent=count>0?'('+count+' item'+(count>1?'s':'')+')':'';
+    renderCartItems();
+  }
+  function renderCartItems(){
+    if(cart.length===0){cartItems.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you\'ll love.</div></div>';return;}
+    cartItems.innerHTML=cart.map(function(item,i){
+      return '<div class="cart-item"><div class="cart-item-photo"><div class="photo" style="height:100%;background:var(--sage);"></div></div><div class="cart-item-info"><div class="cart-item-name">'+esc(item.name)+'</div><div class="cart-item-meta">'+esc(item.meta)+'</div><div class="cart-item-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div></div><div class="cart-item-right"><div class="cart-item-price">'+fmt(unitPriceOf(item)*item.qty)+'</div><button class="cart-item-remove" data-idx="'+i+'" aria-label="Remove">×</button></div></div>';
+    }).join('');
+    cartItems.querySelectorAll('.cart-item-remove').forEach(function(b){b.addEventListener('click',function(){cart.splice(parseInt(b.dataset.idx,10),1);localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});
+    cartItems.querySelectorAll('.cart-item-qty button').forEach(function(b){b.addEventListener('click',function(){
+      var idx=parseInt(b.dataset.idx,10);
+      if(b.dataset.action==='inc')cart[idx].qty++;
+      else{cart[idx].qty--;if(cart[idx].qty<=0)cart.splice(idx,1);}
+      localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();
+    });});
+  }
+  if(cartToggle)cartToggle.addEventListener('click',function(e){e.preventDefault();openCart();});
+  if(cartClose)cartClose.addEventListener('click',closeCart);
+  if(overlay)overlay.addEventListener('click',closeCart);
+  window.addEventListener('aamako-cart-restored',function(){
+    try{cart=JSON.parse(localStorage.getItem('aka-cart')||'[]');}catch(_){cart=[];}
+    updateBadge();
+  });
+  updateBadge();
+
+  /* ---------- collection content per category ---------- */
+  var CAT_META={
+    'freeze-dried-fruits':{
+      heading:'Aama ko Agro Freeze-Dried Fruits & Vegetables | Snack-Ready, Pantry-Long',
+      desc:['Freeze-drying removes the water, not the goodness. Our fruits and vegetables are picked ripe from partner farms across Nepal, frozen within hours of harvest, and dried under vacuum so the cell structure — and the crunch, colour and flavour — stay intact.',
+            'From mango chunks and strawberry slices to garden peas and sweet corn, every pack rehydrates in minutes or eats straight from the bag. No added sugar, no sulphites, no preservatives — just the harvest, kept honest.',
+            'Every pack is batch-coded and graded before it ships, so you always know where your food came from and when it was packed.']
+    },
+    'dehydrated':{
+      heading:'Aama ko Agro Dehydrated Fruits & Vegetables | Chips, Rings & Sun-Dried Tomatoes',
+      desc:['Dehydration is the patient way to keep food. Low, slow heat concentrates natural sugars and flavour into apple rings, banana chips and sun-dried tomatoes with a pantry life measured in months.',
+            'We dry at gentle temperatures to protect vitamins and colour, with nothing added along the way — no oil dips, no sulphur, no refined sugar.',
+            'Great for baking, trekking mixtures, lunchboxes and cooking shortcuts. Reseal the pouch and the batch code inside keeps the story traceable from farm gate to shelf.']
+    },
+    'powders':{
+      heading:'Aama ko Agro Milled Powders | Moringa, Ginger & Timur, Stone-Ground',
+      desc:['Our powders start as whole leaves, roots and berries — shade-dried or sun-dried, then stone-milled in small batches so nothing is lost between the farm and your kitchen.',
+            'Stir moringa into smoothies and dals, wake up a marinade with timur (Sichuan pepper), or add ginger where fresh root is out of reach. One spoon, full flavour, nothing artificial.',
+            'Each jar is packed and batch-coded at our DFTQC-compliant facility [PLACEHOLDER], with third-party lab checks [PLACEHOLDER] before release.']
+    }
+  };
+  var CAT_FALLBACK={
+    heading:'Aama ko Agro Collection | Real Food, Kept Honest',
+    desc:['Hand-picked foods from our partner farms across Nepal — processed gently, packed plainly and shipped fresh from the facility.','Every pack is batch-coded, graded and checked before it ships.']
+  };
+
+  /* ---------- product cards (same design as shop) ---------- */
+  var allProducts=[],currentSlug='';
+  function firstVariant(p){
+    var vs=p.variants||[];
+    for(var i=0;i<vs.length;i++){if(vs[i].isActive!==false)return vs[i];}
+    return vs[0]||null;
+  }
+  function priceOf(p){var v=firstVariant(p);return v?v.basePriceCents/100:Infinity;}
+  var LEAF='<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 21c0-9 5-13 14-14 0 9-5 14-14 14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 21c3-5 6-8 11-10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  function cardHtml(p){
+    var v=firstVariant(p);
+    if(!v)return '';
+    var price=v.basePriceCents/100;
+    var member=price*(1-MEMBER_RATE);
+    var inv=v.inventory;
+    var oos=inv&&inv.stockOnHand===0;
+    var slug=encodeURIComponent(p.slug||v.id);
+    var variantOptions=(p.variants||[]).map(function(o){
+      return '<option value="'+esc(o.id)+'" data-price="'+(o.basePriceCents/100)+'"'+(o.id===v.id?' selected':'')+'>'+esc(o.name)+'</option>';
+    }).join('');
+    var btn=oos
+      ?'<button type="button" class="fp-btn fp-oos" disabled>Out of stock</button>'
+      :'<button type="button" class="fp-btn fp-add" data-id="'+esc(v.id)+'" data-name="'+esc(p.name)+'" data-meta="'+esc(v.name)+'" data-price="'+price+'">Add</button>';
+    return '<div class="fpcard">'
+      +'<a class="fp-img" href="product.html?slug='+slug+'">'
+      +(oos?'<span class="fp-badge oos">Sold out</span>':'<span class="fp-badge" style="display:none"></span>')
+      +'<img src="'+esc(p.imageUrl||'')+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
+      +'</a>'
+      +'<div class="fp-body">'
+      +'<span class="fp-cat">'+esc(p.category&&p.category.name||'')+'</span>'
+      +'<a class="fp-name" href="product.html?slug='+slug+'">'+esc(p.name)+'</a>'
+      +'<div class="fp-price">'+fmt(price)+'</div>'
+      +'<div class="fp-coop">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></div>'
+      +'<div class="fp-action"><div class="fp-variant-row">'
+      +((p.variants||[]).length>1?'<select class="fp-variant-select" aria-label="Choose size">'+variantOptions+'</select>':'')
+      +btn
+      +'</div></div>'
+      +'</div></div>';
+  }
+  function bindCardControls(){
+    document.querySelectorAll('.fp-add[data-id]').forEach(function(b){
+      if(b.dataset.bound)return;b.dataset.bound='1';
+      b.addEventListener('click',function(e){
+        e.preventDefault();e.stopPropagation();
+        if(window.AamakoRequireSignIn&&!window.AamakoRequireSignIn())return;
+        var ex=cart.find(function(i){return i.variantId===b.dataset.id;});
+        if(ex){ex.qty+=1;}else{cart.push({variantId:b.dataset.id,name:b.dataset.name,meta:b.dataset.meta,unitPrice:parseFloat(b.dataset.price),qty:1});}
+        saveCart();updateBadge();
+        b.classList.add('added');var t=b.textContent;b.textContent='Added ✓';
+        setTimeout(function(){b.classList.remove('added');b.textContent=t;},900);
+      });
+    });
+    document.querySelectorAll('.fp-variant-select').forEach(function(sel){
+      if(sel.dataset.bound)return;sel.dataset.bound='1';
+      sel.addEventListener('change',function(){
+        var opt=sel.options[sel.selectedIndex];
+        var card=sel.closest('.fpcard');
+        if(!card)return;
+        var btn=card.querySelector('.fp-add');
+        var priceEl=card.querySelector('.fp-price');
+        if(btn&&opt.value){btn.dataset.id=opt.value;btn.dataset.price=opt.getAttribute('data-price')||'';btn.dataset.meta=opt.textContent;}
+        if(priceEl&&opt.getAttribute('data-price'))priceEl.textContent=fmt(parseFloat(opt.getAttribute('data-price')));
+      });
+    });
+  }
+
+  /* ---------- filtering UI ---------- */
+  var perPage=document.getElementById('perPage'),sortBy=document.getElementById('sortBy');
+  function visibleProducts(){
+    var items=allProducts.filter(function(p){return !currentSlug||(p.category&&p.category.slug===currentSlug);});
+    var s=sortBy.value;
+    if(s==='price-asc')items.sort(function(a,b){return priceOf(a)-priceOf(b);});
+    else if(s==='price-desc')items.sort(function(a,b){return priceOf(b)-priceOf(a);});
+    else if(s==='alpha-asc')items.sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+    else if(s==='alpha-desc')items.sort(function(a,b){return (b.name||'').localeCompare(a.name||'');});
+    else if(s==='newest')items.sort(function(a,b){return new Date(b.createdAt||0)-new Date(a.createdAt||0);});
+    return items;
+  }
+  function render(){
+    var items=visibleProducts();
+    var limit=parseInt(perPage.value,10);
+    var shown=limit>=999?items:items.slice(0,limit);
+    var grid=document.getElementById('collGrid');
+    grid.innerHTML=shown.length?shown.map(cardHtml).join(''):'<div class="fp-empty">No products in this collection yet — check back soon.</div>';
+    document.getElementById('collCount').textContent=items.length+(items.length===1?' product':' products');
+    document.getElementById('showing').textContent='Showing '+shown.length+' of '+items.length+' products';
+    bindCardControls();
+  }
+  if(perPage)perPage.addEventListener('change',render);
+  if(sortBy)sortBy.addEventListener('change',render);
+
+  /* ---------- paint category chrome ---------- */
+  function paintChrome(cats){
+    var meta=CAT_META[currentSlug]||CAT_FALLBACK;
+    var cat=currentSlug?(cats.filter(function(c){return c.slug===currentSlug;})[0]||{}):{};
+    var name=cat.name||'All products';
+    document.title=(currentSlug?name+' — Aama ko Agro':meta.heading);
+    document.getElementById('crumbCat').textContent=name;
+    document.getElementById('collTitle').textContent=meta.heading;
+    document.getElementById('collDesc').innerHTML=(meta.desc||[]).map(function(p){return '<p>'+esc(p)+'</p>';}).join('');
+    document.getElementById('collHeading2').textContent=name;
+    var side=document.getElementById('sideCats'),chips=document.getElementById('collCats');
+    var allLink='<a href="shop.html" class="'+(currentSlug?'':'is-current')+'">All products</a>';
+    side.innerHTML=allLink+(cats||[]).map(function(c){
+      return '<a href="collection.html?cat='+encodeURIComponent(c.slug)+'" class="'+(c.slug===currentSlug?'is-current':'')+'">'+esc(c.name)+' ('+((c._count&&c._count.products)||0)+')</a>';
+    }).join('');
+    chips.innerHTML=allLink+(cats||[]).map(function(c){
+      return '<a href="collection.html?cat='+encodeURIComponent(c.slug)+'" class="'+(c.slug===currentSlug?'is-current':'')+'">'+esc(c.name)+'</a>';
+    }).join('');
+  }
+
+  /* ---------- load ---------- */
+  var params=new URLSearchParams(window.location.search);
+  currentSlug=params.get('cat')||'';
+  if(window.AamakoAPI){
+    window.AamakoAPI.getCategories().then(function(cats){
+      paintChrome(cats||[]);
+      if(currentSlug){
+        return window.AamakoAPI.listProducts(1,currentSlug).then(function(r){allProducts=(r&&r.items)||[];});
+      }
+      return Promise.all((cats||[]).map(function(c){
+        return window.AamakoAPI.listProducts(1,c.slug).catch(function(){return {items:[]};});
+      })).then(function(perCat){
+        var seen={},merged=[];
+        (perCat||[]).forEach(function(r){((r&&r.items)||[]).forEach(function(p){if(!seen[p.id]){seen[p.id]=1;merged.push(p);}});});
+        allProducts=merged;
+      });
+    }).then(render).catch(function(){
+      paintChrome([]);
+      render();
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

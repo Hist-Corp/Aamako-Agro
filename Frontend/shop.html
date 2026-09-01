@@ -4,21 +4,18 @@
 <link rel="icon" type="image/png" href="favicon.png?v=2">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="favicon.png?v=2">
 <title>Shop — Aama ko Agro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-<script src="js/content.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<link rel="stylesheet" href="shop-om.css">
 </head>
 <body>
 
 <div class="trust-strip">
-  <span data-cms="site.trust.1">DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span>
-  <span data-cms="site.trust.2">MADE IN NEPAL</span>
-  <span data-cms="site.trust.3">NO ADDED PRESERVATIVES</span>
+  <span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span>
+  <span>MADE IN NEPAL</span>
+  <span>NO ADDED PRESERVATIVES</span>
 </div>
 
 <header>
@@ -45,58 +42,245 @@
   <a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a>
 </div>
 
-<div class="shop-hero"><div class="wrap"><div class="shop-hero-left"><div class="eyebrow" data-cms="page.shop.hero.eyebrow">Full range</div><h1 data-cms="page.shop.hero">Everything we make, one shelf.</h1><p class="hero-desc" data-cms="page.shop.hero" data-cms-field="short">Every pack is batch-coded and graded before it ships — pick a category or filter by what matters to you.</p><div class="hero-cta"><a href="#" class="btn btn-on-dark" data-cms="page.shop.hero.cta1">Shop all products</a><a href="#" class="btn btn-outline-dark" data-cms="page.shop.hero.cta2">Browse categories</a></div></div><div class="shop-hero-right"><div class="shop-hero-visual"><div class="shop-hero-main-img"><img draggable="false" src="https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=600&q=80&fit=crop" alt="Fruit plate"></div><div class="shop-hero-tag" data-cms="page.shop.hero.tag">BEST SELLER · A+ GRADE</div></div></div></div></div>
+<!-- HERO SPLIT SLIDER -->
+<section class="omhero" id="omHero">
+  <div class="omhero-stage">
 
-<section>
+    <div class="omhero-slide is-active" style="--hs-bg:#F7F1E4;">
+      <div class="omhero-inner">
+        <div class="omhero-text">
+          <p class="omhero-eyebrow">FARM-TO-PACK · FROM THE HILLS OF NEPAL</p>
+          <h2 class="omhero-title">Good food, kept the honest way.</h2>
+          <p class="omhero-sub">Freeze-dried fruits and vegetables, dehydrated snacks and milled powders — from partner farms across Nepal. Picked ripe. Nothing added. Batch-coded.</p>
+          <a class="omhero-btn" href="#favourites">Shop everyday essentials</a>
+        </div>
+        <div class="omhero-media"><img class="omhero-img" src="https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=1200&q=80" alt="Good food, kept the honest way." fetchpriority="high"></div>
+      </div>
+    </div>
+
+    <div class="omhero-slide" style="--hs-bg:#ECEFE0;">
+      <div class="omhero-inner">
+        <div class="omhero-text">
+          <p class="omhero-eyebrow">HARVESTED AT PEAK RIPENESS</p>
+          <h2 class="omhero-title">Fruit, frozen in time.</h2>
+          <p class="omhero-sub">Mango, strawberry, apple and pineapple — freeze-dried within hours of harvest so the colour, crunch and flavour stay exactly as picked.</p>
+          <a class="omhero-btn" href="collection.html?cat=freeze-dried-fruits">Shop freeze-dried</a>
+        </div>
+        <div class="omhero-media"><img class="omhero-img" src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=1200&q=80" alt="Fruit, frozen in time." loading="lazy"></div>
+      </div>
+    </div>
+
+    <div class="omhero-slide" style="--hs-bg:#E9EDE6;">
+      <div class="omhero-inner">
+        <div class="omhero-text">
+          <p class="omhero-eyebrow">SLOW-DRIED · SUN-KISSED</p>
+          <h2 class="omhero-title">Dehydrated, the patient way.</h2>
+          <p class="omhero-sub">Low-heat dried apple rings, banana chips and sun-dried tomatoes — concentrated flavour and a pantry life measured in months, not days.</p>
+          <a class="omhero-btn" href="collection.html?cat=dehydrated">Shop dehydrated</a>
+        </div>
+        <div class="omhero-media"><img class="omhero-img" src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=1200&q=80" alt="Dehydrated, the patient way." loading="lazy"></div>
+      </div>
+    </div>
+
+    <div class="omhero-slide" style="--hs-bg:#E8EDDF;">
+      <div class="omhero-inner">
+        <div class="omhero-text">
+          <p class="omhero-eyebrow">MILLED FRESH · SMALL BATCH</p>
+          <h2 class="omhero-title">Powders with everything intact.</h2>
+          <p class="omhero-sub">Moringa, ginger and timur — stone-milled from whole leaves, roots and berries so nothing is lost between the farm and your kitchen.</p>
+          <a class="omhero-btn" href="collection.html?cat=powders">Shop milled powders</a>
+        </div>
+        <div class="omhero-media"><img class="omhero-img" src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=1200&q=80" alt="Powders with everything intact." loading="lazy"></div>
+      </div>
+    </div>
+
+    <div class="omhero-slide" style="--hs-bg:#F3EBD9;">
+      <div class="omhero-inner">
+        <div class="omhero-text">
+          <p class="omhero-eyebrow">TESTED · BATCH-CODED · TRACEABLE</p>
+          <h2 class="omhero-title">Proof in every pack, not just promises.</h2>
+          <p class="omhero-sub">Every pack is graded and batch-coded before it ships — from the farm gate in the hills to your shelf.</p>
+          <a class="omhero-btn" href="process.html">See our process</a>
+        </div>
+        <div class="omhero-media"><img class="omhero-img" src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=1200&q=80" alt="Proof in every pack, not just promises." loading="lazy"></div>
+      </div>
+    </div>
+
+  </div>
+  <div class="omhero-dots" id="omHeroDots">
+    <button type="button" class="omhero-dot is-active" data-go="0" aria-label="Slide 1"></button>
+    <button type="button" class="omhero-dot" data-go="1" aria-label="Slide 2"></button>
+    <button type="button" class="omhero-dot" data-go="2" aria-label="Slide 3"></button>
+    <button type="button" class="omhero-dot" data-go="3" aria-label="Slide 4"></button>
+    <button type="button" class="omhero-dot" data-go="4" aria-label="Slide 5"></button>
+  </div>
+</section>
+
+<!-- SEARCH -->
+<section class="omsec" style="padding-top:34px;padding-bottom:10px;">
+  <div class="wrap omsearch-wrap">
+    <form class="omsearch-form" id="omSearchForm" role="search">
+      <select id="omSearchCat" aria-label="All categories">
+        <option value="">All categories</option>
+      </select>
+      <span class="omsearch-sep"></span>
+      <input class="omsearch-input" id="omSearchInput" type="search" placeholder="search freeze-dried mango, moringa powder…" aria-label="Search products">
+      <button class="omsearch-btn" type="submit" aria-label="Search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16.6 16.6"><path d="M16.6,15.87l-5.17-5.18A6.43,6.43,0,0,0,13,6.47,6.5,6.5,0,1,0,6.5,13a6.43,6.43,0,0,0,4.22-1.57l5.18,5.18ZM6.5,12A5.5,5.5,0,1,1,12,6.47,5.5,5.5,0,0,1,6.5,12Z" transform="translate(0 0.03)"/></svg>
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- SHOP BY CATEGORY -->
+<section class="omsec" id="shopByCategory">
   <div class="wrap">
-    <div class="filter-bar">
-      <span class="filter-chip active" data-filter="all">All</span>
-      <span class="filter-chip" data-filter="fruits">Fruits</span>
-      <span class="filter-chip" data-filter="vegetables">Vegetables</span>
-      <span class="filter-chip" data-filter="spices">Spices &amp; Powders</span>
-      <span class="filter-chip" data-filter="meals">Ready Meals</span>
-      <span class="filter-chip" data-filter="gifts">Gift Sets</span>
-      <span class="filter-chip" data-filter="best">Best sellers</span>
-      <span class="filter-chip" data-filter="new">New arrivals</span>
-    </div>
-
-    <div class="prod-grid">
-      <a href="product.html" class="prod-card" style="display:block;" data-cat="fruits" data-tag="best">
-        <div class="prod-stamp"><div class="stamp" style="width:52px;height:52px;"><div class="stamp-grade" style="font-size:11px;">A+</div></div></div>
-        <div class="prod-photo"><img draggable="false" src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=500&q=80" alt="Freeze-Dried Mango"></div>
-        <div class="prod-body"><div class="prod-badge">Best seller</div><div class="prod-name">Freeze-Dried Mango</div><div class="prod-meta">50g pouch · 100% fruit</div><div class="prod-foot"><span class="prod-price">Rs 450</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+    <div class="omsec-eyebrow">Browse</div>
+    <h2 class="omsec-title">Shop by category</h2>
+    <div class="omsbc-grid" id="sbcGrid">
+      <a class="omsbc-tile" href="collection.html?cat=freeze-dried-fruits">
+        <div class="omsbc-imgwrap"><img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&q=80" alt="Freeze-Dried Fruits &amp; Vegetables" loading="lazy"></div>
+        <span class="omsbc-label">Freeze-Dried Fruits &amp; Vegetables</span>
       </a>
-      <div class="prod-card" data-cat="vegetables">
-        <div class="prod-photo"><img draggable="false" src="https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=500&q=80" alt="Freeze-Dried Peas"></div>
-        <div class="prod-body"><div class="prod-badge">Vegetable</div><div class="prod-name">Freeze-Dried Peas</div><div class="prod-meta">75g pouch · 100% vegetable</div><div class="prod-foot"><span class="prod-price">Rs 380</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      <a class="omsbc-tile" href="collection.html?cat=dehydrated">
+        <div class="omsbc-imgwrap"><img src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80" alt="Dehydrated Fruits &amp; Vegetables" loading="lazy"></div>
+        <span class="omsbc-label">Dehydrated Fruits &amp; Vegetables</span>
+      </a>
+      <a class="omsbc-tile" href="collection.html?cat=powders">
+        <div class="omsbc-imgwrap"><img src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=400&q=80" alt="Milled Powders" loading="lazy"></div>
+        <span class="omsbc-label">Milled Powders</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- SHOP BY NEED (concern panel) -->
+<section class="omsec" style="padding-top:8px;">
+  <div class="wrap">
+    <div class="omconcern-panel">
+      <div class="omconcern-head">
+        <h2 class="omsec-title">Shop by need</h2>
+        <a class="omconcern-viewall" href="shop.html">View all products &rarr;</a>
       </div>
-      <div class="prod-card" data-cat="spices" data-tag="new">
-        <div class="prod-photo"><img draggable="false" src="https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=500&q=80" alt="Ginger Powder"></div>
-        <div class="prod-body"><div class="prod-badge">New</div><div class="prod-name">Ginger Powder</div><div class="prod-meta">100g jar · high-altitude</div><div class="prod-foot"><span class="prod-price">Rs 320</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
-      </div>
-      <div class="prod-card" data-cat="meals">
-        <div class="prod-photo"><img draggable="false" src="https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500&q=80" alt="Rehydrate Rice Bowl"></div>
-        <div class="prod-body"><div class="prod-badge">Meal</div><div class="prod-name">Rehydrate Rice Bowl</div><div class="prod-meta">Serves 1 · ready in 8 min</div><div class="prod-foot"><span class="prod-price">Rs 280</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
-      </div>
-      <div class="prod-card" data-cat="fruits">
-        <div class="prod-photo"><img draggable="false" src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=500&q=80" alt="Freeze-Dried Strawberry"></div>
-        <div class="prod-body"><div class="prod-badge">Fruit</div><div class="prod-name">Freeze-Dried Strawberry</div><div class="prod-meta">40g pouch · 100% fruit</div><div class="prod-foot"><span class="prod-price">Rs 420</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
-      </div>
-      <div class="prod-card" data-cat="spices">
-        <div class="prod-photo"><img draggable="false" src="https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=500&q=80" alt="Turmeric Powder"></div>
-        <div class="prod-body"><div class="prod-badge">Spice</div><div class="prod-name">Turmeric Powder</div><div class="prod-meta">100g jar · high-curcumin</div><div class="prod-foot"><span class="prod-price">Rs 350</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
-      </div>
-      <div class="prod-card" data-cat="gifts">
-        <div class="prod-photo"><img draggable="false" src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=500&q=80" alt="Himalayan Spice Box"></div>
-        <div class="prod-body"><div class="prod-badge">Gift set</div><div class="prod-name">Himalayan Spice Box</div><div class="prod-meta">4 spices · gift-ready</div><div class="prod-foot"><span class="prod-price">Rs 1,200</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
-      </div>
-      <div class="prod-card" data-cat="vegetables">
-        <div class="prod-photo"><img draggable="false" src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=500&q=80" alt="Freeze-Dried Corn"></div>
-        <div class="prod-body"><div class="prod-badge">Vegetable</div><div class="prod-name">Freeze-Dried Corn</div><div class="prod-meta">75g pouch · 100% vegetable</div><div class="prod-foot"><span class="prod-price">Rs 360</span><button class="add-btn" aria-label="Add to cart">+</button></div></div>
+      <p class="omconcern-sub">Lightweight, long-life foods chosen for how you live.</p>
+      <div class="omconcern-grid">
+        <a class="omconcern-tile" href="collection.html?cat=freeze-dried-fruits">
+          <span class="omconcern-badge"><svg viewBox="0 0 24 24"><path d="M12 3l7 2.5v5.5c0 4.2-2.9 6.8-7 8.5-4.1-1.7-7-4.3-7-8.5V5.5L12 3z"/></svg></span>
+          <span class="omconcern-label">Everyday snacking</span>
+        </a>
+        <a class="omconcern-tile" href="collection.html?cat=freeze-dried-fruits">
+          <span class="omconcern-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14c.9 1.2 2 1.8 3.5 1.8s2.6-.6 3.5-1.8"/><path d="M9 10h.01"/><path d="M15 10h.01"/></svg></span>
+          <span class="omconcern-label">Kids&rsquo; lunchboxes</span>
+        </a>
+        <a class="omconcern-tile" href="collection.html?cat=dehydrated">
+          <span class="omconcern-badge"><svg viewBox="0 0 24 24"><path d="M3 20 10 6l4 8 3-4 4 10H3z"/></svg></span>
+          <span class="omconcern-label">Trail &amp; travel</span>
+        </a>
+        <a class="omconcern-tile" href="collection.html?cat=powders">
+          <span class="omconcern-badge"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></span>
+          <span class="omconcern-label">Smoothie boosts</span>
+        </a>
+        <a class="omconcern-tile" href="collection.html?cat=powders">
+          <span class="omconcern-badge"><svg viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M5 12a7 7 0 0 1 14 0"/><path d="M3 12h2M19 12h2M10 19h4"/></svg></span>
+          <span class="omconcern-label">Kitchen shortcuts</span>
+        </a>
+        <a class="omconcern-tile" href="collection.html?cat=dehydrated">
+          <span class="omconcern-badge"><svg viewBox="0 0 24 24"><path d="M12 3c3.5 4.5 6 7.8 6 11a6 6 0 0 1-12 0c0-3.2 2.5-6.5 6-11z"/></svg></span>
+          <span class="omconcern-label">Camp &amp; expedition</span>
+        </a>
+        <a class="omconcern-tile" href="collection.html?cat=freeze-dried-fruits">
+          <span class="omconcern-badge"><svg viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7"/><path d="M12 7c-2 0-4-1-4-3 0-1 .8-2 2-2 2 0 3 2 2 5zM12 7c2 0 4-1 4-3 0-1-.8-2-2-2-2 0-3 2-2 5z"/></svg></span>
+          <span class="omconcern-label">Gifting</span>
+        </a>
+        <a class="omconcern-tile" href="wholesale.html">
+          <span class="omconcern-badge"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span>
+          <span class="omconcern-label">Bulk &amp; wholesale</span>
+        </a>
       </div>
     </div>
+  </div>
+</section>
 
-    <p style="font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-top:32px; text-align:center;">[PLACEHOLDER — full catalogue pending actual SKU list from business]</p>
+<!-- CUSTOMER FAVOURITES -->
+<section class="omsec" id="favourites">
+  <div class="wrap">
+    <div class="omfp-head">
+      <div>
+        <div class="omsec-eyebrow">Shop</div>
+        <h2 class="omsec-title">Customer favourites</h2>
+      </div>
+      <div class="omfp-tabs">
+        <button type="button" class="omfp-tab active" data-tab="0">Bestsellers</button>
+        <button type="button" class="omfp-tab" data-tab="1">Deals</button>
+        <button type="button" class="omfp-tab" data-tab="2">New</button>
+      </div>
+    </div>
+    <div class="omfp-panel active" data-panel="0"><div class="omfp-grid" id="gridBest"></div></div>
+    <div class="omfp-panel" data-panel="1"><div class="omfp-grid" id="gridDeals"></div></div>
+    <div class="omfp-panel" data-panel="2"><div class="omfp-grid" id="gridNew"></div></div>
+  </div>
+</section>
+
+<!-- REGULAR vs WHOLESALE PARTNER -->
+<section class="omsec">
+  <div class="wrap">
+    <div class="omcompare">
+      <span class="omcompare-watermark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg></span>
+      <div class="cmp-inner">
+        <p class="cmp-eyebrow"><svg viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg> Why wholesale?</p>
+        <h2 class="cmp-head">See the difference.<br>Feel the benefits.</h2>
+        <div class="cmp-grid">
+          <div class="cmp-card">
+            <div class="cmp-who">
+              <span class="cmp-avatar"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+              <span><span class="cmp-name">Regular</span><span class="cmp-note">Standard experience</span></span>
+            </div>
+            <ul class="cmp-list">
+              <li><span class="cmp-mark cmp-mark--no"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></span><span>No extra savings</span></li>
+              <li><span class="cmp-mark cmp-mark--no"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></span><span>Standard delivery</span></li>
+              <li><span class="cmp-mark cmp-mark--no"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></span><span>Retail pricing</span></li>
+              <li><span class="cmp-mark cmp-mark--no"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></span><span>Limited access</span></li>
+            </ul>
+            <a class="cmp-btn cmp-btn--ghost" href="shop.html">Keep browsing</a>
+          </div>
+          <div class="cmp-card cmp-card--member">
+            <span class="cmp-ribbon">Best value</span>
+            <div class="cmp-who">
+              <span class="cmp-avatar"><svg viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg></span>
+              <span><span class="cmp-name">Wholesale Partner</span><span class="cmp-note">For retailers &amp; distributors</span></span>
+            </div>
+            <ul class="cmp-list">
+              <li><span class="cmp-mark cmp-mark--yes"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span>Tiered wholesale pricing</span></li>
+              <li><span class="cmp-mark cmp-mark--yes"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span>Priority fulfilment</span></li>
+              <li><span class="cmp-mark cmp-mark--yes"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span>Sample kits &amp; private label</span></li>
+              <li><span class="cmp-mark cmp-mark--yes"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span>Early access to new batches</span></li>
+            </ul>
+            <a class="cmp-btn" href="wholesale.html"><span class="cmp-btnicon"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>Partner with us</a>
+          </div>
+        </div>
+        <ul class="cmp-trust">
+          <li><span class="cmp-trusticon"><svg viewBox="0 0 24 24"><path d="M12 3l7 2.5v5.5c0 4.2-2.9 6.8-7 8.5-4.1-1.7-7-4.3-7-8.5V5.5L12 3z"/></svg></span><span><span class="cmp-trustname">DFTQC-compliant facility</span>[PLACEHOLDER]</span></li>
+          <li><span class="cmp-trusticon"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></span><span><span class="cmp-trustname">Batch-coded packs</span>Traceable to the farm</span></li>
+          <li><span class="cmp-trusticon"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L5 19a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3L14 9V3"/></svg></span><span><span class="cmp-trustname">Third-party lab tested</span>[PLACEHOLDER]</span></li>
+          <li><span class="cmp-trusticon"><svg viewBox="0 0 24 24"><path d="M3 20 10 6l4 8 3-4 4 10H3z"/></svg></span><span><span class="cmp-trustname">Made in Nepal</span>Partner farms nationwide</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHOLESOME DEHYDRATED CHOICES -->
+<section class="omsec" id="wholesomeShowcase">
+  <div class="wrap">
+    <div class="omshow-head">
+      <div>
+        <div class="omsec-eyebrow">Collection</div>
+        <h2 class="omsec-title">Wholesome Dehydrated Choices</h2>
+      </div>
+      <span class="omshow-tab">Dehydrated Fruits &amp; Vegetables</span>
+    </div>
+    <div class="omshow-scroller" id="showcaseGrid"></div>
+    <div style="text-align:right;margin-top:6px;"><a class="omshow-viewall" href="collection.html?cat=dehydrated">View all &rarr;</a></div>
   </div>
 </section>
 
@@ -117,75 +301,272 @@
   <div class="wrap">
     <div class="foot-grid">
       <div class="foot-col"><a href="index.html" class="logo" style="margin-bottom:12px; display:inline-block;"><img draggable="false" src="logo-footer.png" alt="Aama ko Agro" style="height:88px;"></a><p style="font-size:13.5px; color:var(--ink-soft); max-width:28ch; margin-top:8px;">Real food, kept honest. Made in Nepal.</p></div>
-      <div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="shop.html">Fruits</a><a href="shop.html">Vegetables</a><a href="shop.html">Gift sets</a></div>
+      <div class="foot-col"><h4>Shop</h4><a href="shop.html">All products</a><a href="collection.html?cat=freeze-dried-fruits">Freeze-dried fruits &amp; vegetables</a><a href="collection.html?cat=dehydrated">Dehydrated fruits &amp; vegetables</a><a href="collection.html?cat=powders">Milled powders</a></div>
       <div class="foot-col"><h4>Company</h4><a href="story.html">Our story</a><a href="process.html">Our process</a><a href="wholesale.html">Wholesale</a><a href="journal.html#contact">Contact</a></div>
       <div class="foot-col"><h4>Learn</h4><a href="journal.html">Recipes</a><a href="journal.html">Journal</a><a href="journal.html#faq">FAQ</a></div>
       <div class="foot-col"><h4>Support</h4><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Privacy</a></div>
     </div>
-    <div class="foot-bottom"><span>© 2026 Aama ko Agro. All rights reserved.</span><span>DFTQC registration — [placeholder]</span></div>
   </div>
 </footer>
 
 <script src="js/api.js"></script>
-  <script src="js/account-menu.js"></script>
+<script src="js/account-menu.js"></script>
 <script>
 (function(){
-  var btn=document.getElementById("hamburgerBtn"),drawer=document.getElementById("mobileDrawer");
-  if(btn&&drawer){btn.addEventListener("click",function(){var o=drawer.classList.toggle("is-open");btn.classList.toggle("is-open",o);btn.setAttribute("aria-expanded",o?"true":"false");document.body.style.overflow=o?"hidden":"";document.body.classList.toggle('drawer-open',o);var hdr=document.querySelector('header');if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}else drawer.style.removeProperty('--drawer-top');});drawer.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){drawer.classList.remove("is-open");btn.classList.remove("is-open");document.body.style.overflow="";document.body.classList.remove('drawer-open');});});}
-  (function(){var header=document.querySelector('header');if(!header)return;var lastY=0;window.addEventListener('scroll',function(){var y=window.pageYOffset||document.documentElement.scrollTop;if(y>80&&y>lastY&&!drawer.classList.contains("is-open")){header.classList.add('is-hidden');header.classList.remove('is-scrolled');}else if(y<lastY){header.classList.remove('is-hidden');header.classList.add('is-scrolled');}if(y<=80){header.classList.remove('is-hidden','is-scrolled');}lastY=y;});})();
-  var LOW_STOCK_THRESHOLD = 20;
-  function fmt(n){return 'Rs '+Number(n).toLocaleString('en-IN');}
-  // ---- Product grid rendered live from the backend catalog ----
-  var grid=document.querySelector('.prod-grid');
-  function cardHtml(p){
-    var v=(p.variants&&p.variants[0])||null;
-    if(!v)return '';
-    var price=v.basePriceCents/100;
-    var inv=v.inventory;
-    var stock=(inv&&typeof inv.stockOnHand==='number')?inv.stockOnHand:null;
-    var lowStock=stock!=null&&stock>=0&&stock<=LOW_STOCK_THRESHOLD;
-    var out=stock===0;
-    var cat=p.category?p.category.slug:'';
-    return '<a href="product.html?slug='+encodeURIComponent(p.slug)+'" class="prod-card" style="display:block;" data-cat="'+cat+'" data-variant="'+v.id+'">'+
-      '<div class="prod-stamp"><div class="stamp" style="width:52px;height:52px;"><div class="stamp-grade" style="font-size:11px;">A+</div></div></div>'+
-      '<div class="prod-photo"><img draggable="false" src="'+(p.imageUrl||'https://images.unsplash.com/photo-1553279768-865429fa0078?w=500&q=80')+'" alt="'+p.name.replace(/"/g,'&quot;')+'"></div>'+
-      '<div class="prod-body"><div class="prod-badge">'+(p.category?p.category.name:'Product')+'</div>'+
-      '<div class="prod-name">'+p.name+'</div>'+
-      '<div class="prod-meta">'+v.name+'</div>'+
-      (lowStock?'<div class="prod-stock" style="font-size:12px;color:'+(out?'#b3261e':'#9a6700')+';margin-top:4px;font-weight:600;">'+(out?'Out of stock':'⚠ Only '+stock+' left in stock')+'</div>':'')+
-      '<div class="prod-foot"><span class="prod-price">'+fmt(price)+'</span>'+
-      '<button class="add-btn" aria-label="Add to cart" '+(out?'disabled style="opacity:.4;cursor:not-allowed;"':'')+
-      ' data-id="'+v.id+'" data-name="'+p.name.replace(/"/g,'&quot;')+'" data-meta="'+v.name.replace(/"/g,'&quot;')+'" data-price="'+price+'">+</button></div></div></a>';
-  }
-  function bindAddButtons(){document.querySelectorAll('.add-btn[data-id]').forEach(function(b){if(b.dataset.bound)return;b.dataset.bound='1';b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();if(window.AamakoRequireSignIn&&!window.AamakoRequireSignIn())return;addToCart({variantId:b.dataset.id,name:b.dataset.name,meta:b.dataset.meta,unitPrice:parseFloat(b.dataset.price),qty:1});b.classList.add('is-added');setTimeout(function(){b.classList.remove('is-added');},500);});});}
-  function bindChips(){var chips=document.querySelectorAll(".filter-chip"),cards=document.querySelectorAll(".prod-grid .prod-card");chips.forEach(function(c){c.onclick=function(){chips.forEach(function(x){x.classList.remove("active");});c.classList.add("active");var f=c.getAttribute("data-filter");cards.forEach(function(card){var show=f==="all"||card.getAttribute("data-cat")===f||card.getAttribute("data-tag")===f;card.style.display=show?"":"none";});};});}
-  bindChips();
-  if(window.AamakoAPI){
-    window.AamakoAPI.listProducts(1).then(function(res){
-      var html=(res.items||[]).map(cardHtml).join('');
-      if(html)grid.innerHTML=html;
-      bindAddButtons();
-    }).catch(function(){/* keep static fallback cards */});
-  }
-  if(typeof gsap!=='undefined'&&typeof ScrollTrigger!=='undefined'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){gsap.registerPlugin(ScrollTrigger);gsap.from('.filter-bar',{opacity:0,y:20,duration:0.5,ease:'power3.out',scrollTrigger:{trigger:'.filter-bar',start:'top 90%',once:true}});}
-  // ---- Cart (shape: {variantId,name,meta,unitPrice,qty}) ----
+  'use strict';
+
+  /* ---------- shared helpers ---------- */
+  var MEMBER_RATE = 0.10; // indicative wholesale-partner rate shown on cards
+  function fmt(n){ n = Math.round(n); return 'Rs ' + n.toLocaleString('en-IN'); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  /* ---------- hamburger (site-wide pattern) ---------- */
+  (function(){
+    var btn=document.getElementById('hamburgerBtn'),drawer=document.getElementById('mobileDrawer');
+    if(btn&&drawer){
+      btn.addEventListener('click',function(){
+        var o=drawer.classList.toggle('is-open');
+        btn.classList.toggle('is-open',o);
+        btn.setAttribute('aria-expanded',o?'true':'false');
+        document.body.style.overflow=o?'hidden':'';
+        var hdr=document.querySelector('header');
+        if(o&&hdr){hdr.classList.remove('is-hidden');drawer.style.setProperty('--drawer-top',hdr.getBoundingClientRect().bottom+'px');}
+        else drawer.style.removeProperty('--drawer-top');
+      });
+      drawer.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){drawer.classList.remove('is-open');btn.classList.remove('is-open');document.body.style.overflow='';});});
+    }
+  })();
+
+  /* ---------- hero split slider (autoplay 3s, pause on hover) ---------- */
+  (function(){
+    var slides=Array.prototype.slice.call(document.querySelectorAll('.omhero-slide'));
+    var dots=Array.prototype.slice.call(document.querySelectorAll('.omhero-dot'));
+    var hero=document.getElementById('omHero');
+    if(!slides.length)return;
+    var cur=0,timer=null;
+    function go(i){
+      cur=(i+slides.length)%slides.length;
+      slides.forEach(function(s,idx){s.classList.toggle('is-active',idx===cur);});
+      dots.forEach(function(d,idx){d.classList.toggle('is-active',idx===cur);});
+    }
+    function play(){stop();timer=setInterval(function(){go(cur+1);},3000);}
+    function stop(){if(timer){clearInterval(timer);timer=null;}}
+    dots.forEach(function(d){d.addEventListener('click',function(){go(parseInt(d.dataset.go,10));play();});});
+    if(hero){hero.addEventListener('mouseenter',stop);hero.addEventListener('mouseleave',play);}
+    play();
+  })();
+
+  /* ---------- mini cart (aka-cart, shared shape) ---------- */
   var cart=JSON.parse(localStorage.getItem('aka-cart')||'[]');
   function saveCart(){localStorage.setItem('aka-cart',JSON.stringify(cart));}
   function unitPriceOf(i){return (i.unitPrice!=null?i.unitPrice:i.price)||0;}
   var overlay=document.getElementById('cartOverlay'),cartDrawer=document.getElementById('cartDrawer'),cartClose=document.getElementById('cartClose'),cartToggle=document.getElementById('cartToggle'),cartBadge=document.getElementById('cartBadge'),cartItems=document.getElementById('cartItems'),cartTotal=document.getElementById('cartTotal'),cartSubtotal=document.getElementById('cartSubtotal'),cartCountLabel=document.getElementById('cartCountLabel');
   function openCart(){overlay.classList.add('is-open');cartDrawer.classList.add('is-open');document.body.style.overflow='hidden';}
   function closeCart(){overlay.classList.remove('is-open');cartDrawer.classList.remove('is-open');document.body.style.overflow='';}
-  function updateBadge(){var count=cart.reduce(function(s,i){return s+i.qty;},0);var total=cart.reduce(function(s,i){return s+unitPriceOf(i)*i.qty;},0);if(count>0){cartBadge.textContent=count;cartBadge.style.display='inline-flex';cartBadge.classList.remove('bounce');void cartBadge.offsetWidth;cartBadge.classList.add('bounce');}else{cartBadge.style.display='none';}if(cartTotal)cartTotal.textContent=fmt(total);if(cartSubtotal)cartSubtotal.textContent=fmt(total);if(cartCountLabel)cartCountLabel.textContent=count>0?'('+count+' item'+(count>1?'s':'')+')':'';renderCartItems();}
-  function renderCartItems(){if(cart.length===0){cartItems.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you\'ll love.</div></div>';return;}cartItems.innerHTML=cart.map(function(item,i){return '<div class="cart-item"><div class="cart-item-photo"><div class="photo" style="height:100%;background:var(--sage);"></div></div><div class="cart-item-info"><div class="cart-item-name">'+item.name+'</div><div class="cart-item-meta">'+item.meta+'</div><div class="cart-item-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div></div><div class="cart-item-right"><div class="cart-item-price">'+fmt(unitPriceOf(item)*item.qty)+'</div><button class="cart-item-remove" data-idx="'+i+'" aria-label="Remove">×</button></div></div>';}).join('');cartItems.querySelectorAll('.cart-item-remove').forEach(function(b){b.addEventListener('click',function(){cart.splice(parseInt(b.dataset.idx),1);localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});cartItems.querySelectorAll('.cart-item-qty button').forEach(function(b){b.addEventListener('click',function(){var idx=parseInt(b.dataset.idx);if(b.dataset.action==='inc')cart[idx].qty++;else{cart[idx].qty--;if(cart[idx].qty<=0)cart.splice(idx,1);}localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});}
-  if(cartToggle)cartToggle.addEventListener('click',function(e){e.preventDefault();openCart();});if(cartClose)cartClose.addEventListener('click',closeCart);if(overlay)overlay.addEventListener('click',closeCart);
-  function addToCart(entry){var ex=cart.find(function(i){return i.variantId===entry.variantId;});if(ex){ex.qty++;}else{cart.push(entry);}saveCart();updateBadge();}
-  // account-menu.js may restore this user's saved cart after sign-in —
-  // re-read storage so the badge/drawer reflect it without a manual refresh.
-  window.addEventListener('aamako-cart-restored', function () {
-    try { cart = JSON.parse(localStorage.getItem('aka-cart') || '[]'); } catch (_) { cart = []; }
+  function updateBadge(){
+    var count=cart.reduce(function(s,i){return s+i.qty;},0);
+    var total=cart.reduce(function(s,i){return s+unitPriceOf(i)*i.qty;},0);
+    if(count>0){cartBadge.textContent=count;cartBadge.style.display='inline-flex';}
+    else{cartBadge.style.display='none';}
+    if(cartTotal)cartTotal.textContent=fmt(total);
+    if(cartSubtotal)cartSubtotal.textContent=fmt(total);
+    if(cartCountLabel)cartCountLabel.textContent=count>0?'('+count+' item'+(count>1?'s':'')+')':'';
+    renderCartItems();
+  }
+  function renderCartItems(){
+    if(cart.length===0){cartItems.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-title">Your cart is empty</div><div class="cart-empty-text">Browse our range and find something you\'ll love.</div></div>';return;}
+    cartItems.innerHTML=cart.map(function(item,i){
+      return '<div class="cart-item"><div class="cart-item-photo"><div class="photo" style="height:100%;background:var(--sage);"></div></div><div class="cart-item-info"><div class="cart-item-name">'+esc(item.name)+'</div><div class="cart-item-meta">'+esc(item.meta)+'</div><div class="cart-item-qty"><button data-action="dec" data-idx="'+i+'">−</button><span>'+item.qty+'</span><button data-action="inc" data-idx="'+i+'">+</button></div></div><div class="cart-item-right"><div class="cart-item-price">'+fmt(unitPriceOf(item)*item.qty)+'</div><button class="cart-item-remove" data-idx="'+i+'" aria-label="Remove">×</button></div></div>';
+    }).join('');
+    cartItems.querySelectorAll('.cart-item-remove').forEach(function(b){b.addEventListener('click',function(){cart.splice(parseInt(b.dataset.idx,10),1);localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();});});
+    cartItems.querySelectorAll('.cart-item-qty button').forEach(function(b){b.addEventListener('click',function(){
+      var idx=parseInt(b.dataset.idx,10);
+      if(b.dataset.action==='inc')cart[idx].qty++;
+      else{cart[idx].qty--;if(cart[idx].qty<=0)cart.splice(idx,1);}
+      localStorage.setItem('aka-cart',JSON.stringify(cart));updateBadge();
+    });});
+  }
+  if(cartToggle)cartToggle.addEventListener('click',function(e){e.preventDefault();openCart();});
+  if(cartClose)cartClose.addEventListener('click',closeCart);
+  if(overlay)overlay.addEventListener('click',closeCart);
+  function addToCart(entry){
+    var ex=cart.find(function(i){return i.variantId===entry.variantId;});
+    if(ex){ex.qty+=entry.qty||1;}else{cart.push(entry);}
+    saveCart();updateBadge();
+  }
+  window.addEventListener('aamako-cart-restored',function(){
+    try{cart=JSON.parse(localStorage.getItem('aka-cart')||'[]');}catch(_){cart=[];}
     updateBadge();
   });
   updateBadge();
+
+  /* ---------- favourites tabs ---------- */
+  var tabs=Array.prototype.slice.call(document.querySelectorAll('.omfp-tab'));
+  var panels=Array.prototype.slice.call(document.querySelectorAll('.omfp-panel'));
+  var tabsBar=document.querySelector('.omfp-tabs');
+  tabs.forEach(function(t){
+    t.addEventListener('click',function(){
+      tabs.forEach(function(x){x.classList.remove('active');});
+      panels.forEach(function(p){p.classList.remove('active');});
+      t.classList.add('active');
+      var p=panels.filter(function(x){return x.dataset.panel===t.dataset.tab;})[0];
+      if(p)p.classList.add('active');
+    });
+  });
+
+  /* ---------- product cards ---------- */
+  var allProducts=[];
+  function firstVariant(p){
+    var vs=p.variants||[];
+    for(var i=0;i<vs.length;i++){if(vs[i].isActive!==false)return vs[i];}
+    return vs[0]||null;
+  }
+  function stockOf(p){
+    var v=firstVariant(p);
+    var inv=v&&v.inventory;
+    return inv&&typeof inv.stockOnHand==='number'?inv.stockOnHand:null;
+  }
+  var LEAF='<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 21c0-9 5-13 14-14 0 9-5 14-14 14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 21c3-5 6-8 11-10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  function cardHtml(p){
+    var v=firstVariant(p);
+    if(!v)return '';
+    var price=v.basePriceCents/100;
+    var member=price*(1-MEMBER_RATE);
+    var stock=stockOf(p);
+    var oos=stock===0;
+    var slug=encodeURIComponent(p.slug||v.id);
+    var variantOptions=(p.variants||[]).map(function(o){
+      return '<option value="'+esc(o.id)+'" data-price="'+(o.basePriceCents/100)+'"'+(o.id===v.id?' selected':'')+'>'+esc(o.name)+'</option>';
+    }).join('');
+    var btn=oos
+      ?'<button type="button" class="fp-btn fp-oos" disabled>Out of stock</button>'
+      :'<button type="button" class="fp-btn fp-add" data-id="'+esc(v.id)+'" data-name="'+esc(p.name)+'" data-meta="'+esc(v.name)+'" data-price="'+price+'">Add</button>';
+    return '<div class="fpcard">'
+      +'<a class="fp-img" href="product.html?slug='+slug+'">'
+      +(oos?'<span class="fp-badge oos">Sold out</span>':'<span class="fp-badge" style="display:none"></span>')
+      +'<img src="'+esc(p.imageUrl||'')+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
+      +'</a>'
+      +'<div class="fp-body">'
+      +'<span class="fp-cat">'+esc(p.category&&p.category.name||'')+'</span>'
+      +'<a class="fp-name" href="product.html?slug='+slug+'">'+esc(p.name)+'</a>'
+      +'<div class="fp-price">'+fmt(price)+'</div>'
+      +'<div class="fp-coop">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></div>'
+      +'<div class="fp-action"><div class="fp-variant-row">'
+      +((p.variants||[]).length>1?'<select class="fp-variant-select" aria-label="Choose size">'+variantOptions+'</select>':'')
+      +btn
+      +'</div></div>'
+      +'</div></div>';
+  }
+  function fillGrid(el,items){
+    if(!el)return;
+    el.innerHTML=items.length?items.map(cardHtml).join(''):'<div class="fp-empty">No products here yet — check back soon.</div>';
+  }
+  function renderGrids(){
+    var best=allProducts.slice(0,8);
+    var deals=allProducts.slice().sort(function(a,b){
+      var sa=stockOf(a),sb=stockOf(b);
+      if(sa===null)return 1; if(sb===null)return -1;
+      return sa-sb; // limited availability first
+    }).slice(0,8);
+    var fresh=allProducts.slice().sort(function(a,b){
+      return new Date(b.createdAt||0)-new Date(a.createdAt||0);
+    }).slice(0,8);
+    fillGrid(document.getElementById('gridBest'),best);
+    fillGrid(document.getElementById('gridDeals'),deals);
+    fillGrid(document.getElementById('gridNew'),fresh);
+    var show=allProducts.filter(function(p){return p.category&&p.category.slug==='dehydrated';}).slice(0,8);
+    fillGrid(document.getElementById('showcaseGrid'),show);
+    bindCardControls();
+  }
+  function bindCardControls(){
+    document.querySelectorAll('.fp-add[data-id]').forEach(function(b){
+      if(b.dataset.bound)return;b.dataset.bound='1';
+      b.addEventListener('click',function(e){
+        e.preventDefault();e.stopPropagation();
+        if(window.AamakoRequireSignIn&&!window.AamakoRequireSignIn())return;
+        addToCart({variantId:b.dataset.id,name:b.dataset.name,meta:b.dataset.meta,unitPrice:parseFloat(b.dataset.price),qty:1});
+        b.classList.add('added');var t=b.textContent;b.textContent='Added ✓';
+        setTimeout(function(){b.classList.remove('added');b.textContent=t;},900);
+      });
+    });
+    document.querySelectorAll('.fp-variant-select').forEach(function(sel){
+      if(sel.dataset.bound)return;sel.dataset.bound='1';
+      sel.addEventListener('change',function(){
+        var opt=sel.options[sel.selectedIndex];
+        var card=sel.closest('.fpcard');
+        if(!card)return;
+        var btn=card.querySelector('.fp-add');
+        var priceEl=card.querySelector('.fp-price');
+        if(btn&&opt.value){btn.dataset.id=opt.value;btn.dataset.price=opt.getAttribute('data-price')||'';btn.dataset.meta=opt.textContent;}
+        if(priceEl&&opt.getAttribute('data-price'))priceEl.textContent=fmt(parseFloat(opt.getAttribute('data-price')));
+      });
+    });
+  }
+
+  /* ---------- search + category filter ---------- */
+  var searchForm=document.getElementById('omSearchForm');
+  var searchInput=document.getElementById('omSearchInput');
+  var searchCat=document.getElementById('omSearchCat');
+  var searchTimer=null;
+  function applySearch(){
+    var q=(searchInput.value||'').trim().toLowerCase();
+    var cat=searchCat.value||'';
+    if(!q&&!cat){
+      tabsBar.style.display='';
+      panels.forEach(function(p,idx){p.classList.toggle('active',idx===0);});
+      tabs.forEach(function(x,idx){x.classList.toggle('active',idx===0);});
+      renderGrids();
+      return;
+    }
+    var filtered=allProducts.filter(function(p){
+      var okCat=!cat||(p.category&&p.category.slug===cat);
+      var okQ=!q||((p.name||'')+' '+(p.description||'')).toLowerCase().indexOf(q)>=0;
+      return okCat&&okQ;
+    });
+    tabsBar.style.display='none';
+    panels.forEach(function(p,idx){p.classList.toggle('active',idx===0);});
+    fillGrid(document.getElementById('gridBest'),filtered);
+    bindCardControls();
+  }
+  if(searchForm)searchForm.addEventListener('submit',function(e){
+    e.preventDefault();applySearch();
+    var fav=document.getElementById('favourites');
+    if(fav)fav.scrollIntoView({behavior:'smooth'});
+  });
+  if(searchInput)searchInput.addEventListener('input',function(){
+    clearTimeout(searchTimer);searchTimer=setTimeout(applySearch,200);
+  });
+  if(searchCat)searchCat.addEventListener('change',applySearch);
+
+  /* ---------- load catalog ---------- */
+  function loadCatalog(){
+    if(!window.AamakoAPI)return;
+    window.AamakoAPI.getCategories().then(function(cats){
+      (cats||[]).forEach(function(c){
+        var opt=document.createElement('option');
+        opt.value=c.slug;opt.textContent=c.name;
+        searchCat.appendChild(opt);
+      });
+      return Promise.all((cats||[]).map(function(c){
+        return window.AamakoAPI.listProducts(1,c.slug).catch(function(){return {items:[]};});
+      }));
+    }).then(function(perCat){
+      var seen={},merged=[];
+      (perCat||[]).forEach(function(r){
+        (r&&r.items||[]).forEach(function(p){
+          if(seen[p.id])return;seen[p.id]=1;merged.push(p);
+        });
+      });
+      allProducts=merged;
+      renderGrids();
+    }).catch(function(){
+      fillGrid(document.getElementById('gridBest'),[]);
+      fillGrid(document.getElementById('gridDeals'),[]);
+      fillGrid(document.getElementById('gridNew'),[]);
+      fillGrid(document.getElementById('showcaseGrid'),[]);
+    });
+  }
+  loadCatalog();
 })();
 </script>
 
