@@ -149,11 +149,11 @@
   transition:opacity .5s ease,visibility .5s ease,background .5s ease,backdrop-filter .5s ease,-webkit-backdrop-filter .5s ease;}
 .ombanner-card:hover .ombanner-content,
 .ombanner-card:focus-visible .ombanner-content{opacity:1;visibility:visible;
-  background:rgba(255,253,247,.13);
+  background:rgba(255,253,247,.24);
   -webkit-backdrop-filter:blur(10px) saturate(1.25);
   backdrop-filter:blur(10px) saturate(1.25);
   pointer-events:auto;}
-.ombanner-title{font-weight:700;color:var(--sage-deep);margin:0;font-size:clamp(18px,2vw,24px);line-height:1.3;max-width:26ch;text-shadow:0 1px 10px rgba(255,253,247,.55);opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s var(--ease-out);}
+.ombanner-title{font-weight:700;color:var(--sage-deep);margin:0;font-size:clamp(18px,2vw,24px);line-height:1.3;max-width:26ch;opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s var(--ease-out);}
 .ombanner-btn{display:inline-flex;align-items:center;background:var(--sage-deep);color:#FFFDF7;font-weight:700;font-size:12px;padding:.7rem 1.25rem;border-radius:.5rem;transition:background .2s ease,color .2s ease,opacity .5s ease,transform .5s var(--ease-out),box-shadow .2s ease;box-shadow:0 4px 16px rgba(33,31,23,.18);opacity:0;transform:translateY(14px);text-decoration:none;}
 .ombanner-btn:hover{background:var(--sage);color:#FFFDF7;}
 .ombanner-card:hover .ombanner-title,
@@ -169,7 +169,7 @@
 @media (max-width:640px){ .ombanner-grid{grid-template-columns:1fr;gap:14px;} .ombanner-card{aspect-ratio:16/9;} .ombanner-content{padding:0 1.6rem;} .ombanner-title{font-size:19px;min-height:0;} .ombanners{padding-bottom:4px;} }
 /* touch devices — no hover, so keep the glass panel + text visible */
 @media (hover:none){
-  .ombanner-content{opacity:1;visibility:visible;background:rgba(255,253,247,.13);-webkit-backdrop-filter:blur(8px) saturate(1.2);backdrop-filter:blur(8px) saturate(1.2);}
+  .ombanner-content{opacity:1;visibility:visible;background:rgba(255,253,247,.24);-webkit-backdrop-filter:blur(8px) saturate(1.2);backdrop-filter:blur(8px) saturate(1.2);}
   .ombanner-title,.ombanner-btn{opacity:1;transform:none;}
   .ombanner-imgwrap img{transform:scale(1.04);}
 }
