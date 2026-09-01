@@ -30,8 +30,8 @@
 .omhero-dot.is-active{background:var(--sage-deep);transform:scale(1.15);}
 
 /* ---------- search bar (shop) ---------- */
-.omsearch-bar{position:sticky;top:var(--search-top,0);z-index:40;background:var(--bg);transition:box-shadow .3s ease;}
-.omsearch-bar.is-pinned{box-shadow:0 8px 24px rgba(33,31,23,.10);border-bottom:1px solid var(--line);}
+.omsearch-bar{position:sticky;top:var(--search-top,0);z-index:40;background:var(--bg);transition:transform .35s var(--ease-out);}
+.omsearch-bar.is-hidden{transform:translateY(-100%);}
 .omsearch-wrap{display:flex;justify-content:center;margin:8px 0 0;}
 .omsearch-form{display:flex;align-items:center;border:1px solid var(--line);padding:6px 6px 6px 10px;border-radius:12px;background:var(--paper);width:100%;max-width:640px;box-shadow:var(--shadow-sm);}
 .omsearch-form select{border:none;background:var(--sage);color:#FFFDF7;font-family:var(--body);font-size:15px;font-weight:700;letter-spacing:.01em;cursor:pointer;flex-shrink:0;appearance:none;padding:10px 34px 10px 16px;border-radius:9px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23FFFDF7' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px 6px;outline:none;transition:background .2s ease;}
