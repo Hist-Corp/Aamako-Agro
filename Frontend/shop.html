@@ -122,6 +122,9 @@
     <form class="omsearch-form" id="omSearchForm" role="search">
       <select id="omSearchCat" aria-label="All categories">
         <option value="">All categories</option>
+        <option value="freeze-dried-fruits">Freeze-Dried Fruits &amp; Vegetables</option>
+        <option value="dehydrated">Dehydrated Fruits &amp; Vegetables</option>
+        <option value="powders">Milled Powders</option>
       </select>
       <span class="omsearch-sep"></span>
       <input class="omsearch-input" id="omSearchInput" type="search" placeholder="search freeze-dried mango, moringa powder…" aria-label="Search products">
@@ -640,49 +643,43 @@
     });
   }
 
-  /* ---------- search + category filter ---------- */
+  /* ---------- All-categories dropdown & search → category pages ---------- */
   var searchForm=document.getElementById('omSearchForm');
-  var searchInput=document.getElementById('omSearchInput');
+  var searchInput=document.getElementById('omSearchInput')||{value:''};
   var searchCat=document.getElementById('omSearchCat');
-  var searchTimer=null;
-  function applySearch(){
-    var q=(searchInput.value||'').trim().toLowerCase();
-    var cat=searchCat.value||'';
-    if(!q&&!cat){
-      tabsBar.style.display='';
-      panels.forEach(function(p,idx){p.classList.toggle('active',idx===0);});
-      tabs.forEach(function(x,idx){x.classList.toggle('active',idx===0);});
-      renderGrids();
-      return;
-    }
-    var filtered=allProducts.filter(function(p){
-      var okCat=!cat||(p.category&&p.category.slug===cat);
-      var okQ=!q||((p.name||'')+' '+(p.description||'')).toLowerCase().indexOf(q)>=0;
-      return okCat&&okQ;
-    });
-    tabsBar.style.display='none';
-    panels.forEach(function(p,idx){p.classList.toggle('active',idx===0);});
-    fillGrid(document.getElementById('gridBest'),filtered);
-    bindCardControls();
+  function categoryHref(){
+    var cat=(searchCat&&searchCat.value)||'';
+    var q=(searchInput.value||'').trim();
+    var p=new URLSearchParams();
+    if(cat)p.set('cat',cat);
+    if(q)p.set('q',q);
+    var qs=p.toString();
+    return 'collection.html'+(qs?'?'+qs:'');
   }
+  // selecting a specific category jumps straight to that category page
+  if(searchCat)searchCat.addEventListener('change',function(){
+    var v=searchCat.value||'';
+    if(v){ window.location.href='collection.html?cat='+encodeURIComponent(v); }
+  });
+  // search button / Enter → go to the category page (and query, if any)
   if(searchForm)searchForm.addEventListener('submit',function(e){
-    e.preventDefault();applySearch();
-    var fav=document.getElementById('favourites');
-    if(fav)fav.scrollIntoView({behavior:'smooth'});
+    e.preventDefault();
+    var v=searchCat.value||'';
+    var q=(searchInput.value||'').trim();
+    if(!v&&!q){ /* nothing selected/typed → back to all-products collection */ window.location.href='collection.html';return; }
+    window.location.href=categoryHref();
   });
-  if(searchInput)searchInput.addEventListener('input',function(){
-    clearTimeout(searchTimer);searchTimer=setTimeout(applySearch,200);
-  });
-  if(searchCat)searchCat.addEventListener('change',applySearch);
 
   /* ---------- load catalog ---------- */
   function loadCatalog(){
     if(!window.AamakoAPI)return;
     window.AamakoAPI.getCategories().then(function(cats){
       (cats||[]).forEach(function(c){
-        var opt=document.createElement('option');
-        opt.value=c.slug;opt.textContent=c.name;
-        searchCat.appendChild(opt);
+        if(!searchCat.querySelector('option[value="'+c.slug+'"]')){
+          var opt=document.createElement('option');
+          opt.value=c.slug;opt.textContent=c.name;
+          searchCat.appendChild(opt);
+        }
       });
       return Promise.all((cats||[]).map(function(c){
         return window.AamakoAPI.listProducts(1,c.slug).catch(function(){return {items:[]};});
