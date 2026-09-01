@@ -402,6 +402,30 @@
     syncSearchStick();
   })();
 
+  /* ---------- align the search bar under the nav-link row ---------- */
+  /* nav-links sit centered in the gap between logo (left) and nav-actions (right),
+     so they're usually offset from true page center. Measure that offset once
+     and nudge the search form to share the nav-links' center => "just below" the
+     Shop/Why Freeze-Dried/.../Learn row, with no left drift. */
+  (function(){
+    var navLinks=document.querySelector('nav.wrap .nav-links');
+    var navWrap=document.querySelector('nav.wrap');
+    var form=document.querySelector('.omsearch-form');
+    if(!navLinks||!navWrap||!form)return;
+    function align(){
+      var d=getComputedStyle(navLinks).display;
+      if(d==='none'||d===''){form.style.transform='';return;}
+      var w=navWrap.getBoundingClientRect();
+      var l=navLinks.getBoundingClientRect();
+      var off=(l.left+l.width/2)-(w.left+w.width/2);
+      form.style.transform='translateX('+off+'px)';
+    }
+    window.addEventListener('load',align);
+    window.addEventListener('resize',align);
+    align();
+  })();
+
+
   /* ---------- hero split slider (autoplay 3s, pause on hover) ---------- */
   (function(){
     var slides=Array.prototype.slice.call(document.querySelectorAll('.omhero-slide'));

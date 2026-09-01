@@ -32,6 +32,7 @@
 /* ---------- search bar (shop) — box with small margin, green All-categories pill ---------- */
 .omsearch-bar{position:sticky;top:var(--search-top,0);z-index:40;background:var(--bg);padding:10px 0;transition:transform .35s var(--ease-out);}
 .omsearch-bar.is-hidden{transform:translateY(-100%);}
+#omSearchBar .wrap{max-width:1200px;}
 .omsearch-wrap{display:flex;justify-content:center;margin:0;}
 .omsearch-form{display:flex;align-items:center;border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:6px 6px 6px 10px;width:100%;max-width:640px;box-shadow:var(--shadow-sm);margin:0 auto;}
 .omsearch-form select{border:none;background:var(--sage);color:#FFFDF7;font-family:var(--body);font-size:15px;font-weight:700;letter-spacing:.01em;cursor:pointer;flex-shrink:0;appearance:none;padding:10px 30px 10px 16px;border-radius:9px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23FFFDF7' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px 6px;outline:none;transition:background .2s ease;}
