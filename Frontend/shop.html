@@ -272,15 +272,11 @@
 <!-- WHOLESOME DEHYDRATED CHOICES -->
 <section class="omsec" id="wholesomeShowcase">
   <div class="wrap">
-    <div class="omshow-head">
-      <div>
-        <div class="omsec-eyebrow">Collection</div>
-        <h2 class="omsec-title">Wholesome Dehydrated Choices</h2>
-      </div>
-      <span class="omshow-tab">Dehydrated Fruits &amp; Vegetables</span>
+    <div class="omshow2-titlebar">
+      <h2 class="omshow2-title">Wholesome Dehydrated Choices</h2>
+      <a class="omshow2-cat" href="collection.html?cat=dehydrated">Dehydrated Fruits &amp; Vegetables</a>
     </div>
-    <div class="omshow-scroller" id="showcaseGrid"></div>
-    <div style="text-align:right;margin-top:6px;"><a class="omshow-viewall" href="collection.html?cat=dehydrated">View all &rarr;</a></div>
+    <div class="omshow2-grid" id="showcaseGrid"></div>
   </div>
 </section>
 
@@ -461,6 +457,59 @@
     if(!el)return;
     el.innerHTML=items.length?items.map(cardHtml).join(''):'<div class="fp-empty">No products here yet — check back soon.</div>';
   }
+
+  /* ---------- showcase v2 (promo banner + product grid) ---------- */
+  function showcaseCardHtml(p){
+    var v=firstVariant(p);
+    if(!v)return '';
+    var price=v.basePriceCents/100;
+    var member=price*(1-MEMBER_RATE);
+    var stock=stockOf(p);
+    var oos=stock===0;
+    var slug=encodeURIComponent(p.slug||v.id);
+    var compare=v.compareAtPriceCents?v.compareAtPriceCents/100:0;
+    var hasOff=!!compare&&compare>price;
+    var off=hasOff?Math.round((1-price/compare)*100):0;
+    var badge=hasOff?'<span class="omshow2-off">-'+off+'%</span>':'';
+    var mrp=hasOff?'<s>'+fmt(compare)+'</s>':'';
+    var variantOptions=(p.variants||[]).map(function(o){
+      return '<option value="'+esc(o.id)+'" data-price="'+(o.basePriceCents/100)+'"'+(o.id===v.id?' selected':'')+'>'+esc(o.name)+'</option>';
+    }).join('');
+    var actions;
+    if(oos){
+      actions='<button type="button" class="omshow2-btn" disabled>Out of stock</button>';
+    }else if((p.variants||[]).length>1){
+      actions='<select class="omshow2-select" aria-label="Choose size">'+variantOptions+'</select>'
+        +'<button type="button" class="omshow2-btn omshow2-add" data-id="'+esc(v.id)+'" data-name="'+esc(p.name)+'" data-meta="'+esc(v.name)+'" data-price="'+price+'">Add</button>';
+    }else{
+      actions='<button type="button" class="omshow2-btn omshow2-add" data-id="'+esc(v.id)+'" data-name="'+esc(p.name)+'" data-meta="'+esc(v.name)+'" data-price="'+price+'">Add to cart</button>';
+    }
+    return '<div class="omshow2-card">'
+      +'<a class="omshow2-img" href="product.html?slug='+slug+'">'
+      +badge
+      +'<img src="'+esc(p.imageUrl||'')+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
+      +'</a>'
+      +'<div class="omshow2-body">'
+      +'<a class="omshow2-name" href="product.html?slug='+slug+'">'+esc(p.name)+'</a>'
+      +'<div class="omshow2-pricerow"><span class="omshow2-price"><span class="omshow2-amt">'+fmt(price)+'</span>'+mrp+'</span></div>'
+      +'<span class="omshow2-member">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></span>'
+      +'<div class="omshow2-actions">'+actions+'</div>'
+      +'</div></div>';
+  }
+  function renderShowcase(items){
+    var el=document.getElementById('showcaseGrid');
+    if(!el)return;
+    if(!items.length){
+      el.innerHTML='<div class="fp-empty" style="grid-column:1/-1;">No products here yet — check back soon.</div>';
+      return;
+    }
+    var cards=items.slice(0,3);
+    var bannerSrc=(items[3]&&items[3].imageUrl)||(cards[0]&&cards[0].imageUrl)||'';
+    var banner='<a class="omshow2-banner" href="collection.html?cat=dehydrated" aria-label="Shop all dehydrated products">'
+      +(bannerSrc?'<img src="'+esc(bannerSrc)+'" alt="" loading="lazy" onerror="this.style.display=\'none\';">':'')
+      +'</a>';
+    el.innerHTML=banner+cards.map(showcaseCardHtml).join('');
+  }
   function renderGrids(){
     var best=allProducts.slice(0,8);
     var deals=allProducts.slice().sort(function(a,b){
@@ -474,8 +523,8 @@
     fillGrid(document.getElementById('gridBest'),best);
     fillGrid(document.getElementById('gridDeals'),deals);
     fillGrid(document.getElementById('gridNew'),fresh);
-    var show=allProducts.filter(function(p){return p.category&&p.category.slug==='dehydrated';}).slice(0,8);
-    fillGrid(document.getElementById('showcaseGrid'),show);
+    var show=allProducts.filter(function(p){return p.category&&p.category.slug==='dehydrated';}).slice(0,4);
+    renderShowcase(show);
     bindCardControls();
   }
   function bindCardControls(){
@@ -497,6 +546,28 @@
         if(!card)return;
         var btn=card.querySelector('.fp-add');
         var priceEl=card.querySelector('.fp-price');
+        if(btn&&opt.value){btn.dataset.id=opt.value;btn.dataset.price=opt.getAttribute('data-price')||'';btn.dataset.meta=opt.textContent;}
+        if(priceEl&&opt.getAttribute('data-price'))priceEl.textContent=fmt(parseFloat(opt.getAttribute('data-price')));
+      });
+    });
+    document.querySelectorAll('.omshow2-add[data-id]').forEach(function(b){
+      if(b.dataset.bound)return;b.dataset.bound='1';
+      b.addEventListener('click',function(e){
+        e.preventDefault();e.stopPropagation();
+        if(window.AamakoRequireSignIn&&!window.AamakoRequireSignIn())return;
+        addToCart({variantId:b.dataset.id,name:b.dataset.name,meta:b.dataset.meta,unitPrice:parseFloat(b.dataset.price),qty:1});
+        b.classList.add('added');var t=b.textContent;b.textContent='Added ✓';
+        setTimeout(function(){b.classList.remove('added');b.textContent=t;},900);
+      });
+    });
+    document.querySelectorAll('.omshow2-select').forEach(function(sel){
+      if(sel.dataset.bound)return;sel.dataset.bound='1';
+      sel.addEventListener('change',function(){
+        var opt=sel.options[sel.selectedIndex];
+        var card=sel.closest('.omshow2-card');
+        if(!card)return;
+        var btn=card.querySelector('.omshow2-add');
+        var priceEl=card.querySelector('.omshow2-amt');
         if(btn&&opt.value){btn.dataset.id=opt.value;btn.dataset.price=opt.getAttribute('data-price')||'';btn.dataset.meta=opt.textContent;}
         if(priceEl&&opt.getAttribute('data-price'))priceEl.textContent=fmt(parseFloat(opt.getAttribute('data-price')));
       });
@@ -563,7 +634,7 @@
       fillGrid(document.getElementById('gridBest'),[]);
       fillGrid(document.getElementById('gridDeals'),[]);
       fillGrid(document.getElementById('gridNew'),[]);
-      fillGrid(document.getElementById('showcaseGrid'),[]);
+      renderShowcase([]);
     });
   }
   loadCatalog();
