@@ -163,7 +163,6 @@
     <div class="omconcern-panel">
       <div class="omconcern-head">
         <h2 class="omsec-title">Shop by need</h2>
-        <a class="omconcern-viewall" href="shop.html">View all products &rarr;</a>
       </div>
       <p class="omconcern-sub">Lightweight, long-life foods chosen for how you live.</p>
       <div class="omconcern-grid">
@@ -353,6 +352,13 @@
   var MEMBER_RATE = 0.10; // indicative wholesale-partner rate shown on cards
   function fmt(n){ n = Math.round(n); return 'Rs ' + n.toLocaleString('en-IN'); }
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  /* ---------- wholesale visibility: show partner pricing only to wholesale customers ---------- */
+  function isWholesaleUser(){
+    try{
+      var u=JSON.parse(localStorage.getItem('aamako_user')||'null');
+      return u&&u.role==='WHOLESALE_CUSTOMER';
+    }catch(e){return false;}
+  }
 
   /* ---------- hamburger (site-wide pattern) ---------- */
   (function(){
@@ -389,6 +395,16 @@
       if(!searchBar)return;
       var top=header.offsetHeight||0;
       searchBar.style.setProperty('--search-top',top+'px');
+      /* Dock state: the bar stays transparent and in its normal position
+         until the user scrolls past it; once crossed it docks below the
+         header (cream, header-style strip). While docked it mimics the
+         header's hide/show animation, sliding away and back with it.
+         offsetTop is layout-based, so it is immune to the transform used
+         for the slide (getBoundingClientRect would report moved values). */
+      var y=window.pageYOffset||document.documentElement.scrollTop;
+      var stuck=y>=(searchBar.offsetTop-top-1);
+      searchBar.classList.toggle('is-stuck',stuck);
+      searchBar.classList.toggle('is-hidden',stuck&&header.classList.contains('is-hidden'));
     }
     window.addEventListener('scroll',function(){
       var y=window.pageYOffset||document.documentElement.scrollTop;
@@ -518,7 +534,7 @@
       +'<span class="fp-cat">'+esc(p.category&&p.category.name||'')+'</span>'
       +'<a class="fp-name" href="product.html?slug='+slug+'">'+esc(p.name)+'</a>'
       +'<div class="fp-price">'+fmt(price)+'</div>'
-      +'<div class="fp-coop">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></div>'
+      +(isWholesaleUser()?'<div class="fp-coop">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></div>':'')
       +'<div class="fp-action"><div class="fp-variant-row">'
       +((p.variants||[]).length>1?'<select class="fp-variant-select" aria-label="Choose size">'+variantOptions+'</select>':'')
       +btn
@@ -564,7 +580,7 @@
       +'<div class="omshow2-body">'
       +'<a class="omshow2-name" href="product.html?slug='+slug+'">'+esc(p.name)+'</a>'
       +'<div class="omshow2-pricerow"><span class="omshow2-price"><span class="omshow2-amt">'+fmt(price)+'</span>'+mrp+'</span></div>'
-      +'<span class="omshow2-member">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></span>'
+      +(isWholesaleUser()?'<span class="omshow2-member">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></span>':'')
       +'<div class="omshow2-actions">'+actions+'</div>'
       +'</div></div>';
   }

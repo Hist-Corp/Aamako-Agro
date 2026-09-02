@@ -203,7 +203,7 @@
             canvas.getContext('2d').drawImage(img, sx, sy, cw, ch, 0, 0, TW, TH);
             window.AamakoAvatar.set(canvas.toDataURL('image/jpeg', 0.85));
             paintPhoto();
-            flashPhotoMsg('✓ Photo saved', '#2c5e34');
+            flashPhotoMsg('✓ Photo saved', '#20693f');
           } catch (e) {
             flashPhotoMsg('Could not process that image.', '#a33a2a');
           }
@@ -242,7 +242,7 @@
       localStorage.setItem('aamako_user', JSON.stringify(updated));
       paint(updated);
       if (window.AamakoAccountMenu && window.AamakoAccountMenu.refresh) window.AamakoAccountMenu.refresh();
-      msg.textContent = '✓ Changes saved'; msg.style.color = '#2c5e34';
+      msg.textContent = '✓ Changes saved'; msg.style.color = '#20693f';
     } catch (err) {
       msg.textContent = err.message || 'Could not save changes'; msg.style.color = '#a33a2a';
     }
@@ -267,7 +267,7 @@
     btn.disabled = true;
     try {
       await window.AamakoAPI.changePassword({ currentPassword: cur, newPassword: nw });
-      msg.textContent = '✓ Password updated. Other devices have been signed out.'; msg.style.color = '#2c5e34';
+      msg.textContent = '✓ Password updated. Other devices have been signed out.'; msg.style.color = '#20693f';
       document.getElementById('pwCurrent').value = '';
       document.getElementById('pwNew').value = '';
       document.getElementById('pwConfirm').value = '';

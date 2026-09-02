@@ -42,11 +42,15 @@
   <a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a>
 </div>
 
-<section style="padding-top:6px;">
+<section style="padding:6px 0 0;">
   <div class="wrap">
     <nav class="ombreadcrumb" id="crumbs">
       <a href="index.html">Home</a><span class="sep">/</span><a href="shop.html">Collections</a><span class="sep">/</span><span class="current" id="crumbCat">Collection</span>
     </nav>
+
+    <div class="omcoll-backrow">
+      <a href="shop.html" class="omback-btn" id="backBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Back</a>
+    </div>
 
     <div class="omcoll-banner">
       <h1 id="collTitle">Loading collection…</h1>
@@ -54,42 +58,37 @@
     </div>
     <div class="omcoll-cats" id="collCats"></div>
 
-    <div class="omcoll-titlebar">
-      <h2 id="collHeading2">Collection</h2>
-      <span class="omcoll-count" id="collCount">0 products</span>
-    </div>
+  </div>
+</section>
 
+<section style="padding:88px 0 var(--space-8);">
+  <div class="wrap">
     <div class="omcoll-layout">
       <aside class="omcoll-side">
-        <h3>Category</h3>
-        <nav class="omcoll-sidecats" id="sideCats"></nav>
+        <h3>Categories</h3>
+        <div class="omcoll-sidecats" id="sideCats"></div>
       </aside>
-
       <div>
+        <div class="omcoll-titlebar">
+          <h2>Products</h2>
+          <span class="omcoll-count" id="collCount"></span>
+        </div>
         <div class="omcoll-toolbar">
           <div class="group">
-            <label for="perPage">Display</label>
-            <select id="perPage">
-              <option value="8" selected>8 per page</option>
-              <option value="12">12 per page</option>
-              <option value="16">16 per page</option>
-              <option value="999">All</option>
+            <label for="collSort">Sort by</label>
+            <select id="collSort">
+              <option value="featured">Featured</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="name">Name: A to Z</option>
             </select>
           </div>
           <div class="group">
-            <label for="sortBy">Sort by</label>
-            <select id="sortBy">
-              <option value="featured" selected>Featured</option>
-              <option value="price-asc">Price, low to high</option>
-              <option value="price-desc">Price, high to low</option>
-              <option value="alpha-asc">Alphabetically, A-Z</option>
-              <option value="alpha-desc">Alphabetically, Z-A</option>
-              <option value="newest">Date, new to old</option>
-            </select>
+            <label for="collSearch">Search</label>
+            <input type="search" id="collSearch" class="omcoll-search" placeholder="Search products…">
           </div>
         </div>
-        <p class="omcoll-showing" id="showing">Showing products…</p>
-        <div class="omfp-grid" id="collGrid" style="margin-top:0;"></div>
+        <div class="omfp-grid omcoll-grid" id="collGrid"><div class="fp-empty">Loading products…</div></div>
       </div>
     </div>
   </div>
@@ -229,22 +228,33 @@
     desc:['Hand-picked foods from our partner farms across Nepal — processed gently, packed plainly and shipped fresh from the facility.','Every pack is batch-coded, graded and checked before it ships.']
   };
 
-  /* ---------- product cards (same design as shop) ---------- */
-  var allProducts=[],currentSlug='';
+  /* ---------- wholesale visibility: show partner pricing only to wholesale customers ---------- */
+  function isWholesaleUser(){
+    try{
+      var u=JSON.parse(localStorage.getItem('aamako_user')||'null');
+      return !!(u&&u.role==='WHOLESALE_CUSTOMER');
+    }catch(_){return false;}
+  }
+
+  /* ---------- product cards (restored listing) ---------- */
   function firstVariant(p){
     var vs=p.variants||[];
     for(var i=0;i<vs.length;i++){if(vs[i].isActive!==false)return vs[i];}
     return vs[0]||null;
   }
-  function priceOf(p){var v=firstVariant(p);return v?v.basePriceCents/100:Infinity;}
+  function stockOf(p){
+    var v=firstVariant(p);
+    var inv=v&&v.inventory;
+    return inv&&typeof inv.stockOnHand==='number'?inv.stockOnHand:null;
+  }
   var LEAF='<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 21c0-9 5-13 14-14 0 9-5 14-14 14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 21c3-5 6-8 11-10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   function cardHtml(p){
     var v=firstVariant(p);
     if(!v)return '';
     var price=v.basePriceCents/100;
     var member=price*(1-MEMBER_RATE);
-    var inv=v.inventory;
-    var oos=inv&&inv.stockOnHand===0;
+    var stock=stockOf(p);
+    var oos=stock===0;
     var slug=encodeURIComponent(p.slug||v.id);
     var variantOptions=(p.variants||[]).map(function(o){
       return '<option value="'+esc(o.id)+'" data-price="'+(o.basePriceCents/100)+'"'+(o.id===v.id?' selected':'')+'>'+esc(o.name)+'</option>';
@@ -258,67 +268,28 @@
       +'<img src="'+esc(p.imageUrl||'')+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
       +'</a>'
       +'<div class="fp-body">'
-      +'<span class="fp-cat">'+esc(p.category&&p.category.name||'')+'</span>'
       +'<a class="fp-name" href="product.html?slug='+slug+'">'+esc(p.name)+'</a>'
       +'<div class="fp-price">'+fmt(price)+'</div>'
-      +'<div class="fp-coop">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></div>'
+      +(isWholesaleUser()?'<div class="fp-coop">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></div>':'')
       +'<div class="fp-action"><div class="fp-variant-row">'
       +((p.variants||[]).length>1?'<select class="fp-variant-select" aria-label="Choose size">'+variantOptions+'</select>':'')
       +btn
       +'</div></div>'
       +'</div></div>';
   }
-  function bindCardControls(){
-    document.querySelectorAll('.fp-add[data-id]').forEach(function(b){
-      if(b.dataset.bound)return;b.dataset.bound='1';
-      b.addEventListener('click',function(e){
-        e.preventDefault();e.stopPropagation();
-        if(window.AamakoRequireSignIn&&!window.AamakoRequireSignIn())return;
-        var ex=cart.find(function(i){return i.variantId===b.dataset.id;});
-        if(ex){ex.qty+=1;}else{cart.push({variantId:b.dataset.id,name:b.dataset.name,meta:b.dataset.meta,unitPrice:parseFloat(b.dataset.price),qty:1});}
-        saveCart();updateBadge();
-        b.classList.add('added');var t=b.textContent;b.textContent='Added ✓';
-        setTimeout(function(){b.classList.remove('added');b.textContent=t;},900);
-      });
-    });
-    document.querySelectorAll('.fp-variant-select').forEach(function(sel){
-      if(sel.dataset.bound)return;sel.dataset.bound='1';
-      sel.addEventListener('change',function(){
-        var opt=sel.options[sel.selectedIndex];
-        var card=sel.closest('.fpcard');
-        if(!card)return;
-        var btn=card.querySelector('.fp-add');
-        var priceEl=card.querySelector('.fp-price');
-        if(btn&&opt.value){btn.dataset.id=opt.value;btn.dataset.price=opt.getAttribute('data-price')||'';btn.dataset.meta=opt.textContent;}
-        if(priceEl&&opt.getAttribute('data-price'))priceEl.textContent=fmt(parseFloat(opt.getAttribute('data-price')));
-      });
-    });
-  }
+  var currentSlug='';
 
-  /* ---------- filtering UI ---------- */
-  var perPage=document.getElementById('perPage'),sortBy=document.getElementById('sortBy');
-  function visibleProducts(){
-    var items=allProducts.filter(function(p){return !currentSlug||(p.category&&p.category.slug===currentSlug);});
-    var s=sortBy.value;
-    if(s==='price-asc')items.sort(function(a,b){return priceOf(a)-priceOf(b);});
-    else if(s==='price-desc')items.sort(function(a,b){return priceOf(b)-priceOf(a);});
-    else if(s==='alpha-asc')items.sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
-    else if(s==='alpha-desc')items.sort(function(a,b){return (b.name||'').localeCompare(a.name||'');});
-    else if(s==='newest')items.sort(function(a,b){return new Date(b.createdAt||0)-new Date(a.createdAt||0);});
-    return items;
-  }
-  function render(){
-    var items=visibleProducts();
-    var limit=parseInt(perPage.value,10);
-    var shown=limit>=999?items:items.slice(0,limit);
-    var grid=document.getElementById('collGrid');
-    grid.innerHTML=shown.length?shown.map(cardHtml).join(''):'<div class="fp-empty">No products in this collection yet — check back soon.</div>';
-    document.getElementById('collCount').textContent=items.length+(items.length===1?' product':' products');
-    document.getElementById('showing').textContent='Showing '+shown.length+' of '+items.length+' products';
-    bindCardControls();
-  }
-  if(perPage)perPage.addEventListener('change',render);
-  if(sortBy)sortBy.addEventListener('change',render);
+  /* ---------- back button — return to the page the user came from ---------- */
+  (function(){
+    var btn=document.getElementById('backBtn');
+    if(!btn)return;
+    btn.addEventListener('click',function(e){
+      e.preventDefault();
+      var host=(document.referrer||'').replace(/^https?:\/\//,'').split('/')[0];
+      if(host&&host===location.host){history.back();return;}
+      window.location.href=btn.getAttribute('href');
+    });
+  })();
 
   /* ---------- paint category chrome ---------- */
   function paintChrome(cats){
@@ -329,37 +300,88 @@
     document.getElementById('crumbCat').textContent=name;
     document.getElementById('collTitle').textContent=meta.heading;
     document.getElementById('collDesc').innerHTML=(meta.desc||[]).map(function(p){return '<p>'+esc(p)+'</p>';}).join('');
-    document.getElementById('collHeading2').textContent=name;
-    var side=document.getElementById('sideCats'),chips=document.getElementById('collCats');
-    var allLink='<a href="shop.html" class="'+(currentSlug?'':'is-current')+'">All products</a>';
-    side.innerHTML=allLink+(cats||[]).map(function(c){
-      return '<a href="collection.html?cat='+encodeURIComponent(c.slug)+'" class="'+(c.slug===currentSlug?'is-current':'')+'">'+esc(c.name)+' ('+((c._count&&c._count.products)||0)+')</a>';
+    var chips=document.getElementById('collCats');
+    chips.innerHTML=(cats||[]).map(function(c){
+      return '<a href="collection.html?cat='+encodeURIComponent(c.slug)+'" class="'+(c.slug===currentSlug?'is-current':'')+'">'+esc(c.name)+'</a>';
     }).join('');
-    chips.innerHTML=allLink+(cats||[]).map(function(c){
+    var side=document.getElementById('sideCats');
+    if(side)side.innerHTML=(cats||[]).map(function(c){
       return '<a href="collection.html?cat='+encodeURIComponent(c.slug)+'" class="'+(c.slug===currentSlug?'is-current':'')+'">'+esc(c.name)+'</a>';
     }).join('');
   }
 
-  /* ---------- load ---------- */
+  /* ---------- load categories + product listing ---------- */
   var params=new URLSearchParams(window.location.search);
   currentSlug=params.get('cat')||'';
+  var allItems=[];
+  function renderList(){
+    var grid=document.getElementById('collGrid');
+    var count=document.getElementById('collCount');
+    if(!grid)return;
+    var items=allItems.slice();
+    var search=document.getElementById('collSearch');
+    var q=((search&&search.value)||'').trim().toLowerCase();
+    if(q)items=items.filter(function(p){return (p.name||'').toLowerCase().indexOf(q)>=0;});
+    var sort=document.getElementById('collSort');
+    var mode=sort?sort.value:'featured';
+    if(mode==='price-asc')items.sort(function(a,b){return priceOf(a)-priceOf(b);});
+    else if(mode==='price-desc')items.sort(function(a,b){return priceOf(b)-priceOf(a);});
+    else if(mode==='name')items.sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+    if(count)count.textContent=items.length+(items.length===1?' product':' products');
+    grid.innerHTML=items.length?items.map(cardHtml).join(''):'<div class="fp-empty">'+(q?'No products match your search.':'No products here yet — check back soon.')+'</div>';
+    bindAddButtons();
+  }
+  function priceOf(p){var v=firstVariant(p);return v?v.basePriceCents/100:Infinity;}
+  function bindAddButtons(){
+    var add=typeof addToCart==='function'?addToCart:function(entry){
+      var c=[];try{c=JSON.parse(localStorage.getItem('aka-cart')||'[]');}catch(_){}
+      var ex=null;
+      for(var i=0;i<c.length;i++){if(c[i].variantId===entry.variantId){ex=c[i];break;}}
+      if(ex)ex.qty+=entry.qty||1;else c.push(entry);
+      localStorage.setItem('aka-cart',JSON.stringify(c));
+      window.dispatchEvent(new Event('aamako-cart-restored'));
+    };
+    document.querySelectorAll('#collGrid .fp-add').forEach(function(b){
+      if(b.dataset.bound)return;b.dataset.bound='1';
+      b.addEventListener('click',function(e){
+        e.preventDefault();e.stopPropagation();
+        if(window.AamakoRequireSignIn&&!window.AamakoRequireSignIn())return;
+        add({variantId:b.dataset.id,name:b.dataset.name,meta:b.dataset.meta,unitPrice:parseFloat(b.dataset.price),qty:1});
+        b.classList.add('added');var t=b.textContent;b.textContent='Added ✓';
+        setTimeout(function(){b.classList.remove('added');b.textContent=t;},900);
+      });
+    });
+    document.querySelectorAll('#collGrid .fp-variant-select').forEach(function(sel){
+      if(sel.dataset.bound)return;sel.dataset.bound='1';
+      sel.addEventListener('change',function(){
+        var opt=sel.options[sel.selectedIndex];
+        var card=sel.closest('.fpcard');
+        if(!card)return;
+        var btn=card.querySelector('.fp-add');
+        if(btn&&opt.value){btn.dataset.id=opt.value;btn.dataset.price=opt.getAttribute('data-price')||'';btn.dataset.meta=opt.textContent;}
+      });
+    });
+  }
+  var sortSel=document.getElementById('collSort');
+  if(sortSel)sortSel.addEventListener('change',renderList);
+  var searchInput=document.getElementById('collSearch');
+  if(searchInput)searchInput.addEventListener('input',renderList);
   if(window.AamakoAPI){
     window.AamakoAPI.getCategories().then(function(cats){
       paintChrome(cats||[]);
-      if(currentSlug){
-        return window.AamakoAPI.listProducts(1,currentSlug).then(function(r){allProducts=(r&&r.items)||[];});
-      }
-      return Promise.all((cats||[]).map(function(c){
-        return window.AamakoAPI.listProducts(1,c.slug).catch(function(){return {items:[]};});
-      })).then(function(perCat){
-        var seen={},merged=[];
-        (perCat||[]).forEach(function(r){((r&&r.items)||[]).forEach(function(p){if(!seen[p.id]){seen[p.id]=1;merged.push(p);}});});
-        allProducts=merged;
-      });
-    }).then(render).catch(function(){
+    }).catch(function(){
       paintChrome([]);
-      render();
     });
+    window.AamakoAPI.listProducts(1,currentSlug||null).then(function(res){
+      allItems=(res&&res.items)||[];
+      renderList();
+    }).catch(function(){
+      allItems=[];
+      renderList();
+    });
+  }else{
+    var grid=document.getElementById('collGrid');
+    if(grid)grid.innerHTML='<div class="fp-empty">No products here yet — check back soon.</div>';
   }
 })();
 </script>

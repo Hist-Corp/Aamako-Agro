@@ -48,6 +48,22 @@
       <a href="index.html">Home</a><span class="sep">/</span><a href="shop.html">Shop</a><span class="sep">/</span><span class="current" id="pdCrumbName">Product</span>
     </nav>
 
+    <div class="omcoll-backrow">
+      <a href="shop.html" class="omback-btn" id="backBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Back</a>
+    </div>
+    <script>
+    (function(){
+      var btn=document.getElementById('backBtn');
+      if(!btn)return;
+      btn.addEventListener('click',function(e){
+        e.preventDefault();
+        var host=(document.referrer||'').replace(/^https?:\/\//,'').split('/')[0];
+        if(host&&host===location.host){history.back();return;}
+        window.location.href=btn.getAttribute('href');
+      });
+    })();
+    </script>
+
     <div class="ompdp-grid">
       <!-- gallery -->
       <div>
@@ -76,16 +92,6 @@
           <span class="count">(8 reviews)</span>
         </div>
         <div class="ompdp-price" id="pdPrice">—</div>
-        <div class="ompdp-member" id="pdMember">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 21c0-9 5-13 14-14 0 9-5 14-14 14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 21c3-5 6-8 11-10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <span>WHOLESALE PARTNER <strong id="pdMemberPrice">—</strong> · save <span id="pdMemberSave">—</span> · <a href="wholesale.html">Join now</a></span>
-        </div>
-
-        <div class="ompdp-pincode">
-          <input id="pdPinInput" inputmode="numeric" maxlength="6" placeholder="Enter Pincode to Order" aria-label="Enter pincode">
-          <button type="button" id="pdPinBtn">Check</button>
-        </div>
-        <div class="ompdp-pincode-msg" id="pdPinMsg"></div>
 
         <p class="ompdp-desc" id="pdShort">Loading product details…</p>
         <button type="button" class="readmore" id="pdReadMore" hidden>Read more</button>
@@ -240,6 +246,13 @@
   var MEMBER_RATE=0.10;
   function fmt(n){n=Math.round(n);return 'Rs '+n.toLocaleString('en-IN');}
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  /* ---------- wholesale visibility: show partner pricing only to wholesale customers ---------- */
+  function isWholesaleUser(){
+    try{
+      var u=JSON.parse(localStorage.getItem('aamako_user')||'null');
+      return u&&u.role==='WHOLESALE_CUSTOMER';
+    }catch(e){return false;}
+  }
   var CHECK='<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
 
   /* ---------- per-category content templates ---------- */
@@ -481,16 +494,6 @@
     window.location.href='cart.html';
   });
 
-  /* ---------- pincode (placeholder check) ---------- */
-  var pinBtn=document.getElementById('pdPinBtn');
-  if(pinBtn)pinBtn.addEventListener('click',function(){
-    var v=(document.getElementById('pdPinInput').value||'').trim();
-    var msg=document.getElementById('pdPinMsg');
-    if(!/^\d{5,6}$/.test(v)){msg.textContent='Enter a valid 5–6 digit pincode.';msg.style.color='#b3261e';return;}
-    msg.textContent='Delivery available to '+v+' — charges confirmed at checkout. [PLACEHOLDER]';
-    msg.style.color='var(--sage)';
-  });
-
   /* ---------- related products ---------- */
   var LEAF='<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 21c0-9 5-13 14-14 0 9-5 14-14 14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 21c3-5 6-8 11-10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   function relatedCardHtml(p){
@@ -509,7 +512,7 @@
       +'<span class="fp-cat">'+esc(p.category&&p.category.name||'')+'</span>'
       +'<a class="fp-name" href="product.html?slug='+slug+'">'+esc(p.name)+'</a>'
       +'<div class="fp-price">'+fmt(price)+'</div>'
-      +'<div class="fp-coop">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></div>'
+      +(isWholesaleUser()?'<div class="fp-coop">'+LEAF+'<span>'+fmt(member)+' for Wholesale Partners</span></div>':'')
       +'<div class="fp-action"><div class="fp-variant-row">'
       +'<button type="button" class="fp-btn fp-add" data-id="'+esc(v.id)+'" data-name="'+esc(p.name)+'" data-meta="'+esc(v.name)+'" data-price="'+price+'">Add</button>'
       +'</div></div>'
@@ -576,8 +579,6 @@
     if(currentVariant){
       var price=currentVariant.basePriceCents/100;
       document.getElementById('pdPrice').textContent=fmt(price);
-      document.getElementById('pdMemberPrice').textContent=fmt(price*(1-MEMBER_RATE));
-      document.getElementById('pdMemberSave').textContent=fmt(price*MEMBER_RATE);
       document.getElementById('pdPack').textContent=currentVariant.name||'—';
       document.getElementById('pdSku').textContent=currentVariant.sku||'—';
       var inv=currentVariant.inventory;
