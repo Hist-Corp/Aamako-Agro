@@ -24,16 +24,16 @@
 .omhero-title{font-family:var(--display);font-size:clamp(30px,4vw,46px);font-weight:600;color:var(--ink);line-height:1.12;margin:0 0 14px;max-width:16ch;}
 .omhero-sub{font-size:15.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 24px;max-width:52ch;}
 .omhero-btn{display:inline-flex;align-items:center;gap:8px;background:var(--sage-deep);color:#FFFDF7;font-weight:600;font-size:14px;padding:13px 24px;border-radius:999px;text-decoration:none;transition:background var(--motion-micro) ease,transform var(--motion-micro) ease;}
-.omhero-btn:hover{background:#4A5530;transform:translateY(-1px);}
+.omhero-btn:hover{background:#012a15;transform:translateY(-1px);}
 .omhero-dots{position:absolute;bottom:16px;left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:5;}
 .omhero-dot{width:9px;height:9px;border-radius:50%;border:none;background:rgba(33,31,23,.25);cursor:pointer;padding:0;transition:background var(--motion-micro) ease,transform var(--motion-micro) ease;}
 .omhero-dot.is-active{background:var(--sage-deep);transform:scale(1.15);}
 
-/* ---------- search bar (shop) — box with small margin, green All-categories pill ---------- */
+/* ---------- search bar (shop) — box with small margin, green Select Category pill ---------- */
 .omsearch-bar{position:sticky;top:var(--search-top,0);z-index:40;background:var(--bg);padding:10px 0;transition:transform .35s var(--ease-out);}
 .omsearch-bar.is-hidden{transform:translateY(-100%);}
 #omSearchBar .wrap{max-width:1200px;}
-.omsearch-wrap{display:flex;justify-content:center;margin:0;}
+.omsearch-wrap{display:flex;justify-content:center;margin:0 auto;}
 .omsearch-form{display:flex;align-items:center;border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:6px 6px 6px 10px;width:640px;max-width:100%;box-shadow:var(--shadow-sm);margin:0 auto;}
 .omsearch-form select{border:none;background:var(--sage);color:#FFFDF7;font-family:var(--body);font-size:15px;font-weight:700;letter-spacing:.01em;cursor:pointer;flex-shrink:0;appearance:none;padding:10px 30px 10px 16px;border-radius:9px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23FFFDF7' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px 6px;outline:none;transition:background .2s ease;}
 .omsearch-form select:hover{background:var(--sage-deep);}
@@ -47,13 +47,13 @@
 .omsearch-btn:hover{color:var(--sage);}
 
 /* ---------- shop by category tiles ---------- */
-.omsbc-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:20px 16px;margin-top:26px;}
-.omsbc-tile{display:flex;flex-direction:column;align-items:center;gap:10px;text-decoration:none;}
-.omsbc-imgwrap{width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:#EFEBDD;display:flex;align-items:center;justify-content:center;transition:transform .2s ease,box-shadow .2s ease;}
-.omsbc-tile:hover .omsbc-imgwrap{transform:translateY(-3px);box-shadow:0 8px 20px rgba(56,64,31,.12);}
+.omsbc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px 16px;margin:26px auto 0;max-width:560px;}
+.omsbc-tile{display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;}
+.omsbc-imgwrap{width:100%;max-width:160px;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:#EFEBDD;display:flex;align-items:center;justify-content:center;transition:transform .2s ease,box-shadow .2s ease;}
+.omsbc-tile:hover .omsbc-imgwrap{transform:translateY(-3px);box-shadow:0 8px 20px rgba(2,51,37,.12);}
 .omsbc-imgwrap img{width:100%;height:100%;object-fit:cover;display:block;}
 .omsbc-imgwrap.omsbc-fallback{background:linear-gradient(145deg,var(--sage) 0%,var(--sage-deep) 100%);font-family:var(--mono);color:#FFFDF7;font-size:12px;letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:10px;}
-.omsbc-label{font-weight:600;font-size:13.5px;color:var(--ink);text-align:center;line-height:1.25;}
+.omsbc-label{font-weight:600;font-size:12px;color:var(--ink);text-align:center;line-height:1.25;}
 
 /* ---------- shop by concern (dark panel) ---------- */
 .omconcern-panel{background:var(--sage-deep);border-radius:26px;padding:36px 40px 40px;color:#FFFDF7;}
@@ -95,7 +95,7 @@
 .fp-action{margin-top:auto;padding-top:4px;}
 .fp-btn{width:100%;box-sizing:border-box;height:42px;border-radius:10px;font-family:var(--body);font-weight:700;font-size:13.5px;cursor:pointer;border:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;transition:background .25s ease;}
 .fp-add{background:var(--sage-deep);color:#FFFDF7;}
-.fp-add:hover{background:#4A5530;}
+.fp-add:hover{background:#012a15;}
 .fp-add.added{background:var(--sage);}
 .fp-oos{background:#C9C4B2;color:#FFFDF7;cursor:not-allowed;}
 .fp-variant-row{display:flex;gap:8px;}
@@ -104,7 +104,7 @@
 
 /* ---------- comparison (regular vs wholesale) ---------- */
 .omcompare{background:var(--surface);border-radius:28px;padding:40px;position:relative;overflow:hidden;}
-.omcompare-watermark{position:absolute;right:-30px;top:-30px;width:220px;height:220px;color:rgba(92,107,62,.12);}
+.omcompare-watermark{position:absolute;right:-30px;top:-30px;width:220px;height:220px;color:rgba(3,57,34,.12);}
 .omcompare-watermark svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.2;}
 .cmp-inner{position:relative;max-width:980px;margin:0 auto;}
 .cmp-eyebrow{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);font-weight:500;}
@@ -126,7 +126,7 @@
 .cmp-mark--no{background:#EFE3DC;color:var(--rust);}
 .cmp-mark--yes{background:var(--sage);color:#FFFDF7;}
 .cmp-btn{margin-top:20px;display:inline-flex;align-items:center;gap:8px;background:var(--sage-deep);color:#FFFDF7;font-weight:700;font-size:14px;padding:12px 22px;border-radius:12px;text-decoration:none;transition:background var(--motion-micro) ease;}
-.cmp-btn:hover{background:#4A5530;}
+.cmp-btn:hover{background:#012a15;}
 .cmp-btn--ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
 .cmp-btn--ghost:hover{background:var(--surface);}
 .cmp-btnicon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
@@ -234,14 +234,14 @@
 .ompdp-rating .count{font-size:13px;color:var(--ink-soft);}
 .ompdp-price{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--ink);}
 .ompdp-price s{font-size:15px;font-weight:400;color:#A39B82;margin-left:10px;}
-.ompdp-member{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--sage);background:rgba(92,107,62,.09);border-radius:8px;padding:7px 12px;margin:10px 0 4px;}
+.ompdp-member{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--sage);background:rgba(3,57,34,.09);border-radius:8px;padding:7px 12px;margin:10px 0 4px;}
 .ompdp-member svg{width:14px;height:14px;flex-shrink:0;}
 .ompdp-member a{color:var(--sage-deep);text-decoration:underline;}
 .ompdp-pincode{display:flex;gap:8px;margin:16px 0 4px;max-width:380px;}
 .ompdp-pincode input{flex:1;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--paper);padding:0 14px;font-family:var(--body);font-size:14px;color:var(--ink);outline:none;min-width:0;}
 .ompdp-pincode input:focus{border-color:var(--sage);}
 .ompdp-pincode button{height:44px;padding:0 18px;border:none;border-radius:10px;background:var(--sage-deep);color:#FFFDF7;font-weight:700;font-size:13.5px;cursor:pointer;}
-.ompdp-pincode button:hover{background:#4A5530;}
+.ompdp-pincode button:hover{background:#012a15;}
 .ompdp-pincode-msg{font-size:12px;color:var(--ink-soft);min-height:18px;margin-bottom:4px;}
 .ompdp-desc{font-size:14.5px;line-height:1.7;color:var(--ink-soft);margin:14px 0 6px;}
 .ompdp-desc .more{display:none;}
@@ -299,7 +299,7 @@
 
 /* ---------- responsive ---------- */
 @media (max-width:1200px){
-  .omsbc-grid{grid-template-columns:repeat(6,1fr);}
+  .omsbc-grid{max-width:480px;}
   .omshow-scroller{grid-auto-columns:calc((100% - 36px)/3);}
 }
 @media (max-width:1024px){
@@ -308,7 +308,7 @@
   .ompdp-grid{grid-template-columns:1fr;gap:28px;}
 }
 @media (max-width:900px){
-  .omsbc-grid{grid-template-columns:repeat(4,1fr);}
+  .omsbc-grid{max-width:400px;}
   .omconcern-grid{grid-template-columns:repeat(4,1fr);}
   .cmp-grid{grid-template-columns:1fr;}
   .cmp-trust{grid-template-columns:1fr 1fr;}
@@ -326,7 +326,8 @@
 }
 @media (max-width:640px){
   .omsec{padding:34px 0;}
-  .omsbc-grid{grid-template-columns:repeat(3,1fr);gap:16px 12px;}
+  .omsbc-imgwrap{max-width:130px;}
+  .omsbc-grid{grid-template-columns:1fr;gap:16px 12px;max-width:none;margin-top:20px;}
   .omsec-title{font-size:23px;}
   .omconcern-panel{padding:26px 20px 28px;}
   .omconcern-grid{gap:8px;}
@@ -365,11 +366,11 @@
 .omshow2-pricerow{display:flex;align-items:baseline;gap:8px;}
 .omshow2-price{font-weight:700;font-size:18px;color:var(--sage-deep);font-family:var(--body);}
 .omshow2-price s{font-size:13.5px;color:#A39B82;font-weight:400;margin-left:6px;}
-.omshow2-member{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;background:rgba(92,107,62,.12);color:var(--sage);font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;}
+.omshow2-member{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;background:rgba(3,57,34,.12);color:var(--sage);font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;}
 .omshow2-member svg{width:12px;height:12px;flex-shrink:0;}
 .omshow2-actions{margin-top:auto;display:flex;gap:8px;}
 .omshow2-btn{height:44px;border-radius:12px;border:none;background:var(--sage-deep);color:#FFFDF7;font-family:var(--body);font-weight:700;font-size:14px;cursor:pointer;transition:background .2s ease;width:100%;display:inline-flex;align-items:center;justify-content:center;}
-.omshow2-btn:hover{background:#4A5530;}
+.omshow2-btn:hover{background:#012a15;}
 .omshow2-btn.added{background:var(--sage);}
 .omshow2-btn:disabled{background:#C9C4B2;cursor:not-allowed;}
 .omshow2-select{flex:0 0 92px;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-family:var(--body);font-size:13.5px;color:var(--ink);padding:0 8px;cursor:pointer;min-width:0;}
