@@ -97,24 +97,24 @@
         <button type="button" class="readmore" id="pdReadMore" hidden>Read more</button>
 
         <div class="omhighlights">
-          <h4>Key Highlights</h4>
+          <h4 data-cms="product-page.highlights">Key Highlights</h4>
           <ul id="pdHighlights"></ul>
         </div>
 
-        <div class="spec-row"><span>Pack size</span><span id="pdPack">—</span></div>
-        <div class="spec-row"><span>Availability</span><span id="pdAvailability">Checking…</span></div>
-        <div class="spec-row"><span>SKU</span><span id="pdSku">—</span></div>
+        <div class="spec-row"><span data-cms="product-page.pack">Pack size</span><span id="pdPack">—</span></div>
+        <div class="spec-row"><span data-cms="product-page.availability">Availability</span><span id="pdAvailability">Checking…</span></div>
+        <div class="spec-row"><span data-cms="product-page.sku">SKU</span><span id="pdSku">—</span></div>
 
         <div class="omqty-row">
           <div class="qty-stepper"><button type="button" id="qtyDec" aria-label="Decrease quantity">−</button><span id="qtyValue">1</span><button type="button" id="qtyInc" aria-label="Increase quantity">+</button></div>
         </div>
         <div class="ompdp-cta">
-          <button class="btn btn-primary" id="addToCartBtn">Add to cart</button>
-          <button type="button" class="btn btn-ghost" id="buyNowBtn">Buy now</button>
+          <button class="btn btn-primary" id="addToCartBtn" data-cms="product-page.cta1">Add to cart</button>
+          <button type="button" class="btn btn-ghost" id="buyNowBtn" data-cms="product-page.cta2">Buy now</button>
           <button type="button" class="btn btn-ghost" id="wishBtn" aria-label="Add to wishlist">♡</button>
         </div>
 
-        <div class="tear" style="padding:var(--space-6) 0 0;"><span>Batch traceability</span></div>
+        <div class="tear" style="padding:var(--space-6) 0 0;"><span data-cms="product-page.tear">Batch traceability</span></div>
         <div class="batch-tag" id="pdBatch">
           <div><span>Batch</span><span>—</span></div>
           <div><span>Source</span><span>[Region], Nepal</span></div>
@@ -130,12 +130,12 @@
 <section style="padding-top:8px;">
   <div class="wrap">
     <div class="omtabs" id="pdTabs">
-      <button type="button" class="omtab active" data-tab="desc">Description</button>
-      <button type="button" class="omtab" data-tab="howto">How to use</button>
-      <button type="button" class="omtab" data-tab="nutrition">Nutrition</button>
-      <button type="button" class="omtab" data-tab="certs">Certifications</button>
-      <button type="button" class="omtab" data-tab="why">Why choose</button>
-      <button type="button" class="omtab" data-tab="sourcing">Sourcing</button>
+      <button type="button" class="omtab active" data-tab="desc" data-cms="product-page.tab.desc">Description</button>
+      <button type="button" class="omtab" data-tab="howto" data-cms="product-page.tab.howto">How to use</button>
+      <button type="button" class="omtab" data-tab="nutrition" data-cms="product-page.tab.nutrition">Nutrition</button>
+      <button type="button" class="omtab" data-tab="certs" data-cms="product-page.tab.certs">Certifications</button>
+      <button type="button" class="omtab" data-tab="why" data-cms="product-page.tab.why">Why choose</button>
+      <button type="button" class="omtab" data-tab="sourcing" data-cms="product-page.tab.sourcing">Sourcing</button>
     </div>
     <div class="omtab-panel active" data-panel="desc" id="tab-desc"></div>
     <div class="omtab-panel" data-panel="howto" id="tab-howto"></div>
@@ -144,7 +144,7 @@
     <div class="omtab-panel" data-panel="why" id="tab-why"></div>
     <div class="omtab-panel" data-panel="sourcing" id="tab-sourcing"></div>
 
-    <h2 class="omsec-title" style="margin-top:56px;">Frequently asked</h2>
+    <h2 class="omsec-title" style="margin-top:56px;" data-cms="product-page.faq.title">Frequently asked</h2>
     <div class="omfaq" id="pdFaq"></div>
   </div>
 </section>
@@ -152,7 +152,7 @@
 <!-- REVIEWS -->
 <section class="omsec">
   <div class="wrap">
-    <div class="section-head"><div><h2 class="section-title">Reviews</h2></div></div>
+    <div class="section-head"><div><h2 class="section-title" data-cms="product-page.reviews.title">Reviews</h2></div></div>
     <div class="omrev-summary">
       <div class="omrev-score">4.8</div>
       <div class="omrev-meta">
@@ -207,7 +207,7 @@
 <!-- RELATED -->
 <section class="omsec" style="padding-top:8px;">
   <div class="wrap">
-    <div class="section-head"><div><h2 class="section-title">You might also like</h2></div></div>
+    <div class="section-head"><div><h2 class="section-title" data-cms="product-page.related.title">You might also like</h2></div></div>
     <div class="omfp-grid" id="relatedGrid"></div>
   </div>
 </section>
@@ -240,6 +240,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/account-menu.js"></script>
+<script src="js/content.js" defer></script>
 <script>
 (function(){
   'use strict';
