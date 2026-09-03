@@ -143,7 +143,7 @@ if (contentOk && managerOk && categoryId) {
   r = await req('PATCH', `/admin/products/${prodId}`, { body: { isPublished: true }, token: managerToken });
   check('manager publishes product (PATCH isPublished=true)', r.status === 200 && r.data.isPublished === true, `status=${r.status} ${JSON.stringify(r.data).slice(0,150)}`);
 
-  r = await req('GET', '/products?search=' + encodeURIComponent(prodBody.slug));
+  r = await req('GET', '/products?search=' + encodeURIComponent(prodBody.name));
   check('published product NOW on storefront', (r.data.items ?? []).some(p => p.id === prodId), 'published product missing from public list');
 
   r = await req('GET', '/products/' + prodBody.slug);
