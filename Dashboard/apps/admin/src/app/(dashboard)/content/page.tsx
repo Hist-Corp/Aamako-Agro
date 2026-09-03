@@ -75,9 +75,9 @@ interface FormState {
 const EMPTY_FORM: FormState = { title: '', shortDescription: '', longDescription: '', body: '' };
 
 /** Screen: Content Management â€” backed by the live content API.
- *  CONTENT_MANAGER has full rights here: edit every existing page, create
- *  new pages and publish directly (writes land live with an APPROVED
- *  ContentRevision snapshot kept as an audit trail). */
+ *  Manager / Admin / Super Admin publish directly; CONTENT_MANAGER edits and
+ *  creates pages, but every change lands as a PENDING ContentRevision and only
+ *  goes live after one of the reviewers approves it. */
 export default function ContentPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
@@ -123,16 +123,19 @@ export default function ContentPage() {
   }
   const [pending, setPending] = useState<PendingRevision[]>([]);
   const canApprove = !!user && canAct(user.role, 'content:approve');
+  /** Content Managers can watch the queue for their own submissions, but only
+   *  Managers/Admins/Super Admins (canApprove) may act on it. */
+  const canViewQueue = canApprove || user?.role === 'CONTENT_MANAGER';
 
   const loadPending = useCallback(async () => {
-    if (!canApprove) return;
+    if (!canViewQueue) return;
     try {
       const data = await apiClient.get<PendingRevision[]>('/content/revisions');
       setPending(data);
     } catch {
       /* queue is optional UI â€” ignore load errors */
     }
-  }, [canApprove]);
+  }, [canViewQueue]);
 
   useEffect(() => {
     void loadPending();
@@ -387,7 +390,7 @@ export default function ContentPage() {
     <div className="space-y-6">
       <PageHeader
         title="Content Management"
-        description="Edit every page, write rich long-form descriptions and create new pages â€” your changes publish immediately."
+        description="Edit every page, write rich long-form descriptions and create new pages. Manager, Admin and Super Admin changes publish immediately — Content Manager changes are sent for approval first."
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Content' }]}
         actions={
           canCreate ? (
@@ -421,7 +424,7 @@ export default function ContentPage() {
       </div>
 
       {/* Pending approvals â€” Manager/Admin/Super Admin review Content Manager proposals */}
-      {canApprove && (
+      {canViewQueue && (
         <div className="rounded-lg border border-surface-200 bg-white p-5">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-amber-500" />
@@ -443,14 +446,16 @@ export default function ContentPage() {
                       Proposed {relativeTime(rev.createdAt)} â€” appears on the storefront only after approval.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={() => review(rev.id, true)}>
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Approve &amp; Publish
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => review(rev.id, false)}>
-                      <XCircle className="h-3.5 w-3.5" /> Reject
-                    </Button>
-                  </div>
+                  {canApprove && (
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" onClick={() => review(rev.id, true)}>
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Approve &amp; Publish
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={() => review(rev.id, false)}>
+                        <XCircle className="h-3.5 w-3.5" /> Reject
+                      </Button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -560,8 +565,16 @@ export default function ContentPage() {
           maxWidth="lg"
           onClose={() => setNewDialog(false)}
           title="New page"
-          description="The page is created and published to the website immediately."
-          primaryAction={{ label: 'Create & Publish', onClick: handleCreate, isLoading: isSaving }}
+          description={
+            canPublish
+              ? 'The page is created and published to the website immediately.'
+              : 'The page is created and sent to a Manager for approval before it appears on the website.'
+          }
+          primaryAction={{
+            label: canPublish ? 'Create & Publish' : 'Create & Submit for Approval',
+            onClick: handleCreate,
+            isLoading: isSaving,
+          }}
         >
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

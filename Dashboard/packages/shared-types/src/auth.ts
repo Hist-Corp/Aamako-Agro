@@ -204,9 +204,10 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'quotes:view', 'quotes:respond',
     // Customers
     'customers:view', 'customers:edit',
+    // Content — Manager reviews & approves Content Manager changes
+    'content:view', 'content:edit', 'content:publish', 'content:approve',
     // Customer Support — Manager oversees the support queue
     'support:view', 'support:manage',
-    // Website Pages — Manager may edit & publish storefront page templates
     'pages:view', 'pages:edit', 'pages:publish',
     'product-templates:view', 'product-templates:edit', 'product-templates:create', 'product-templates:publish',
     // Reports & Analytics
@@ -256,9 +257,10 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'dashboard:view',
     // Products (content only) — can add products and publish them to the storefront
     'products:view', 'products:content-fields', 'products:create', 'products:publish',
-    // Content — Content Manager may fully edit all existing pages and create
-    // new pages, publishing directly without waiting for approval.
-    'content:view', 'content:create', 'content:edit', 'content:publish', 'content:approve',
+    // Content — Content Manager edits & creates pages; every change is
+    // submitted as a PENDING revision and goes live only after a Manager
+    // approves it (no direct publish / self-approval).
+    'content:view', 'content:create', 'content:edit',
     'pages:view', 'pages:edit', 'pages:publish',
     'product-templates:view', 'product-templates:edit', 'product-templates:create', 'product-templates:publish',
     'journal:view', 'journal:edit', 'journal:publish',

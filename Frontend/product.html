@@ -542,6 +542,7 @@
     var kind=KIND_OF[p.category&&p.category.slug]||'fd';
     buildTabs(kind,p.name||'this product');
     var catName=(p.category&&p.category.name)||'Shop';
+    document.getElementById('pdTitle').textContent=p.name||'Product';
     document.getElementById('pdCrumbName').textContent=p.name||'Product';
     document.getElementById('pdCrumbs').innerHTML=
       '<a href="index.html">Home</a><span class="sep">/</span><a href="shop.html">Shop</a><span class="sep">/</span>'
