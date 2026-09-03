@@ -64,6 +64,17 @@ const statSection = (
   desc = 'Statistic number (title) and caption (short) shown in this block.',
 ): PageTemplateSection => ({ key, label, description: desc, group });
 
+/** Shared footer — identical markup on every page, edited once for the whole site. */
+const siteFooter = (): PageTemplateSection[] => [
+  { key: 'site.footer.tagline', label: 'Tagline', description: 'The short brand line under the logo in the footer.', group: 'Footer (global)' },
+  { key: 'site.footer.col1.title', label: 'Column 1 heading', description: '“Shop” column heading.', group: 'Footer (global)' },
+  { key: 'site.footer.col2.title', label: 'Column 2 heading', description: '“Company” column heading.', group: 'Footer (global)' },
+  { key: 'site.footer.col3.title', label: 'Column 3 heading', description: '“Learn” column heading.', group: 'Footer (global)' },
+  { key: 'site.footer.col4.title', label: 'Column 4 heading', description: '“Support” column heading.', group: 'Footer (global)' },
+  { key: 'site.footer.copy', label: 'Copyright line', description: 'The copyright line at the very bottom.', group: 'Footer (global)' },
+  { key: 'site.footer.reg', label: 'Registration line', description: 'The DFTQC registration line next to the copyright.', group: 'Footer (global)' },
+];
+
 export const SITE_PAGES: SitePage[] = [
   {
     slug: 'home',
@@ -128,6 +139,7 @@ export const SITE_PAGES: SitePage[] = [
       { key: 'home.reviews.r3', label: 'Review 3', description: 'Quote (title) and attribution line (short).', group: 'Reviews' },
       { key: 'home.newsletter', label: 'Heading & sub-line', description: 'Newsletter band heading and description.', group: 'Newsletter' },
       { key: 'home.newsletter.button', label: 'Button', description: '“Subscribe” button label.', group: 'Newsletter' },
+      ...siteFooter(),
     ],
   },
   {
@@ -158,6 +170,7 @@ export const SITE_PAGES: SitePage[] = [
           group: `Hero slide ${n}`,
         },
       ]),
+      ...siteFooter(),
     ],
   },
   {
@@ -185,6 +198,7 @@ export const SITE_PAGES: SitePage[] = [
       { key: 'product-page.faq.title', label: 'FAQ heading', description: 'The “Frequently asked” heading.', group: 'Sections' },
       { key: 'product-page.reviews.title', label: 'Reviews heading', description: 'The “Reviews” section heading.', group: 'Sections' },
       { key: 'product-page.related.title', label: 'Related heading', description: 'The “You might also like” heading above related products.', group: 'Sections' },
+      ...siteFooter(),
     ],
   },
   {
@@ -219,6 +233,7 @@ export const SITE_PAGES: SitePage[] = [
       { key: 'page.process.cta', label: 'Headline & sub-line', description: '“Taste the difference yourself.” heading and paragraph.', group: 'Call to action' },
       { key: 'page.process.cta.btn1', label: 'Primary button', description: '“Shop the range” label.', group: 'Call to action' },
       { key: 'page.process.cta.btn2', label: 'Secondary button', description: '“Read more guides” label.', group: 'Call to action' },
+      ...siteFooter(),
     ],
   },
   {
@@ -267,6 +282,7 @@ export const SITE_PAGES: SitePage[] = [
       { key: 'page.story.newsletter', label: 'Heading & sub-line', description: '“Want the full story?” band heading and text.', group: 'Contact band' },
       { key: 'page.story.newsletter.btn1', label: 'Primary button', description: '“Wholesale inquiry” label.', group: 'Contact band' },
       { key: 'page.story.newsletter.btn2', label: 'Secondary button', description: '“Contact us” label.', group: 'Contact band' },
+      ...siteFooter(),
     ],
   },
   {
@@ -283,12 +299,14 @@ export const SITE_PAGES: SitePage[] = [
       { key: 'page.wholesale.hero.cta1', label: 'Primary button', description: '“Get wholesale pricing” label.', group: 'Hero' },
       { key: 'page.wholesale.hero.cta2', label: 'Secondary button', description: '“View full catalogue” label.', group: 'Hero' },
       { key: 'page.wholesale.pricing', label: 'Heading & sub-line', description: '“Wholesale pricing” heading and description.', group: 'Pricing tiers' },
+      { key: 'page.wholesale.pricing.note1', label: 'Pricing note (top)', description: 'The small placeholder note under the pricing heading.', group: 'Pricing tiers' },
       ...([1, 2, 3] as const).flatMap((n): PageTemplateSection[] => [
         { key: `page.wholesale.tier${n}`, label: `Tier ${n}`, description: 'Tier name (title) and description (short).', group: 'Pricing tiers' },
         { key: `page.wholesale.tier${n}.moq`, label: `Tier ${n} — MOQ`, description: 'Minimum-order quantity line.', group: 'Pricing tiers' },
         { key: `page.wholesale.tier${n}.features`, label: `Tier ${n} — features`, description: 'Feature list (rich text, one line per feature).', group: 'Pricing tiers' },
         { key: `page.wholesale.tier${n}.btn`, label: `Tier ${n} — button`, description: 'Call-to-action button label.', group: 'Pricing tiers' },
       ]),
+      { key: 'page.wholesale.pricing.note2', label: 'Pricing note (tiers)', description: 'The ex-factory pricing note under the tier cards.', group: 'Pricing tiers' },
       { key: 'page.wholesale.tear', label: 'Divider text', description: 'The dotted tear-strip caption between sections.', group: 'Sample kits' },
       { key: 'page.wholesale.samples.eyebrow', label: 'Eyebrow', description: '“Sample kits” tag line.', group: 'Sample kits' },
       { key: 'page.wholesale.samples', label: 'Headline & body', description: '“Try before you commit.” heading and paragraph.', group: 'Sample kits' },
@@ -309,6 +327,7 @@ export const SITE_PAGES: SitePage[] = [
       { key: 'page.wholesale.access.eyebrow', label: 'Eyebrow', description: '“Get started” tag line.', group: 'Request access' },
       { key: 'page.wholesale.access', label: 'Headline & sub-line', description: '“Request wholesale access” heading and description.', group: 'Request access' },
       { key: 'page.wholesale.access.btn', label: 'Submit button', description: '“Submit inquiry” button label.', group: 'Request access' },
+      ...siteFooter(),
     ],
   },
   {
@@ -325,6 +344,7 @@ export const SITE_PAGES: SitePage[] = [
       statSection('page.journal.stat1', 'Stat 1', 'Hero stats'),
       statSection('page.journal.stat2', 'Stat 2', 'Hero stats'),
       statSection('page.journal.stat3', 'Stat 3', 'Hero stats'),
+      { key: 'page.journal.latest', label: 'Latest heading', description: 'The “Latest from the journal” section heading.', group: 'Articles' },
       ...([1, 2, 3] as const).map((n): PageTemplateSection => ({
         key: `page.journal.article${n}`,
         label: `Article ${n}`,
@@ -341,6 +361,7 @@ export const SITE_PAGES: SitePage[] = [
       { key: 'page.journal.contact.eyebrow', label: 'Eyebrow', description: '“Get in touch” tag line.', group: 'Contact' },
       { key: 'page.journal.contact', label: 'Headline & body', description: '“Questions? We’re listening.” heading and text.', group: 'Contact' },
       { key: 'page.journal.contact.btn', label: 'Submit button', description: '“Send message” button label.', group: 'Contact' },
+      ...siteFooter(),
     ],
   },
 ];

@@ -140,14 +140,38 @@ export default function PageEditor() {
   // (js/content.js) which postMessages the content key of any [data-cms]
   // element the user clicks in the live preview. Select that section here so
   // EVERY section of the page is reachable — including ones far down the page
-  // that are inconvenient to pick from the chip list.
+  // that are inconvenient to pick from the chip list. Keys that exist on the
+  // page but aren't part of the template yet still open as generic sections,
+  // so every tagged element in the preview is selectable and editable.
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       const d = e.data as { source?: string; type?: string; key?: string } | null;
-      if (!d || d.source !== 'aamako-cms-bridge' || d.type !== 'section-click') return;
+      if (!d || d.source !== 'aamako-cms-bridge') return;
+      if (d.type === 'untagged-click') {
+        addToast({
+          type: 'info',
+          title: 'Not an editable section',
+          description:
+            'That part of the page is static (navigation, buttons, images). Click a highlighted section instead — text content is outlined on hover.',
+        });
+        return;
+      }
+      if (d.type !== 'section-click') return;
       const key = String(d.key ?? '');
+      if (!key) return;
       const section = page?.sections.find((s) => s.key === key);
-      if (section) selectSection(section);
+      if (section) {
+        selectSection(section);
+        return;
+      }
+      // Generic fallback: the key exists in the live preview but has no
+      // template entry — still make it selectable and editable.
+      const friendly = key
+        .split('.')
+        .pop()!
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      selectSection({ key, label: friendly, description: `Custom content section (${key}).` });
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);

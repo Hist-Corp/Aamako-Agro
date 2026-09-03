@@ -144,7 +144,21 @@
     document.addEventListener('click', function (e) {
       var t = e.target;
       var el = t && t.closest ? t.closest('[data-cms]') : null;
-      if (!el) return;
+      if (!el) {
+        // Clicked somewhere without a data-cms ancestor. Keep the editor
+        // context: never let the preview navigate away while editing, but
+        // still tell the dashboard so it can hint the user. Non-link clicks
+        // (sliders, accordions) keep working normally.
+        var link = t && t.closest ? t.closest('a[href]') : null;
+        if (link) { e.preventDefault(); e.stopPropagation(); }
+        try {
+          window.parent.postMessage(
+            { source: 'aamako-cms-bridge', type: 'untagged-click' },
+            '*'
+          );
+        } catch (_) { /* parent messaging must never break the page */ }
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       var key = el.getAttribute('data-cms');
