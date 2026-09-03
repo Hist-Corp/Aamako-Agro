@@ -22,13 +22,20 @@ import { useToast } from '@/components/ui/toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
+  Check,
   ChevronLeft,
   ExternalLink,
+  Eye,
+  EyeOff,
+  FolderOpen,
   LayoutTemplate,
+  Pencil,
   RefreshCw,
   Save,
   FileText,
   Globe,
+  Trash2,
+  X,
 } from 'lucide-react';
 
 interface CmsItem {
@@ -39,6 +46,7 @@ interface CmsItem {
   longDescription: string | null;
   body: string;
   isPublished: boolean;
+  isVisible: boolean;
   updatedAt: string;
 }
 
@@ -50,6 +58,22 @@ interface PendingRevision {
   createdAt: string;
   contentItem: { key: string; title: string };
 }
+
+/** One switchable category page on the Product Category template. */
+interface CategoryOption {
+  /** DB id — present for live API data; absent in the offline fallback (rename disabled). */
+  id?: string;
+  name: string;
+  slug: string;
+  products: number;
+}
+
+/** Fallback if the categories API is unreachable — the three seeded storefront categories. */
+const FALLBACK_CATEGORIES: CategoryOption[] = [
+  { name: 'Freeze-Dried Fruits & Vegetables', slug: 'freeze-dried-fruits', products: 0 },
+  { name: 'Dehydrated Fruits & Vegetables', slug: 'dehydrated', products: 0 },
+  { name: 'Milled Powders', slug: 'powders', products: 0 },
+];
 
 interface FormState {
   title: string;
@@ -78,6 +102,9 @@ export default function PageEditor() {
   const { addToast } = useToast();
 
   const page = useMemo<SitePage | undefined>(() => (slug ? getSitePage(slug) : undefined), [slug]);
+  // The Product Category template previews the shared collection page — offer a
+  // switcher between the individual category pages.
+  const isCategoryTemplate = page?.slug === 'product-category';
 
   const [items, setItems] = useState<CmsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,6 +113,15 @@ export default function PageEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [pending, setPending] = useState<PendingRevision[]>([]);
   const [frameTick, setFrameTick] = useState(0);
+  // Product Category template: which category page (collection.html?cat=…) the
+  // live preview shows. Defaults to the first seeded category — there is no
+  // separate "all products" page, so the preview always targets a real category.
+  const [categorySlug, setCategorySlug] = useState('freeze-dried-fruits');
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  // Inline rename of a category page (display name only — slugs/links stay stable).
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
 
   // Content Managers always go through the moderation queue — their save
   // button submits for Manager approval rather than publishing directly.
@@ -129,6 +165,32 @@ export default function PageEditor() {
       }
     })();
   }, [user, allowed, router, page, addToast]);
+
+  // Product Category template: load the storefront categories (with product
+  // counts) so the preview can be switched between the category pages.
+  useEffect(() => {
+    if (!isCategoryTemplate) return;
+    let cancelled = false;
+    apiClient
+      .get<Array<{ id: string; name: string; slug: string; _count?: { products?: number } }>>('/categories')
+      .then((data) => {
+        if (cancelled) return;
+        setCategories(
+          (data ?? []).map((c) => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            products: c._count?.products ?? 0,
+          })),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setCategories(FALLBACK_CATEGORIES);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isCategoryTemplate]);
 
   const selectSection = (section: PageTemplateSection) => {
     setActiveKey(section.key);
@@ -265,7 +327,121 @@ export default function PageEditor() {
     }
   };
 
-  const previewUrl = page ? storefrontUrl(page) : '';
+  // Hide/show a section on the storefront without deleting it. The layout
+  // reflows (the page stays responsive) and the section can be restored anytime.
+  const handleToggleVisible = async () => {
+    if (!activeKey || !foundItem) return;
+    const nextVisible = !foundItem.isVisible;
+    setIsSaving(true);
+    try {
+      await apiClient.patch(`/content/${encodeURIComponent(activeKey)}`, {
+        isVisible: nextVisible,
+      });
+      addToast({
+        type: 'success',
+        title: nextVisible ? 'Section is visible again' : 'Section hidden from the page',
+        description: nextVisible
+          ? `${activeKey} is back on the storefront.`
+          : `${activeKey} no longer renders on the storefront — the layout reflows to fill the gap. Restore it anytime from here.`,
+      });
+      const data = await apiClient.get<CmsItem[]>('/content/manage');
+      setItems(data);
+      setFrameTick((t) => t + 1);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: nextVisible ? 'Could not show section' : 'Could not hide section',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Remove the section entirely — the storefront falls back to the page's
+  // built-in default copy and the item (with its revision history) is deleted.
+  /** Rename a category page. Only the display name changes — the slug (and
+   *  therefore every collection.html?cat=… link, footer link and product
+   *  assignment) stays stable, so nothing else needs updating. */
+  const handleRenameCategory = async (id: string) => {
+    const name = renameValue.trim();
+    if (name.length < 2) {
+      addToast({
+        type: 'error',
+        title: 'Name too short',
+        description: 'Category names need at least 2 characters.',
+      });
+      return;
+    }
+    setIsRenaming(true);
+    try {
+      await apiClient.patch(`/admin/categories/${id}`, { name });
+      addToast({
+        type: 'success',
+        title: 'Category renamed',
+        description: `Now shown as “${name}” on the storefront.`,
+      });
+      setRenamingId(null);
+      // Refresh chips + reload the live preview so the new name shows immediately.
+      const cats = await apiClient.get<
+        Array<{ id: string; name: string; slug: string; _count?: { products?: number } }>
+      >('/categories');
+      setCategories(
+        (cats ?? []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          products: c._count?.products ?? 0,
+        })),
+      );
+      setFrameTick((t) => t + 1);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Rename failed',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!activeKey || !foundItem) return;
+    const ok = window.confirm(
+      `Remove "${activeSection?.label ?? activeKey}" from this template?\n\n` +
+        'The section disappears from the page and the storefront falls back to its default copy. This cannot be undone.',
+    );
+    if (!ok) return;
+    setIsSaving(true);
+    try {
+      await apiClient.delete(`/content/${encodeURIComponent(activeKey)}`);
+      addToast({
+        type: 'success',
+        title: 'Section removed',
+        description: `${activeKey} was removed. The page falls back to its built-in copy.`,
+      });
+      const data = await apiClient.get<CmsItem[]>('/content/manage');
+      setItems(data);
+      setActiveKey(null);
+      setForm(EMPTY_FORM);
+      setFrameTick((t) => t + 1);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Remove failed',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const previewUrl = page
+    ? isCategoryTemplate && categorySlug
+      ? `${storefrontUrl(page)}?cat=${encodeURIComponent(categorySlug)}`
+      : storefrontUrl(page)
+    : '';
 
   if (!user) {
     return (
@@ -317,6 +493,107 @@ export default function PageEditor() {
           </div>
         }
       />
+      {/* Product Category template: switch between the category pages that the
+          live preview shows. Buttons live here (below the page header) so they
+          are easy to find — each one previews that category's real page. */}
+      {isCategoryTemplate && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-surface-500">
+            Category page:
+          </span>
+          {(categories.length ? categories : FALLBACK_CATEGORIES).map((opt) => {
+            const active = categorySlug === opt.slug;
+            // Inline rename mode: input + confirm/cancel instead of the chip.
+            if (renamingId != null && renamingId === opt.id) {
+              return (
+                <span
+                  key={opt.slug}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand-400 bg-white px-2 py-1.5 shadow-sm"
+                >
+                  <FolderOpen className="h-4 w-4 flex-shrink-0 text-brand-600" />
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (opt.id) void handleRenameCategory(opt.id);
+                      }
+                      if (e.key === 'Escape') setRenamingId(null);
+                    }}
+                    placeholder="Category name"
+                    aria-label="Category name"
+                    className="h-7 w-52 rounded-md border border-surface-200 px-2 text-sm text-surface-800 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40"
+                  />
+                  <button
+                    type="button"
+                    title="Save name"
+                    disabled={isRenaming || renameValue.trim().length < 2}
+                    onClick={() => opt.id && void handleRenameCategory(opt.id)}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40"
+                  >
+                    <Check className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Cancel"
+                    onClick={() => setRenamingId(null)}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-surface-500 hover:bg-surface-100 hover:text-surface-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </span>
+              );
+            }
+            return (
+              <span key={opt.slug} className="relative inline-flex">
+                <button
+                  type="button"
+                  title={`Preview collection.html?cat=${opt.slug}`}
+                  onClick={() => {
+                    if (categorySlug === opt.slug) return;
+                    setCategorySlug(opt.slug);
+                    setFrameTick((t) => t + 1); // remount iframe → fresh page load
+                  }}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium shadow-sm transition-colors',
+                    active
+                      ? 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
+                      : 'border-surface-200 bg-white text-surface-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700',
+                  )}
+                >
+                  <FolderOpen className="h-4 w-4 flex-shrink-0" />
+                  <span>{opt.name}</span>
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-2xs font-semibold',
+                      active ? 'bg-white/20 text-white' : 'bg-surface-100 text-surface-500',
+                    )}
+                  >
+                    {opt.products} {opt.products === 1 ? 'product' : 'products'}
+                  </span>
+                </button>
+                {opt.id && (
+                  <button
+                    type="button"
+                    title={`Rename “${opt.name}”`}
+                    aria-label={`Rename ${opt.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRenamingId(opt.id!);
+                      setRenameValue(opt.name);
+                    }}
+                    className="absolute -right-1.5 -top-1.5 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full border border-surface-200 bg-white text-surface-400 shadow-sm hover:border-brand-400 hover:text-brand-600"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                )}
+              </span>
+            );
+          })}
+        </div>
+      )}
 <div className="grid flex-1 gap-4 items-start lg:grid-cols-2">
         {/* ── Left: editable template ── */}
         <div className="flex flex-col min-w-0">
@@ -327,7 +604,9 @@ export default function PageEditor() {
             <div className="max-h-64 overflow-y-auto">
             <div className="flex flex-wrap gap-2">
               {page.sections.map((section, idx) => {
-                const exists = items.some((i) => i.key === section.key);
+                const item = items.find((i) => i.key === section.key);
+                const exists = !!item;
+                const isHidden = item?.isVisible === false;
                 const hasPending = pending.some((r) => r.contentItem.key === section.key);
                 const isActive = section.key === activeKey;
                 const showGroup = !!section.group && page.sections[idx - 1]?.group !== section.group;
@@ -352,12 +631,15 @@ export default function PageEditor() {
                         'h-1.5 w-1.5 rounded-full',
                         hasPending
                           ? 'bg-amber-500'
-                          : exists
-                            ? 'bg-green-500'
-                            : 'bg-surface-300',
+                          : isHidden
+                            ? 'bg-surface-400'
+                            : exists
+                              ? 'bg-green-500'
+                              : 'bg-surface-300',
                       )}
                     />
                     {section.label}
+                    {isHidden && <EyeOff className="h-3 w-3 text-surface-400" />}
                     {hasPending && (
                       <span className="rounded bg-amber-100 px-1 text-2xs font-semibold text-amber-700">
                         pending
@@ -398,6 +680,9 @@ export default function PageEditor() {
                     <Badge variant={foundItem?.isPublished ? 'success' : 'warning'} dot>
                       {foundItem?.isPublished ? 'Live' : 'Unpublished'}
                     </Badge>
+                  )}
+                  {foundItem?.isVisible === false && (
+                    <Badge variant="info" dot>Hidden from page</Badge>
                   )}
                 </div>
 
@@ -475,6 +760,17 @@ export default function PageEditor() {
                   {foundItem && !foundItem.isPublished && (
                     <Button variant="secondary" onClick={handlePublish} isLoading={isSaving}>
                       <Globe className="h-4 w-4" /> Publish
+                    </Button>
+                  )}
+                  {foundItem && (
+                    <Button variant="ghost" onClick={handleToggleVisible} isLoading={isSaving}>
+                      {foundItem.isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {foundItem.isVisible ? 'Hide from page' : 'Show on page'}
+                    </Button>
+                  )}
+                  {foundItem && (
+                    <Button variant="danger" onClick={handleRemove} isLoading={isSaving}>
+                      <Trash2 className="h-4 w-4" /> Remove
                     </Button>
                   )}
                 </div>

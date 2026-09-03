@@ -1,6 +1,10 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body, Controller, Delete, Get, Param, Patch, Post, Put,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean, IsOptional, IsString, Matches, MaxLength, MinLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role, RevisionStatus } from '@prisma/client';
 import {
@@ -24,6 +28,14 @@ class UpsertContentDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(80)
   category?: string;
   @ApiProperty() @IsString() body!: string;
+  /** Editor-side visibility — false hides the section from the public page
+   *  (the storefront falls back to its built-in default copy). */
+  @ApiPropertyOptional() @IsOptional() @IsBoolean()
+  isVisible?: boolean;
+}
+
+class SetVisibilityDto {
+  @ApiProperty() @IsBoolean() isVisible!: boolean;
 }
 
 class CreateContentDto extends UpsertContentDto {
@@ -106,6 +118,7 @@ export class ContentController {
         longDescription: true,
         category: true,
         body: true,
+        isVisible: true,
         updatedAt: true,
       },
       orderBy: { key: 'asc' },
@@ -126,6 +139,7 @@ export class ContentController {
         category: true,
         body: true,
         isPublished: true,
+        isVisible: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -250,6 +264,7 @@ export class ContentController {
         category: dto.category?.trim() || null,
         body: dto.body,
         isPublished: canPublishDirectly,
+        isVisible: dto.isVisible ?? true,
         updatedById: actor!.id,
       },
       update: canPublishDirectly
@@ -263,6 +278,9 @@ export class ContentController {
               ? { category: dto.category?.trim() || null }
               : {}),
             body: dto.body,
+            // Visibility is editor-side — applied immediately regardless of
+            // the review workflow (it never changes the approved copy).
+            ...(dto.isVisible !== undefined ? { isVisible: dto.isVisible } : {}),
             updatedById: actor!.id,
           }
         : {}, // live content untouched
@@ -383,6 +401,43 @@ export class ContentController {
     if (!item) throw new NotFoundException('Content item not found');
     await this.prisma.contentItem.update({ where: { key }, data: { isPublished: false } });
     return { success: true };
+  }
+
+  /**
+   * Toggle editor-side visibility of a section (PATCH /content/:key).
+   * `isVisible: false` removes the section from the rendered storefront page
+   * (the layout reflows — the page stays responsive) while the section stays
+   * in the template and in the dashboard, so it can be brought back anytime.
+   */
+  @Roles(...CONTENT_EDITORS)
+  @Patch(':key')
+  async setVisibility(
+    @Param('key') key: string,
+    @Body() dto: SetVisibilityDto,
+    @CurrentUser() actor?: { id: string; role: Role },
+  ) {
+    const item = await this.prisma.contentItem.findUnique({ where: { key } });
+    if (!item) throw new NotFoundException('Content item not found');
+    await this.prisma.contentItem.update({
+      where: { key },
+      data: { isVisible: dto.isVisible, updatedById: actor!.id },
+    });
+    return { success: true, key, isVisible: dto.isVisible };
+  }
+
+  /**
+   * Remove a template section entirely (DELETE /content/:key). The storefront
+   * falls back to the default copy baked into the page markup. The item's
+   * revision history is removed with it (cascade).
+   */
+  @Roles(...DIRECT_PUBLISHERS)
+  @Delete(':key')
+  async remove(@Param('key') key: string) {
+    const item = await this.prisma.contentItem.findUnique({ where: { key } });
+    if (!item) throw new NotFoundException('Content item not found');
+    await this.prisma.contentRevision.deleteMany({ where: { contentItem: { key } } });
+    await this.prisma.contentItem.delete({ where: { key } });
+    return { success: true, key };
   }
 }
 

@@ -17,6 +17,7 @@ import {
   CreateProductDto,
   CreateVariantDto,
   ListProductsQueryDto,
+  UpdateCategoryDto,
   UpdateProductDto,
 } from './dto/catalog.dto';
 
@@ -76,5 +77,12 @@ export class CatalogController {
   @Post('admin/products/:id/variants')
   addVariant(@Param('id') id: string, @Body() dto: CreateVariantDto) {
     return this.catalog.addVariant(id, dto);
+  }
+
+  /** Rename a category page (display name only — slugs stay stable). */
+  @Roles(Role.STAFF_ADMIN, Role.STAFF_MANAGER, Role.CONTENT_MANAGER)
+  @Patch('admin/categories/:id')
+  updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+    return this.catalog.updateCategory(id, dto);
   }
 }

@@ -5,6 +5,7 @@ import {
   CreateProductDto,
   CreateVariantDto,
   ListProductsQueryDto,
+  UpdateCategoryDto,
   UpdateProductDto,
 } from './dto/catalog.dto';
 
@@ -124,6 +125,14 @@ export class CatalogService {
       orderBy: { sortOrder: 'asc' },
       include: { _count: { select: { products: true } } },
     });
+  }
+
+  /** Rename a category — the display name only; the slug (and therefore all
+   *  existing collection.html?cat=… links) stays stable. */
+  async updateCategory(id: string, dto: UpdateCategoryDto) {
+    const category = await this.prisma.category.findUnique({ where: { id } });
+    if (!category) throw new NotFoundException('Category not found');
+    return this.prisma.category.update({ where: { id }, data: dto });
   }
 
   /** Admin listing — everything the dashboard Products screen needs,

@@ -53,8 +53,8 @@
     </div>
 
     <div class="omcoll-banner">
-      <h1 id="collTitle">Loading collection…</h1>
-      <div id="collDesc"><p>Hand-picked foods from our partner farms, processed gently and shipped fresh from the facility.</p></div>
+      <h1 id="collTitle" data-cms="page.collection.title">Loading collection…</h1>
+      <div id="collDesc" data-cms="page.collection.desc"><p>Hand-picked foods from our partner farms, processed gently and shipped fresh from the facility.</p></div>
     </div>
     <div class="omcoll-cats" id="collCats"></div>
 
@@ -65,12 +65,12 @@
   <div class="wrap">
     <div class="omcoll-layout">
       <aside class="omcoll-side">
-        <h3>Categories</h3>
+        <h3 data-cms="page.collection.cats.title">Categories</h3>
         <div class="omcoll-sidecats" id="sideCats"></div>
       </aside>
       <div>
         <div class="omcoll-titlebar">
-          <h2>Products</h2>
+          <h2 data-cms="page.collection.products.title">Products</h2>
           <span class="omcoll-count" id="collCount"></span>
         </div>
         <div class="omcoll-toolbar">
@@ -122,6 +122,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/account-menu.js"></script>
+<script src="js/content.js" defer></script>
 <script>
 (function(){
   'use strict';
@@ -298,8 +299,12 @@
     var name=cat.name||'All products';
     document.title=(currentSlug?name+' — Aama ko Agro':meta.heading);
     document.getElementById('crumbCat').textContent=name;
-    document.getElementById('collTitle').textContent=meta.heading;
-    document.getElementById('collDesc').innerHTML=(meta.desc||[]).map(function(p){return '<p>'+esc(p)+'</p>';}).join('');
+    // The heading/intro are CMS-editable: if content.js already applied a
+    // value (data-cms-applied marker), keep it instead of the category default.
+    var titleEl=document.getElementById('collTitle');
+    if(titleEl&&!titleEl.hasAttribute('data-cms-applied'))titleEl.textContent=name;
+    var descEl=document.getElementById('collDesc');
+    if(descEl&&!descEl.hasAttribute('data-cms-applied'))descEl.innerHTML=(meta.desc||[]).map(function(p){return '<p>'+esc(p)+'</p>';}).join('');
     var chips=document.getElementById('collCats');
     chips.innerHTML=(cats||[]).map(function(c){
       return '<a href="collection.html?cat='+encodeURIComponent(c.slug)+'" class="'+(c.slug===currentSlug?'is-current':'')+'">'+esc(c.name)+'</a>';

@@ -115,6 +115,14 @@ function isValidColor(value: string): boolean {
   }
 }
 
+/** Normalise `rgb(r, g, b)` (what queryCommandValue returns) into `#rrggbb`. */
+function rgbToHex(value: string): string {
+  const m = value.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+  if (!m) return value.startsWith('#') ? value : '';
+  const hex = (n: string) => Number(n).toString(16).padStart(2, '0');
+  return `#${hex(m[1])}${hex(m[2])}${hex(m[3])}`;
+}
+
 interface ComboOption {
   label: string;
   value: string;
@@ -132,6 +140,8 @@ interface FormatComboProps {
   onApply: (value: string) => void;
   /** Called on mousedown so the contenteditable selection is preserved. */
   onCaptureSelection: () => void;
+  /** Live value currently active on the selection — shown as the placeholder. */
+  current?: string;
 }
 
 /**
@@ -139,7 +149,7 @@ interface FormatComboProps {
  * font name, size (`16`, `24px`, `1.5rem`) or colour (hex / named) and
  * pressing Enter (or picking a preset) applies it to the selected text.
  */
-function FormatCombo({ title, placeholder, options, color, width = 'w-24', onApply, onCaptureSelection }: FormatComboProps) {
+function FormatCombo({ title, placeholder, options, color, current, width = 'w-24', onApply, onCaptureSelection }: FormatComboProps) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const wrapRef = useRef<HTMLSpanElement>(null);
@@ -198,8 +208,8 @@ function FormatCombo({ title, placeholder, options, color, width = 'w-24', onApp
           }
           if (e.key === 'Escape') setOpen(false);
         }}
-        placeholder={placeholder}
-        title={title}
+        placeholder={current || placeholder}
+        title={current ? `${title} — current: ${current}` : title}
         className={`h-7 ${width} rounded-md border border-surface-200 bg-white px-1.5 text-xs text-surface-700 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40 ${preview ? 'pl-6' : ''}`}
       />
       <button
@@ -275,6 +285,13 @@ export function RichTextEditor({
   const savedRange = useRef<Range | null>(null);
   const [panel, setPanel] = useState<'none' | 'link' | 'image'>('none');
   const [url, setUrl] = useState('');
+  // Live formatting state under the caret — surfaced in the Font / Size / Color
+  // comboboxes so the user always sees what the selection is currently using.
+  const [current, setCurrent] = useState<{ font: string; size: string; color: string }>({
+    font: '',
+    size: '',
+    color: '',
+  });
 
   // Sync external value into the editable area unless the user is editing it.
   useEffect(() => {
@@ -287,6 +304,36 @@ export function RichTextEditor({
   const push = () => {
     if (ref.current) onChange(ref.current.innerHTML);
   };
+
+  // Track the formatting active on the caret/selection (selectionchange fires
+  // on every caret move, click and keystroke). Values are only read while the
+  // selection is inside this editor so other fields don't clobber the display.
+  useEffect(() => {
+    const readCurrent = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || !ref.current || !ref.current.contains(sel.anchorNode)) return;
+      let font = '';
+      let size = '';
+      let color = '';
+      try {
+        font = (document.queryCommandValue('fontName') || '').replace(/^["']|["']$/g, '');
+        const rawSize = document.queryCommandValue('fontSize');
+        // execCommand sizes are 1-7 — show the px value the browser renders.
+        const pxByHtmlSize: Record<string, string> = {
+          '1': '8px', '2': '10px', '3': '12px', '4': '14px', '5': '18px', '6': '24px', '7': '32px',
+        };
+        size = pxByHtmlSize[rawSize] ?? (rawSize && rawSize !== '4' ? rawSize : '');
+        color = rgbToHex(document.queryCommandValue('foreColor') || '');
+      } catch {
+        /* queryCommandValue can throw in rare engines — never break typing */
+      }
+      setCurrent((prev) =>
+        prev.font === font && prev.size === size && prev.color === color ? prev : { font, size, color },
+      );
+    };
+    document.addEventListener('selectionchange', readCurrent);
+    return () => document.removeEventListener('selectionchange', readCurrent);
+  }, []);
 
   const exec = (command: string, arg?: string) => {
     ref.current?.focus();
@@ -402,6 +449,7 @@ export function RichTextEditor({
             placeholder="Font"
             width="w-24"
             options={FONT_FAMILIES.map((f) => ({ label: f, value: f }))}
+            current={current.font}
             onCaptureSelection={captureSelection}
             onApply={(v) => execOnSelection('fontName', v)}
           />
@@ -410,6 +458,7 @@ export function RichTextEditor({
             placeholder="Size"
             width="w-16"
             options={FONT_SIZES}
+            current={current.size}
             onCaptureSelection={captureSelection}
             onApply={applySize}
           />
@@ -428,6 +477,7 @@ export function RichTextEditor({
             width="w-20"
             color
             options={TEXT_COLORS}
+            current={current.color}
             onCaptureSelection={captureSelection}
             onApply={(v) => execOnSelection('foreColor', v)}
           />

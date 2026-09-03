@@ -38,6 +38,10 @@ model ContentItem {
   category         String? // journal category, e.g. "Farming"
   body             String
   isPublished      Boolean  @default(true)
+  /// Editor-side visibility switch — hidden sections stay in the template
+  /// (and in the dashboard editor) but the storefront falls back to the
+  /// built-in default copy baked into the page markup.
+  isVisible        Boolean  @default(true)
   updatedById      String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

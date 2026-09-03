@@ -93,6 +93,12 @@
   function apply(el, item, field) {
     var val = fieldValue(item, field);
     if (val === null || val === undefined || val === '') return; // keep default
+    // Form controls can't take text content — write to their placeholder instead.
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      el.setAttribute('placeholder', val);
+      el.setAttribute('data-cms-applied', '1');
+      return;
+    }
     var looksHtml = typeof val === 'string' && /<[a-z][\s\S]*>/i.test(val);
     var asHtml = el.hasAttribute('data-cms-html') ||
       field === 'body' || field === 'long' || looksHtml;
@@ -101,6 +107,9 @@
     } else {
       el.textContent = val;
     }
+    // Marker consumed by pages with dynamic renderers (e.g. collection.html):
+    // they skip overwriting an element once the CMS has applied a value.
+    el.setAttribute('data-cms-applied', '1');
   }
 
   /**
@@ -117,7 +126,15 @@
         if (!key) continue;
         var field = node.getAttribute('data-cms-field') || 'title';
         var item = get(key);
-        if (item) apply(node, item, field);
+        if (!item) continue;
+        // "Hide from page" in the dashboard removes the block from the live
+        // site while keeping it editable — the element is simply hidden.
+        if (item.isVisible === false) {
+          node.style.display = 'none';
+          node.setAttribute('data-cms-hidden', '1');
+          continue;
+        }
+        apply(node, item, field);
       }
       return content;
     });

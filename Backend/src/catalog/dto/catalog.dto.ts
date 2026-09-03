@@ -58,6 +58,14 @@ export class UpdateProductDto {
   @IsOptional() @IsBoolean() isPublished?: boolean;
 }
 
+export class UpdateCategoryDto {
+  @ApiPropertyOptional({ description: 'New display name for the category' })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  name?: string;
+}
+
 export class ListProductsQueryDto {
   @ApiPropertyOptional({ default: 1 })
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number = 1;
