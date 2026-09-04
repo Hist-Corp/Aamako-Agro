@@ -10,6 +10,5 @@ export * from './batch';
 export * from './business';
 export * from './customer';
 export * from './review';
-export * from './support';
 export * from './audit';
 export * from './analytics';

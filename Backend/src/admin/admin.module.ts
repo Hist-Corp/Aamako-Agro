@@ -6,12 +6,6 @@ import {
   AdminPricingController,
   PricingHistoryController,
 } from './admin.controller';
-import { AdminDashboardController } from './admin-dashboard.controller';
-import { AdminAnalyticsController } from './admin-analytics.controller';
-import { AdminReviewsController } from './admin-reviews.controller';
-import { AdminBatchesController } from './admin-batches.controller';
-import { AdminWarehousesController } from './admin-warehouses.controller';
-import { AdminSupportController } from './admin-support.controller';
 import { LiveGateway } from './live.gateway';
 
 @Module({
@@ -20,12 +14,6 @@ import { LiveGateway } from './live.gateway';
     AdminPricingController,
     AdminInventoryController,
     PricingHistoryController,
-    AdminDashboardController,
-    AdminAnalyticsController,
-    AdminReviewsController,
-    AdminBatchesController,
-    AdminWarehousesController,
-    AdminSupportController,
   ],
   providers: [LiveGateway],
 })

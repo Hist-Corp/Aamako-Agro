@@ -71,11 +71,3 @@ export interface InventoryListParams {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
-
-export interface WarehouseStats {
-  warehouseId: string;
-  totalProducts: number;
-  totalStock: number;
-  lowStock: number;
-  value: number;
-}
