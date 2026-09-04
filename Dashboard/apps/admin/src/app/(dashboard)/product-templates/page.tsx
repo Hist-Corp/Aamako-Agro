@@ -34,9 +34,16 @@ interface ProductTemplate {
   slug: string;
   name: string;
   category: string;
+  processCategory: string;
   price: string;
   isPublished: boolean;
 }
+
+const PROCESS_CATEGORY_LABELS: Record<string, string> = {
+  'freeze-dried-fruits': 'Freeze-Dried Fruits',
+  dehydrated: 'Dehydrated Fruits & Vegetables',
+  powders: 'Milled Powders',
+};
 
 const STOREFRONT_URL =
   process.env.NEXT_PUBLIC_STOREFRONT_URL ?? 'http://localhost:8080';
@@ -83,9 +90,10 @@ export default function ProductTemplatesPage() {
       if (!match) continue;
       const slug = match[1];
       const field = match[2];
-      const existing = map.get(slug) ?? { slug, name: slug, category: '', price: '', isPublished: true };
+      const existing = map.get(slug) ?? { slug, name: slug, category: '', processCategory: '', price: '', isPublished: true };
       if (field === 'name') existing.name = item.title || slug;
       if (field === 'category') existing.category = item.title;
+      if (field === 'process-category') existing.processCategory = item.title;
       if (field === 'price') existing.price = item.title;
       existing.isPublished = existing.isPublished && item.isPublished;
       map.set(slug, existing);
@@ -174,6 +182,17 @@ export default function ProductTemplatesPage() {
                   <span className="inline-block rounded bg-surface-100 px-2 py-0.5 text-xs font-medium text-surface-600">
                     {product.category}
                   </span>
+                )}
+                {product.processCategory && (
+                  <a
+                    href={`${STOREFRONT_URL}/collection.html?cat=${encodeURIComponent(product.processCategory)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 hover:bg-brand-100"
+                    title="Open the storefront category page for this process category"
+                  >
+                    {PROCESS_CATEGORY_LABELS[product.processCategory] ?? product.processCategory} ↗
+                  </a>
                 )}
                 {product.price && (
                   <span className="ml-2 text-xs text-surface-500">Rs {product.price}</span>

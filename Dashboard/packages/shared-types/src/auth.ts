@@ -20,22 +20,30 @@ export type Role =
 /**
  * Hierarchical authority ranking (mirrors Backend/src/common/rbac.ts).
  * An actor may promote/demote/manage a user only to roles strictly below
- * their own rank. SUPER_ADMIN (5) is the top — nobody can promote/demote to
- * or above their own rank, and SUPER_ADMIN itself cannot be assigned.
+ * their own rank. SUPER_ADMIN (5) is the highest position — nobody can
+ * promote/demote to or above their own rank, and SUPER_ADMIN itself cannot
+ * be assigned.
+ *
+ *   Level 0  Retail/Wholesale Buyer       — RETAIL_CUSTOMER, WHOLESALE_CUSTOMER
+ *   Level 1  Customer Support             — STAFF_SUPPORT
+ *   Level 2  Content & Inventory Manager  — CONTENT_MANAGER, STAFF_MANAGER
+ *   Level 3  Sales Manager                — STAFF_SALES
+ *   Level 4  Admin Staff                  — STAFF_ADMIN
+ *   Level 5  Super Admin (highest)        — SUPER_ADMIN
  */
 export const ROLE_RANK: Record<Role, number> = {
   RETAIL_CUSTOMER: 0,
-  WHOLESALE_CUSTOMER: 1,
-  CONTENT_MANAGER: 1,
-  STAFF_SALES: 2,
-  STAFF_SUPPORT: 2,
-  STAFF_MANAGER: 3,
+  WHOLESALE_CUSTOMER: 0,
+  STAFF_SUPPORT: 1,
+  CONTENT_MANAGER: 2,
+  STAFF_MANAGER: 2,
+  STAFF_SALES: 3,
   STAFF_ADMIN: 4,
   SUPER_ADMIN: 5,
   // Legacy/dashboard-only aliases ranked to mirror their real counterparts
-  CUSTOMER_SUPPORT: 2,
-  SALES: 2,
-  MANAGER: 3,
+  CUSTOMER_SUPPORT: 1,
+  SALES: 3,
+  MANAGER: 2,
   ADMIN: 4,
   INVENTORY_MANAGER: 2,
 };

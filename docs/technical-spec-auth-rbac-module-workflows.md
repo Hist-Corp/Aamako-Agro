@@ -365,7 +365,7 @@ enum Role {
 }
 ```
 
-- `Backend/src/common/rbac.ts`: `ROLE_RANK.INVENTORY_MANAGER = 2` (same tier as Sales/Support — manages nobody).
+- `Backend/src/common/rbac.ts`: `ROLE_RANK.INVENTORY_MANAGER = 2` — Level 2, same tier as Content Manager / Operations (Staff) Manager, above Customer Support (1) and Retail/Wholesale Buyers (0).
 - `CREATABLE_ROLES_BY_ACTOR`: Manager/Admin/Super Admin may create `INVENTORY_MANAGER` (matches existing `USER_CREATION_ALLOWED_TARGETS` in shared-types, which already lists the alias).
 - `shared-types/src/auth.ts`: keep `INVENTORY_MANAGER` as a first-class key of `ROLE_PERMISSIONS`; it currently has **no entry**, so `hasPermission()` returns false for everything. Add:
 

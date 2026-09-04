@@ -258,6 +258,7 @@
 
   /* ---------- per-category content templates ---------- */
   var KIND_OF={'freeze-dried-fruits':'fd','dehydrated':'dh','powders':'pw'};
+  var PROCESS_CAT={'freeze-dried-fruits':'Freeze-Dried Fruits','dehydrated':'Dehydrated Fruits & Vegetables','powders':'Milled Powders'};
   var CONTENT={
     fd:{
       highlights:['Freeze-dried within hours of harvest','100% fruit or vegetable — nothing added','No added sugar, sulphites or preservatives','Crunchy straight from the pack, rehydrates in minutes','Batch-coded and graded before it ships','Lightweight and pantry-stable — no refrigeration'],
@@ -602,9 +603,57 @@
 
   /* ---------- load product + related ---------- */
   var slug=new URLSearchParams(window.location.search).get('slug');
+
+  /* Fallback for products added via Content → Product Templates that have not
+     been created in the DB catalog yet. Renders the page from the published
+     CMS product-template.<slug>.* fields and links the breadcrumb to the
+     product's Process Category collection page. */
+  function applyTemplateProduct(slugToLoad){
+    if(!slugToLoad||!window.AamakoContent||!window.AamakoContent.load)return;
+    window.AamakoContent.load().then(function(){
+      var prefix='product-template.'+slugToLoad+'.';
+      function field(f){
+        var it=window.AamakoContent.get(prefix+f);
+        if(!it)return '';
+        return (it.title!=null?String(it.title):'').trim();
+      }
+      var name=field('name')||slugToLoad;
+      var price=field('price');
+      var image=field('image-url');
+      var pack=field('pack');
+      var availability=field('availability');
+      var description=field('description');
+      var processCat=field('process-category');
+      if(!name)return;
+      document.getElementById('pdTitle').textContent=name;
+      document.getElementById('pdCrumbName').textContent=name;
+      var catName=processCat&&PROCESS_CAT[processCat]?PROCESS_CAT[processCat]:'Shop';
+      var catSlug=processCat&&/^(freeze-dried-fruits|dehydrated|powders)$/.test(processCat)?processCat:null;
+      document.getElementById('pdCrumbs').innerHTML=
+        '<a href="index.html">Home</a><span class="sep">/</span><a href="shop.html">Shop</a><span class="sep">/</span>'
+        +(catSlug?'<a href="collection.html?cat='+encodeURIComponent(catSlug)+'">'+esc(catName)+'</a><span class="sep">/</span>':'')
+        +'<span class="current">'+esc(name)+'</span>';
+      document.title=name+' — Aama ko Agro';
+      if(image){
+        var main=document.getElementById('pdMainImg');
+        if(main){main.src=image;main.alt=name||'Product photo';}
+        Array.prototype.slice.call(document.querySelectorAll('#pdThumbs .omthumb')).forEach(function(t){
+          var img=t.querySelector('img');
+          if(img&&image)img.src=image;
+        });
+      }
+      if(price)document.getElementById('pdPrice').textContent=fmt(parseFloat(price)||0);
+      if(pack)document.getElementById('pdPack').textContent=pack;
+      if(availability)document.getElementById('pdAvailability').textContent=availability;
+      if(description)document.getElementById('pdShort').innerHTML=esc(description);
+      var kind=catSlug&&KIND_OF[catSlug]?KIND_OF[catSlug]:'fd';
+      buildTabs(kind,name);
+    }).catch(function(){/* keep static fallback */});
+  }
+
   if(window.AamakoAPI){
     var load=slug?window.AamakoAPI.getProduct(slug):window.AamakoAPI.listProducts(1).then(function(r){return r.items&&r.items[0];});
-    load.then(applyProduct).catch(function(){/* keep static fallback */});
+    load.then(applyProduct).catch(function(){applyTemplateProduct(slug);});
     load.then(function(p){
       var catSlug=p&&p.category&&p.category.slug;
       var req=catSlug?window.AamakoAPI.listProducts(1,catSlug):window.AamakoAPI.listProducts(1);

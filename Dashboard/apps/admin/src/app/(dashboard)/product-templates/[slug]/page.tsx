@@ -351,6 +351,16 @@ function renderField(
             onChange={(e) => onSave(field.key, e.target.value, true)}
           />
         )}
+        {field.key === 'process-category' && (existing?.title ?? '').trim() && (
+          <a
+            href={`${STOREFRONT_URL}/collection.html?cat=${encodeURIComponent((existing?.title ?? '').trim())}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-flex items-center gap-1 text-2xs font-medium text-brand-600 hover:text-brand-700"
+          >
+            <ExternalLink className="h-3 w-3" /> View the {field.options?.find((o: any) => o.value === existing?.title)?.label ?? existing?.title} category page
+          </a>
+        )}
         <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
         <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
       </div>

@@ -33,6 +33,7 @@ export const PRODUCT_TEMPLATE_SECTIONS: ProductTemplateSection[] = [
       { key: 'slug', label: 'URL slug', description: 'Kebab-case identifier used in the product page URL.', type: 'text', required: true, placeholder: 'e.g. fd-mango' },
       { key: 'badge', label: 'Badge', description: 'Small tag shown on the product card (e.g. Best seller, New).', type: 'text', placeholder: 'e.g. Best seller' },
       { key: 'category', label: 'Category', description: 'Product category for the shop filter.', type: 'select', required: true, options: [{ value: 'fruits', label: 'Fruits' }, { value: 'vegetables', label: 'Vegetables' }, { value: 'spices', label: 'Spices & Powders' }, { value: 'meals', label: 'Ready Meals' }, { value: 'gifts', label: 'Gift Sets' }] },
+      { key: 'process-category', label: 'Process Category', description: 'Links this product to its storefront category page (Freeze-Dried Fruits, Dehydrated Fruits & Vegetables or Milled Powders) and creates a product card on that page.', type: 'select', required: true, options: [{ value: 'freeze-dried-fruits', label: 'Freeze-Dried Fruits' }, { value: 'dehydrated', label: 'Dehydrated Fruits & Vegetables' }, { value: 'powders', label: 'Milled Powders' }] },
       { key: 'batch-no', label: 'Batch no', description: 'Production batch number for traceability (shown on the product page).', type: 'text', placeholder: 'e.g. BATCH-2026-014' },
     ],
   },
