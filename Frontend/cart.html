@@ -289,7 +289,11 @@
             '<div class="ck-summary-row"><span>Deliver to</span><span style="text-align:right;max-width:60%;">' + savedAddress.full + '</span></div>';
           showStep(2);
         } catch (err) {
-          alert(err.message || 'Checkout failed');
+          if (window.AamakoErrorPage && /network|fetch|server|500|502|503|timeout/i.test(err.message || '')) {
+            window.AamakoErrorPage.show(err, { url: '/cart.html' });
+          } else {
+            alert(err.message || 'Checkout failed');
+          }
         } finally {
           btn.disabled = false; btn.textContent = 'Place order';
         }
@@ -297,6 +301,7 @@
     })();
   </script>
 
+  <script src="/js/error-page.js"></script>
   <script>
     // ---- Open the modal / restore last address ----
     (function () {

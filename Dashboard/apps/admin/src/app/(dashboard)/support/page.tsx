@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useSupportTickets, useCreateTicket, useUpdateTicket } from '@/lib/api-hooks';
 import { useAuth } from '@/config/auth-context';
 import { formatDateTime, relativeTime } from '@/lib/utils';
 import { canAct } from '@/config/rbac';
@@ -16,34 +17,8 @@ import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
+import type { SupportTicket, TicketStatus, TicketPriority } from '@aamako/shared-types';
 import { Headphones, MessageSquare, Plus, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
-
-type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'WAITING_CUSTOMER' | 'RESOLVED' | 'CLOSED';
-type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-
-interface SupportTicket {
-  id: string;
-  subject: string;
-  customerName: string;
-  customerEmail: string;
-  category: string;
-  status: TicketStatus;
-  priority: TicketPriority;
-  assignedTo: string;
-  lastMessage: string;
-  messageCount: number;
-  createdAt: string;
-  updatedAt: string;
-  resolvedAt?: string;
-}
-
-const MOCK_TICKETS: SupportTicket[] = [
-  { id: 'TKT-001', subject: 'Order not received after 7 days', customerName: 'KTM Fresh Mart', customerEmail: 'orders@ktmfresh.com', category: 'Order Issue', status: 'IN_PROGRESS', priority: 'HIGH', assignedTo: 'Sita Support', lastMessage: 'Checking with courier service for tracking update', messageCount: 4, createdAt: new Date(Date.now() - 604800000).toISOString(), updatedAt: new Date(Date.now() - 3600000).toISOString() },
-  { id: 'TKT-002', subject: 'Damaged product received', customerName: 'Bhaktapur Organics', customerEmail: 'info@bhaktapurorg.com', category: 'Product Quality', status: 'WAITING_CUSTOMER', priority: 'MEDIUM', assignedTo: 'Sita Support', lastMessage: 'Please share photos of the damaged product', messageCount: 3, createdAt: new Date(Date.now() - 259200000).toISOString(), updatedAt: new Date(Date.now() - 7200000).toISOString() },
-  { id: 'TKT-003', subject: 'Wholesale pricing inquiry', customerName: 'Lalitpur Grocery', customerEmail: 'buy@lalitpurgrocery.com', category: 'General Inquiry', status: 'OPEN', priority: 'LOW', assignedTo: 'Unassigned', lastMessage: 'Looking for bulk pricing on Basmati Rice', messageCount: 1, createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date(Date.now() - 86400000).toISOString() },
-  { id: 'TKT-004', subject: 'Refund request for cancelled order', customerName: 'Chitwan Fresh Direct', customerEmail: 'order@chitwanfresh.com', category: 'Refund', status: 'RESOLVED', priority: 'MEDIUM', assignedTo: 'Sita Support', lastMessage: 'Refund processed successfully', messageCount: 6, createdAt: new Date(Date.now() - 518400000).toISOString(), updatedAt: new Date(Date.now() - 172800000).toISOString(), resolvedAt: new Date(Date.now() - 172800000).toISOString() },
-  { id: 'TKT-005', subject: 'Account access issue', customerName: 'Pokhara Organics Co.', customerEmail: 'deepak@pokharaorganics.com', category: 'Account', status: 'OPEN', priority: 'URGENT', assignedTo: 'Sita Support', lastMessage: 'Cannot login to wholesale portal', messageCount: 2, createdAt: new Date(Date.now() - 14400000).toISOString(), updatedAt: new Date(Date.now() - 7200000).toISOString() },
-];
 
 const STATUS_VARIANT: Record<TicketStatus, string> = {
   OPEN: 'warning',
@@ -72,35 +47,40 @@ export default function SupportPage() {
   const [assignDialog, setAssignDialog] = useState<SupportTicket | null>(null);
   const [resolveDialog, setResolveDialog] = useState<SupportTicket | null>(null);
   const [resolveNote, setResolveNote] = useState('');
-  const [tickets, setTickets] = useState<SupportTicket[]>(MOCK_TICKETS);
   const [assignAgent, setAssignAgent] = useState('');
   const [newTicketDialog, setNewTicketDialog] = useState(false);
   const [newTicket, setNewTicket] = useState({ subject: '', customerName: '', customerEmail: '', category: 'General Inquiry', priority: 'MEDIUM' as TicketPriority });
 
   const canManage = user && canAct(user.role, 'support:manage');
-
-  const filteredTickets = tickets.filter((t) => {
-    if (statusFilter && t.status !== statusFilter) return false;
-    if (priorityFilter && t.priority !== priorityFilter) return false;
-    return true;
+  const { data: ticketsData, isLoading } = useSupportTickets({
+    status: (statusFilter as TicketStatus) || undefined,
+    priority: (priorityFilter as TicketPriority) || undefined,
   });
+  const createMutation = useCreateTicket();
+  const updateMutation = useUpdateTicket();
+
+  const tickets = ticketsData ?? [];
 
   const handleResolve = async () => {
     if (!resolveDialog) return;
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === resolveDialog.id
-          ? { ...t, status: 'RESOLVED', lastMessage: resolveNote.trim() || t.lastMessage, updatedAt: new Date().toISOString(), resolvedAt: new Date().toISOString() }
-          : t,
-      ),
-    );
-    addToast({
-      type: 'success',
-      title: 'Ticket resolved',
-      description: `${resolveDialog.subject} has been marked as resolved.`,
-    });
-    setResolveDialog(null);
-    setResolveNote('');
+    try {
+      await updateMutation.mutateAsync({
+        id: resolveDialog.id,
+        data: {
+          status: 'RESOLVED',
+          message: resolveNote.trim() || undefined,
+        },
+      });
+      addToast({
+        type: 'success',
+        title: 'Ticket resolved',
+        description: `${resolveDialog.subject} has been marked as resolved.`,
+      });
+      setResolveDialog(null);
+      setResolveNote('');
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Resolve failed', description: err.message });
+    }
   };
 
   const handleAssign = async () => {
@@ -110,48 +90,50 @@ export default function SupportPage() {
       return;
     }
     const agentName = { sita: 'Sita Support', ram: 'Ram Sales', gita: 'Gita Manager' }[assignAgent] ?? assignAgent;
-    setTickets((prev) =>
-      prev.map((t) => (t.id === assignDialog.id ? { ...t, assignedTo: agentName, status: t.status === 'OPEN' ? 'IN_PROGRESS' : t.status, updatedAt: new Date().toISOString() } : t)),
-    );
-    addToast({
-      type: 'success',
-      title: 'Ticket assigned',
-      description: `${assignDialog.subject} has been assigned to ${agentName}.`,
-    });
-    setAssignDialog(null);
-    setAssignAgent('');
+    try {
+      await updateMutation.mutateAsync({
+        id: assignDialog.id,
+        data: {
+          assignedTo: agentName,
+          status: assignDialog.status === 'OPEN' ? 'IN_PROGRESS' : undefined,
+        },
+      });
+      addToast({
+        type: 'success',
+        title: 'Ticket assigned',
+        description: `${assignDialog.subject} has been assigned to ${agentName}.`,
+      });
+      setAssignDialog(null);
+      setAssignAgent('');
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Assignment failed', description: err.message });
+    }
   };
 
-  const handleCreateTicket = () => {
+  const handleCreateTicket = async () => {
     if (!newTicket.subject.trim() || !newTicket.customerName.trim()) {
       addToast({ type: 'error', title: 'Missing fields', description: 'Subject and customer name are required.' });
       return;
     }
-    const now = new Date().toISOString();
-    setTickets((prev) => [
-      {
-        id: 'TKT-' + String(Date.now()).slice(-3),
+    try {
+      await createMutation.mutateAsync({
         subject: newTicket.subject.trim(),
         customerName: newTicket.customerName.trim(),
-        customerEmail: newTicket.customerEmail.trim(),
+        customerEmail: newTicket.customerEmail.trim() || undefined,
         category: newTicket.category,
-        status: 'OPEN',
         priority: newTicket.priority,
-        assignedTo: 'Unassigned',
-        lastMessage: 'Ticket created',
-        messageCount: 1,
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...prev,
-    ]);
-    addToast({
-      type: 'success',
-      title: 'Ticket created',
-      description: `${newTicket.subject} is now open.`,
-    });
-    setNewTicket({ subject: '', customerName: '', customerEmail: '', category: 'General Inquiry', priority: 'MEDIUM' });
-    setNewTicketDialog(false);
+        message: 'Ticket created',
+      });
+      addToast({
+        type: 'success',
+        title: 'Ticket created',
+        description: `${newTicket.subject} has been added to the queue.`,
+      });
+      setNewTicketDialog(false);
+      setNewTicket({ subject: '', customerName: '', customerEmail: '', category: 'General Inquiry', priority: 'MEDIUM' });
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Creation failed', description: err.message });
+    }
   };
 
   const columns = useMemo<ColumnDef<SupportTicket>[]>(() => [
@@ -322,8 +304,8 @@ export default function SupportPage() {
 
       <DataTable
         columns={columns}
-        data={filteredTickets}
-        isLoading={false}
+        data={tickets}
+        isLoading={isLoading}
         searchPlaceholder="Search tickets by subject, customer…"
         emptyState={
           <EmptyState

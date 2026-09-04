@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Something went wrong — Aama ko Agro</title>
+<style>
+  :root{--brand:#2f7a3d;--brand-dark:#245e2f;--ink:#1f2a20;--muted:#6b7a6d;--bg:#f6f8f5;}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
+  body{background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#fff;border-bottom:1px solid #e4eae2;}
+  .nav .logo{font-weight:700;color:var(--brand);font-size:1.1rem;text-decoration:none;}
+  .nav a.lnk{color:var(--muted);text-decoration:none;margin-left:18px;font-size:.9rem;}
+  .nav a.lnk:hover{color:var(--brand);}
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:32px 20px;}
+  .card{max-width:520px;width:100%;background:#fff;border:1px solid #e4eae2;border-radius:16px;padding:44px 36px;text-align:center;box-shadow:0 6px 24px rgba(31,42,32,.06);}
+  .icon{font-size:52px;line-height:1;}
+  h1{font-size:1.5rem;margin:18px 0 8px;}
+  p{color:var(--muted);font-size:.95rem;line-height:1.6;}
+  .ref{display:inline-block;margin-top:14px;padding:4px 12px;border-radius:999px;background:#eef3ec;color:var(--muted);font-family:Consolas,monospace;font-size:.75rem;}
+  .actions{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap;}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:10px;font-size:.95rem;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:.15s;}
+  .btn-primary{background:var(--brand);color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn-ghost{background:transparent;color:var(--brand);border-color:#cfe0cd;}
+  .btn-ghost:hover{background:#eef3ec;}
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <a class="logo" href="/">🌿 Aama ko Agro</a>
+    <div>
+      <a class="lnk" href="/shop.html">Shop</a>
+      <a class="lnk" href="/journal.html">Learn</a>
+      <a class="lnk" href="/wholesale.html">Wholesale</a>
+    </div>
+  </nav>
+  <main>
+    <div class="card">
+      <div class="icon" id="errIcon">🛠️</div>
+      <h1 id="errTitle">Something went wrong</h1>
+      <p id="errMsg">An unexpected error occurred while processing your request. Please try again — your data is safe.</p>
+      <span class="ref" id="errRef">REF: —</span>
+      <div class="actions">
+        <button class="btn btn-primary" id="btnRetry" type="button">Try again</button>
+        <a class="btn btn-ghost" href="/shop.html">Back to Shop</a>
+        <a class="btn btn-ghost" href="/">Home</a>
+      </div>
+    </div>
+  </main>
+  <script src="/js/error-page.js"></script>
+  <script>AamakoErrorPage.render();</script>
+</body>
+</html>

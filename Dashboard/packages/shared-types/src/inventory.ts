@@ -17,6 +17,15 @@ export interface Warehouse {
   code: string;
   address?: string;
   isActive: boolean;
+  stats?: WarehouseStats;
+}
+
+export interface WarehouseStats {
+  warehouseId: string;
+  totalProducts: number;
+  totalStock: number;
+  lowStock: number;
+  value: number;
 }
 
 export interface InventoryItem {

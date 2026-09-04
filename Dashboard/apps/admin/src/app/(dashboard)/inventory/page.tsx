@@ -185,12 +185,12 @@ export default function InventoryPage() {
         actions={
           <div className="flex flex-wrap gap-2">
             {canCreateProducts && (
-              <Button variant="secondary" onClick={() => router.push('/products?add=1')}>
+              <Button onClick={() => router.push('/products?add=1')}>
                 <Plus className="h-4 w-4" /> Add New Product
               </Button>
             )}
             {canAdjust && (
-              <Button onClick={() => setLowStockOnly(!lowStockOnly)}>
+              <Button variant="secondary" onClick={() => setLowStockOnly(!lowStockOnly)}>
                 {lowStockOnly ? 'Show All' : (
                   <><AlertTriangle className="h-4 w-4" /> Low Stock Only</>
                 )}

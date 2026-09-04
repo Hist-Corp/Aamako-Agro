@@ -473,6 +473,11 @@ export default function PageEditor() {
         breadcrumbs={[{ label: 'Content' }, { label: 'Pages', href: '/pages' }, { label: page.name }]}
         actions={
           <div className="flex items-center gap-2">
+            <Link href="/pages">
+              <Button variant="ghost">
+                <ChevronLeft className="h-4 w-4" /> Back
+              </Button>
+            </Link>
             <Button
               variant="secondary"
               onClick={() => setFrameTick((t) => t + 1)}
@@ -485,11 +490,6 @@ export default function PageEditor() {
                 <ExternalLink className="h-4 w-4" /> Open live
               </Button>
             </a>
-            <Link href="/pages">
-              <Button variant="ghost">
-                <ChevronLeft className="h-4 w-4" /> Back
-              </Button>
-            </Link>
           </div>
         }
       />
