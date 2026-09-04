@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useWarehouses, useCreateWarehouse, useUpdateWarehouse } from '@/lib/api-hooks';
 import { useAuth } from '@/config/auth-context';
 import { formatNumber } from '@/lib/utils';
 import { canAct } from '@/config/rbac';
@@ -16,20 +17,6 @@ import { useRouter } from 'next/navigation';
 import type { Warehouse } from '@aamako/shared-types';
 import { MapPin, Plus, Package, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
-const MOCK_WAREHOUSES: Warehouse[] = [
-  { id: 'WH001', name: 'Main Warehouse - Kathmandu', code: 'KTM-MAIN', address: 'Balkhu, Kathmandu', isActive: true },
-  { id: 'WH002', name: 'Secondary Warehouse - Pokhara', code: 'PKR-SEC', address: 'Lakeside, Pokhara', isActive: true },
-  { id: 'WH003', name: 'Distribution Hub - Chitwan', code: 'CHW-DIST', address: 'Bharatpur, Chitwan', isActive: true },
-  { id: 'WH004', name: 'Cold Storage - Kathmandu', code: 'KTM-COLD', address: 'Thankot, Kathmandu', isActive: false },
-];
-
-const MOCK_WAREHOUSE_STATS = [
-  { warehouseId: 'WH001', totalProducts: 12, totalStock: 450, lowStock: 2, value: 1250000 },
-  { warehouseId: 'WH002', totalProducts: 8, totalStock: 180, lowStock: 1, value: 480000 },
-  { warehouseId: 'WH003', totalProducts: 6, totalStock: 95, lowStock: 0, value: 210000 },
-  { warehouseId: 'WH004', totalProducts: 0, totalStock: 0, lowStock: 0, value: 0 },
-];
-
 /** Screen: Warehouses
  *  Can view: SUPER_ADMIN, ADMIN, MANAGER, INVENTORY_MANAGER
  *  Can manage: SUPER_ADMIN, ADMIN, INVENTORY_MANAGER
@@ -39,50 +26,73 @@ export default function WarehousesPage() {
   const { addToast } = useToast();
   const [createDialog, setCreateDialog] = useState(false);
   const [newWarehouse, setNewWarehouse] = useState({ name: '', code: '', address: '' });
-  const [warehouses, setWarehouses] = useState<Warehouse[]>(MOCK_WAREHOUSES);
   const [editWarehouse, setEditWarehouse] = useState<Warehouse | null>(null);
   const router = useRouter();
 
   const canManage = user && canAct(user.role, 'warehouses:manage');
+  const { data: warehouses, isLoading } = useWarehouses();
+  const createMutation = useCreateWarehouse();
+  const updateMutation = useUpdateWarehouse();
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!newWarehouse.name.trim() || !newWarehouse.code.trim()) {
       addToast({ type: 'error', title: 'Missing fields', description: 'Name and code are required.' });
       return;
     }
-    setWarehouses((prev) => [
-      ...prev,
-      {
-        id: 'WH' + String(Date.now()).slice(-3),
+    try {
+      await createMutation.mutateAsync({
         name: newWarehouse.name.trim(),
         code: newWarehouse.code.trim().toUpperCase(),
         address: newWarehouse.address.trim(),
-        isActive: true,
-      },
-    ]);
-    addToast({
-      type: 'success',
-      title: 'Warehouse created',
-      description: `${newWarehouse.name} (${newWarehouse.code}) has been added.`,
-    });
-    setCreateDialog(false);
-    setNewWarehouse({ name: '', code: '', address: '' });
+      });
+      addToast({
+        type: 'success',
+        title: 'Warehouse created',
+        description: `${newWarehouse.name} (${newWarehouse.code}) has been added.`,
+      });
+      setCreateDialog(false);
+      setNewWarehouse({ name: '', code: '', address: '' });
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Creation failed', description: err.message });
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editWarehouse) return;
     if (!editWarehouse.name.trim()) {
       addToast({ type: 'error', title: 'Name required', description: 'Warehouse name cannot be empty.' });
       return;
     }
-    setWarehouses((prev) => prev.map((w) => (w.id === editWarehouse.id ? editWarehouse : w)));
-    addToast({
-      type: 'success',
-      title: 'Warehouse updated',
-      description: `${editWarehouse.name} has been saved.`,
-    });
-    setEditWarehouse(null);
+    try {
+      await updateMutation.mutateAsync({
+        id: editWarehouse.id,
+        data: {
+          name: editWarehouse.name,
+          address: editWarehouse.address,
+          isActive: editWarehouse.isActive,
+        },
+      });
+      addToast({
+        type: 'success',
+        title: 'Warehouse updated',
+        description: `${editWarehouse.name} has been saved.`,
+      });
+      setEditWarehouse(null);
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Update failed', description: err.message });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  const warehouseList = warehouses ?? [];
+  const totalStock = warehouseList.reduce((acc, w) => acc + (w.stats?.totalStock ?? 0), 0);
 
   return (
     <div className="space-y-6">
@@ -103,32 +113,32 @@ export default function WarehousesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Total Warehouses</p>
-          <p className="mt-1 text-2xl font-semibold text-surface-900">{warehouses.length}</p>
+          <p className="mt-1 text-2xl font-semibold text-surface-900">{warehouseList.length}</p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Active Warehouses</p>
           <p className="mt-1 text-2xl font-semibold text-surface-900">
-            {warehouses.filter((w) => w.isActive).length}
+            {warehouseList.filter((w) => w.isActive).length}
           </p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Total Stock Units</p>
           <p className="mt-1 text-2xl font-semibold text-surface-900 tabular-nums">
-            {formatNumber(MOCK_WAREHOUSE_STATS.reduce((acc, s) => acc + s.totalStock, 0))}
+            {formatNumber(totalStock)}
           </p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-surface-500 uppercase">Low Stock Alerts</p>
           <p className="mt-1 text-2xl font-semibold text-surface-900 tabular-nums text-amber-600">
-            {MOCK_WAREHOUSE_STATS.reduce((acc, s) => acc + s.lowStock, 0)}
+            {warehouseList.reduce((acc, w) => acc + (w.stats?.lowStock ?? 0), 0)}
           </p>
         </Card>
       </div>
 
       {/* Warehouse Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {warehouses.map((warehouse) => {
-          const stats = MOCK_WAREHOUSE_STATS.find((s) => s.warehouseId === warehouse.id);
+        {warehouseList.map((warehouse) => {
+          const stats = warehouse.stats;
           return (
             <Card key={warehouse.id}>
               <div className="p-5">

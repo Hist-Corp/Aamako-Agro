@@ -118,6 +118,7 @@
 })();
 </script>
   <script src="js/api.js"></script>
+<script src="js/error-page.js"></script>
   <script src="js/account-menu.js"></script>
   <!-- Checkout modal: step 1 address → step 2 payment → step 3 confirmation -->
   <div class="ck-overlay" id="ckOverlay">
@@ -289,7 +290,11 @@
             '<div class="ck-summary-row"><span>Deliver to</span><span style="text-align:right;max-width:60%;">' + savedAddress.full + '</span></div>';
           showStep(2);
         } catch (err) {
-          alert(err.message || 'Checkout failed');
+          if (window.AamakoErrorPage && window.AamakoErrorPage.show(err, { context: 'Checkout', url: location.href })) {
+            // Error page shown (unexpected failure while placing the order).
+          } else {
+            alert(err.message || 'Checkout failed');
+          }
         } finally {
           btn.disabled = false; btn.textContent = 'Place order';
         }

@@ -36,6 +36,12 @@ import type {
   AuditLogListParams,
   SalesReport,
   SalesReportParams,
+  Warehouse,
+  WarehouseStats,
+  SupportTicket,
+  SupportListParams,
+  CreateTicketRequest,
+  UpdateTicketRequest,
   User,
   Role,
 } from '@aamako/shared-types';
@@ -61,6 +67,10 @@ export const queryKeys = {
   reviews: (params?: ReviewListParams) => ['admin', 'reviews', params] as const,
   auditLogs: (params?: AuditLogListParams) => ['admin', 'audit-logs', params] as const,
   salesReport: (params: SalesReportParams) => ['admin', 'reports', 'sales', params] as const,
+  warehouses: ['admin', 'warehouses'] as const,
+  warehouse: (id: string) => ['admin', 'warehouses', id] as const,
+  supportTickets: (params?: SupportListParams) => ['admin', 'support-tickets', params] as const,
+  supportTicket: (id: string) => ['admin', 'support-tickets', id] as const,
   users: ['admin', 'users'] as const,
 } as const;
 
@@ -858,4 +868,105 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
-// ─── Notifications ──────────────────────────────────────────────────
+// ─── Warehouses ─────────────────────────────────────────────────────
+const MOCK_WAREHOUSES: Warehouse[] = [
+  { id: 'WH001', name: 'Main Warehouse - Kathmandu', code: 'KTM-MAIN', address: 'Balkhu, Kathmandu', isActive: true },
+  { id: 'WH002', name: 'Secondary Warehouse - Pokhara', code: 'PKR-SEC', address: 'Lakeside, Pokhara', isActive: true },
+  { id: 'WH003', name: 'Distribution Hub - Chitwan', code: 'CHW-DIST', address: 'Bharatpur, Chitwan', isActive: true },
+  { id: 'WH004', name: 'Cold Storage - Kathmandu', code: 'KTM-COLD', address: 'Thankot, Kathmandu', isActive: false },
+];
+
+const MOCK_WAREHOUSE_STATS: WarehouseStats[] = [
+  { warehouseId: 'WH001', totalProducts: 12, totalStock: 450, lowStock: 2, value: 1250000 },
+  { warehouseId: 'WH002', totalProducts: 8, totalStock: 180, lowStock: 1, value: 480000 },
+  { warehouseId: 'WH003', totalProducts: 6, totalStock: 95, lowStock: 0, value: 210000 },
+  { warehouseId: 'WH004', totalProducts: 0, totalStock: 0, lowStock: 0, value: 0 },
+];
+
+export function useWarehouses() {
+  return useQuery({
+    queryKey: queryKeys.warehouses,
+    queryFn: async () => {
+      const warehouses = await withFallback(
+        () => apiClient.get<Warehouse[]>('/admin/warehouses'),
+        MOCK_WAREHOUSES,
+      );
+      return warehouses.map((w: any) => ({
+        ...w,
+        stats: w.stats ?? MOCK_WAREHOUSE_STATS.find((s) => s.warehouseId === w.id) ?? {
+          warehouseId: w.id,
+          totalProducts: 0,
+          totalStock: 0,
+          lowStock: 0,
+          value: 0,
+        },
+      }));
+    },
+  });
+}
+
+export function useCreateWarehouse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; code: string; address?: string }) =>
+      apiClient.post<Warehouse>('/admin/warehouses', data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.warehouses }),
+  });
+}
+
+export function useUpdateWarehouse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { name?: string; address?: string; isActive?: boolean } }) =>
+      apiClient.patch<Warehouse>(`/admin/warehouses/${id}`, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.warehouses }),
+  });
+}
+
+// ─── Support Tickets ────────────────────────────────────────────────
+const MOCK_SUPPORT_TICKETS: SupportTicket[] = [
+  { id: 'TKT-001', subject: 'Order not received after 7 days', customerName: 'KTM Fresh Mart', customerEmail: 'orders@ktmfresh.com', category: 'Order Issue', status: 'IN_PROGRESS', priority: 'HIGH', assignedTo: 'Sita Support', lastMessage: 'Checking with courier service for tracking update', messageCount: 4, createdAt: new Date(Date.now() - 604800000).toISOString(), updatedAt: new Date(Date.now() - 3600000).toISOString() },
+  { id: 'TKT-002', subject: 'Damaged product received', customerName: 'Bhaktapur Organics', customerEmail: 'info@bhaktapurorg.com', category: 'Product Quality', status: 'WAITING_CUSTOMER', priority: 'MEDIUM', assignedTo: 'Sita Support', lastMessage: 'Please share photos of the damaged product', messageCount: 3, createdAt: new Date(Date.now() - 259200000).toISOString(), updatedAt: new Date(Date.now() - 7200000).toISOString() },
+  { id: 'TKT-003', subject: 'Wholesale pricing inquiry', customerName: 'Lalitpur Grocery', customerEmail: 'buy@lalitpurgrocery.com', category: 'General Inquiry', status: 'OPEN', priority: 'LOW', assignedTo: 'Unassigned', lastMessage: 'Looking for bulk pricing on Basmati Rice', messageCount: 1, createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date(Date.now() - 86400000).toISOString() },
+  { id: 'TKT-004', subject: 'Refund request for cancelled order', customerName: 'Chitwan Fresh Direct', customerEmail: 'order@chitwanfresh.com', category: 'Refund', status: 'RESOLVED', priority: 'MEDIUM', assignedTo: 'Sita Support', lastMessage: 'Refund processed successfully', messageCount: 6, createdAt: new Date(Date.now() - 518400000).toISOString(), updatedAt: new Date(Date.now() - 172800000).toISOString(), resolvedAt: new Date(Date.now() - 172800000).toISOString() },
+  { id: 'TKT-005', subject: 'Account access issue', customerName: 'Pokhara Organics Co.', customerEmail: 'deepak@pokharaorganics.com', category: 'Account', status: 'OPEN', priority: 'URGENCY', assignedTo: 'Sita Support', lastMessage: 'Cannot login to wholesale portal', messageCount: 2, createdAt: new Date(Date.now() - 14400000).toISOString(), updatedAt: new Date(Date.now() - 7200000).toISOString() },
+];
+
+export function useSupportTickets(params?: SupportListParams) {
+  return useQuery({
+    queryKey: queryKeys.supportTickets(params),
+    queryFn: () => withFallback(
+      () => apiClient.get<SupportTicket[]>('/admin/support/tickets', { params: params as Record<string, string> }),
+      MOCK_SUPPORT_TICKETS,
+    ),
+  });
+}
+
+export function useSupportTicket(id: string) {
+  return useQuery({
+    queryKey: queryKeys.supportTicket(id),
+    queryFn: () => withFallback(
+      () => apiClient.get<SupportTicket>(`/admin/support/tickets/${id}`),
+      MOCK_SUPPORT_TICKETS.find((t) => t.id === id) || MOCK_SUPPORT_TICKETS[0],
+    ),
+    enabled: !!id,
+  });
+}
+
+export function useCreateTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateTicketRequest) =>
+      apiClient.post<SupportTicket>('/admin/support/tickets', data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'support-tickets'] }),
+  });
+}
+
+export function useUpdateTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateTicketRequest }) =>
+      apiClient.patch<SupportTicket>(`/admin/support/tickets/${id}`, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'support-tickets'] }),
+  });
+}

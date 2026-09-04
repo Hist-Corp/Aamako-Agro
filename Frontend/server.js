@@ -9,7 +9,14 @@ http.createServer((req, res) => {
   if (url === '/') url = '/index.html';
   const fp = path.join(ROOT, url);
   fs.readFile(fp, (err, data) => {
-    if (err) { res.writeHead(404); res.end('Not found'); return; }
+    if (err) {
+      // Serve the styled error page for unknown routes instead of plain text.
+      res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+      fs.readFile(path.join(ROOT, 'error.html'), (e2, errData) => {
+        res.end(e2 ? '<h1>404 Not Found</h1>' : errData);
+      });
+      return;
+    }
     const ext = path.extname(fp);
     res.writeHead(200, {
       'Content-Type': MIME[ext] || 'application/octet-stream',
