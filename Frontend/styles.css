@@ -1,14 +1,12 @@
 /* ===========================================================
    AAMA KO AGRO — Design System v2
-   Fonts: Playfair Display (display) + Inter (body) + JetBrains Mono (accent)
+   Fonts: SF Pro family (system font stack) across display/body/mono
    Signature device: produce grading stamp
 =========================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 :root{
-  --bg: #F7F1E4;
-  --surface: #ECE3CC;
+  --bg: #FAF9F6;
+  --surface: #F1EFE9;
   --paper: #FFFDF7;
   --ink: #211F17;
   --ink-soft: #55503F;
@@ -17,7 +15,7 @@
     --gold: #BE8A2A;
     --clay: #9C4E30;
     --rust: #7A3820;
-    --line: #D9CBA4;
+    --line: #E2DED2;
   --stamp: #023325;
 
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
@@ -27,9 +25,9 @@
   --shadow-md: 0 8px 30px rgba(33,31,23,0.12);
   --shadow-lg: 0 20px 60px rgba(33,31,23,0.18);
 
-  --display: 'Playfair Display', Georgia, serif;
-  --body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   --motion-micro: 160ms;
   --motion-component: 320ms;
@@ -357,6 +355,10 @@ h2.section-title{font-family:var(--display); font-weight:700; font-size:clamp(1.
 .link-arrow::after{content:' →'; display:inline-block; transition:transform var(--motion-micro) ease;}
 .link-arrow:hover::after{transform:translateX(3px);}
 
+/* soft light-green band for home highlight sections */
+.section-love{background:#E2F0E2;}
+footer{background:#E2F0E2;}
+
 /* ---------- categories ---------- */
 .cat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:var(--space-6);}
 @media (max-width:768px){ .cat-grid{grid-template-columns:1fr;} }
@@ -478,8 +480,9 @@ h2.section-title{font-family:var(--display); font-weight:700; font-size:clamp(1.
 .trace{display:grid; grid-template-columns:0.9fr 1.1fr; gap:var(--space-8); align-items:center;}
 @media (max-width:900px){ .trace{grid-template-columns:1fr;} }
 .batch-tag{
+  /* Batch traceability keeps its original monospace type (not SF Pro) */
   border:1px dashed var(--sage-deep); border-radius:var(--radius-sm); padding:var(--space-5);
-  font-family:var(--mono); font-size:12px; color:var(--sage-deep); background:var(--surface);
+  font-family:'JetBrains Mono','Fira Code',monospace; font-size:12px; color:var(--sage-deep); background:var(--surface);
 }
 .batch-tag div{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line);}
 .batch-tag div:last-child{border-bottom:none;}
@@ -1127,7 +1130,7 @@ body.is-signed-out .cart-btn-wrap{display:none;}
 }
 .signin-gate-close:hover{color:var(--ink);}
 .signin-gate-icon{font-size:36px; margin-bottom:var(--space-3);}
-.signin-gate-title{font-family:var(--font-display,'Playfair Display',serif); font-size:1.35rem; margin-bottom:var(--space-2);}
+.signin-gate-title{font-family:var(--display); font-size:1.35rem; margin-bottom:var(--space-2);}
 .signin-gate-text{font-size:14px; color:var(--ink-soft); margin-bottom:var(--space-5); line-height:1.55;}
 .signin-gate-actions{display:flex; flex-direction:column; gap:var(--space-2); align-items:center;}
 .signin-gate-signin{
@@ -1148,7 +1151,7 @@ body.is-signed-out .cart-btn-wrap{display:none;}
 /* Header account dropdown */
 .acct-wrap{position:relative; display:inline-block;}
 .acct-trigger{display:flex; align-items:center; gap:8px; background:none; border:none; cursor:pointer;
-  font-family:'Inter',sans-serif; font-size:13px; font-weight:500; color:var(--ink); padding:6px 10px;
+  font-family:var(--body); font-size:13px; font-weight:500; color:var(--ink); padding:6px 10px;
   border-radius:var(--radius-sm); transition:background .15s ease;}
 .acct-trigger:hover{background:rgba(0,0,0,.05);}
 .acct-avatar{width:30px; height:30px; border-radius:50%; background:var(--sage); color:#fff;

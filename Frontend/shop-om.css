@@ -11,14 +11,14 @@
 .omsec-title{font-family:var(--display);font-size:30px;font-weight:600;color:var(--ink);margin:4px 0 0;line-height:1.15;}
 
 /* ---------- hero split slider ---------- */
-.omhero{position:relative;overflow:hidden;background:#F7F1E4;}
+.omhero{position:relative;overflow:hidden;background:#FAF9F6;}
 .omhero-stage{display:grid;}
-.omhero-slide{grid-area:1/1;opacity:0;pointer-events:none;transition:opacity .6s ease;z-index:1;background:var(--hs-bg,#F7F1E4);}
+.omhero-slide{grid-area:1/1;opacity:0;pointer-events:none;transition:opacity .6s ease;z-index:1;background:var(--hs-bg,#FAF9F6);}
 .omhero-slide.is-active{opacity:1;pointer-events:auto;z-index:2;}
 .omhero-inner{display:flex;align-items:center;max-width:1240px;margin:0 auto;}
 .omhero-text{flex:1 1 48%;padding:56px 3vw 56px var(--space-5);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;}
 .omhero-media{flex:1 1 52%;font-size:0;position:relative;}
-.omhero-media::before{content:"";position:absolute;top:0;bottom:0;left:0;width:13%;background:linear-gradient(to right,var(--hs-bg,#F7F1E4) 0%,rgba(247,241,228,0) 100%);z-index:2;pointer-events:none;}
+.omhero-media::before{content:"";position:absolute;top:0;bottom:0;left:0;width:13%;background:linear-gradient(to right,var(--hs-bg,#FAF9F6) 0%,rgba(250,249,246,0) 100%);z-index:2;pointer-events:none;}
 .omhero-img{width:100%;height:auto;display:block;max-height:460px;object-fit:cover;object-position:center;border-radius:var(--radius-lg) 0 0 var(--radius-lg);}
 .omhero-eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--clay);font-weight:500;margin:0 0 14px;}
 .omhero-title{font-family:var(--display);font-size:clamp(30px,4vw,46px);font-weight:600;color:var(--ink);line-height:1.12;margin:0 0 14px;max-width:16ch;}
@@ -338,7 +338,7 @@
   .omhero-inner{flex-direction:column;align-items:stretch;}
   .omhero-text{padding:44px var(--space-4) 28px;flex:1 1 auto;}
   .omhero-media{flex:1 1 auto;}
-  .omhero-media::before{top:0;left:0;right:0;width:100%;height:13%;background:linear-gradient(to bottom,var(--hs-bg,#F7F1E4) 0%,rgba(247,241,228,0) 100%);}
+  .omhero-media::before{top:0;left:0;right:0;width:100%;height:13%;background:linear-gradient(to bottom,var(--hs-bg,#FAF9F6) 0%,rgba(250,249,246,0) 100%);}
   .omhero-img{border-radius:var(--radius-lg) var(--radius-lg) 0 0;max-height:320px;}
   .omhero-title{max-width:none;}
 }
