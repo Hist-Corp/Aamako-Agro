@@ -192,23 +192,29 @@ nav.wrap{display:flex; align-items:center; justify-content:space-between; paddin
   .mobile-drawer a{padding:16px 0; font-size:17px;}
 }
 
-/* ---------- hero (home) — full-width bg image ---------- */
+/* ---------- hero (home) — brand-green bg (image slot below) ---------- */
 .hero{
   position:relative; overflow:hidden;
   min-height:92vh; display:flex; align-items:center;
-  background:var(--ink); color:var(--paper);
+  /* Brand green background. To swap in a real photo later, drop an <img>
+     inside the .hero-bg container in index.html — the green tint overlay
+     below keeps the hero copy legible over the image. */
+  background:var(--sage-deep); color:var(--paper);
 }
 .hero-bg{
   position:absolute; inset:0; z-index:0;
 }
 .hero-bg img{
   width:100%; height:100%; object-fit:cover;
-  opacity:0.55;
 }
 .hero-bg::after{
   content:''; position:absolute; inset:0;
-  background: linear-gradient(135deg, rgba(33,31,23,0.75) 0%, rgba(33,31,23,0.35) 50%, rgba(2,51,37,0.5) 100%);
+  /* Green tint so any future hero photo reads in the brand palette */
+  background: linear-gradient(135deg, rgba(1,42,21,0.45) 0%, rgba(1,42,21,0.2) 50%, rgba(3,57,34,0.35) 100%);
 }
+/* Primary CTA must stay visible on the brand-green hero */
+.hero .btn-primary{background:var(--gold); color:var(--ink); border-color:var(--gold);}
+.hero .btn-primary:hover{box-shadow:0 6px 20px rgba(190,138,42,0.35); transform:translateY(-2px);}
 .hero .wrap{position:relative; z-index:1; width:100%;}
 .hero-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:var(--space-8); align-items:center; min-height:70vh;}
 .hero-content{ padding:var(--space-8) 0; }
