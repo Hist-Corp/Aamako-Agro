@@ -3,6 +3,7 @@
 // Nav rendering is driven by this config, not scattered conditionals.
 
 import type { Role } from '@aamako/shared-types';
+import { ROLE_PERMISSIONS } from '@aamako/shared-types';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -262,7 +263,6 @@ export const NAV_STRUCTURE: NavGroup[] = [
 
 /** Check if a role has a specific permission */
 export function hasPermission(role: Role, permission: string): boolean {
-  const { ROLE_PERMISSIONS } = require('@aamako/shared-types');
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 }
 

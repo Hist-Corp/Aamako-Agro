@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { User, Role } from '@aamako/shared-types';
+import { ROLE_PERMISSIONS } from '@aamako/shared-types';
 
 interface AuthContextValue {
   user: User | null;
@@ -124,7 +125,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (permission: string): boolean => {
       if (!user) return false;
       try {
-        const { ROLE_PERMISSIONS } = require('@aamako/shared-types');
         return ROLE_PERMISSIONS[user.role]?.includes(permission) ?? false;
       } catch {
         return false; // Fail closed when permissions cannot be determined
