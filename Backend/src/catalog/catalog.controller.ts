@@ -14,6 +14,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CatalogService } from './catalog.service';
 import {
+  CreateCategoryDto,
   CreateProductDto,
   CreateVariantDto,
   ListProductsQueryDto,
@@ -84,5 +85,15 @@ export class CatalogController {
   @Patch('admin/categories/:id')
   updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
     return this.catalog.updateCategory(id, dto);
+  }
+
+  /** Create a new product category page (Dashboard → Content → Pages →
+   *  Product Category → "Add category page"). The shared collection template
+   *  picks it up immediately. */
+  @ApiOperation({ summary: 'Create a product category page' })
+  @Roles(Role.STAFF_ADMIN, Role.STAFF_MANAGER, Role.CONTENT_MANAGER)
+  @Post('admin/categories')
+  createCategory(@Body() dto: CreateCategoryDto) {
+    return this.catalog.createCategory(dto);
   }
 }

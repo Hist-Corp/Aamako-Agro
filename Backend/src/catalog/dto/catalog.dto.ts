@@ -58,6 +58,22 @@ export class UpdateProductDto {
   @IsOptional() @IsBoolean() isPublished?: boolean;
 }
 
+export class CreateCategoryDto {
+  @ApiProperty({ description: 'Display name of the category page (min 2 chars)' })
+  @IsString()
+  @MinLength(2)
+  name!: string;
+
+  /** Optional URL slug — generated from the name when omitted. */
+  @ApiPropertyOptional({ description: 'URL slug (collection.html?cat=…). Generated from the name when omitted.' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'slug must be lowercase letters/numbers separated by single hyphens',
+  })
+  slug?: string;
+}
+
 export class UpdateCategoryDto {
   @ApiPropertyOptional({ description: 'New display name for the category' })
   @IsOptional()

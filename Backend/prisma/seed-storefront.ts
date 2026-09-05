@@ -68,7 +68,24 @@ function extractCmsElements(html: string): CmsHit[] {
       continue;
     }
 
-    if (VOID_TAGS.has(tag) || /\/\s*>$/.test(token)) continue;
+    // Void / self-closing elements can't wrap content, but they may still be
+    // CMS-editable via an attribute — e.g.
+    //   <input data-cms="page.shop.search.placeholder" data-cms-attr="placeholder">
+    // content.js writes the item's title into that attribute (form controls
+    // get their placeholder replaced), so seed the attribute's current value
+    // as the default title.
+    if (VOID_TAGS.has(tag) || /\/\s*>$/.test(token)) {
+      const voidKey = attrs.match(/\bdata-cms="([^"]+)"/);
+      if (!voidKey) continue;
+      const attrName =
+        attrs.match(/\bdata-cms-attr="([^"]+)"/)?.[1] ??
+        (tag === 'input' || tag === 'textarea' ? 'placeholder' : null);
+      const attrText = attrName
+        ? attrs.match(new RegExp(`\\b${attrName}="([^"]*)"`))?.[1]
+        : undefined;
+      if (attrText) hits.push({ key: voidKey[1], field: 'title', html: attrText });
+      continue;
+    }
 
     const keyMatch = attrs.match(/\bdata-cms="([^"]+)"/);
     const fieldMatch = attrs.match(/\bdata-cms-field="([^"]+)"/);

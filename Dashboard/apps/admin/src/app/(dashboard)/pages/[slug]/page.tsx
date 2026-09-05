@@ -7,6 +7,7 @@ import { useAuth } from '@/config/auth-context';
 import { canAct } from '@/config/rbac';
 import { apiClient, ApiError } from '@/lib/api-client';
 import {
+  collectionCategorySections,
   getSitePage,
   storefrontUrl,
   type SitePage,
@@ -30,6 +31,7 @@ import {
   FolderOpen,
   LayoutTemplate,
   Pencil,
+  Plus,
   RefreshCw,
   Save,
   FileText,
@@ -123,6 +125,15 @@ export default function PageEditor() {
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
 
+  // "Add category page" — inline creation of a brand-new category. The company
+  // can decide to add a new product category any time; the new page is born
+  // with the SAME template and the editor switches to it so contents can be
+  // replaced right away.
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatSlug, setNewCatSlug] = useState('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
   // Content Managers always go through the moderation queue — their save
   // button submits for Manager approval rather than publishing directly.
   const isContentManager = user?.role === 'CONTENT_MANAGER';
@@ -192,6 +203,35 @@ export default function PageEditor() {
     };
   }, [isCategoryTemplate]);
 
+  /** Map the raw categories API payload to the chip/option shape. */
+  const mapCategories = (
+    data: Array<{ id: string; name: string; slug: string; _count?: { products?: number } }>,
+  ): CategoryOption[] =>
+    (data ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      products: c._count?.products ?? 0,
+    }));
+
+  // Product Category template: extend the shared template with per-category
+  // sections for the category currently selected in the preview. The template
+  // itself never changes — every category (including brand-new pages added
+  // below) just gets its own heading/intro edition, so contents are replaced
+  // per category while the layout stays identical.
+  const allSections = useMemo<PageTemplateSection[]>(() => {
+    if (!page) return [];
+    if (!isCategoryTemplate || !categorySlug) return page.sections;
+    const catSections = collectionCategorySections(categorySlug);
+    const footerIdx = page.sections.findIndex((s) => s.group === 'Footer (global)');
+    if (footerIdx === -1) return [...page.sections, ...catSections];
+    return [
+      ...page.sections.slice(0, footerIdx),
+      ...catSections,
+      ...page.sections.slice(footerIdx),
+    ];
+  }, [page, isCategoryTemplate, categorySlug]);
+
   const selectSection = (section: PageTemplateSection) => {
     setActiveKey(section.key);
     const loaded = items.find((i) => i.key === section.key);
@@ -221,7 +261,7 @@ export default function PageEditor() {
       if (d.type !== 'section-click') return;
       const key = String(d.key ?? '');
       if (!key) return;
-      const section = page?.sections.find((s) => s.key === key);
+      const section = allSections.find((s) => s.key === key);
       if (section) {
         selectSection(section);
         return;
@@ -245,8 +285,8 @@ export default function PageEditor() {
     [items, activeKey],
   );
   const activeSection = useMemo(
-    () => page?.sections.find((s) => s.key === activeKey) ?? null,
-    [page, activeKey],
+    () => allSections.find((s) => s.key === activeKey) ?? null,
+    [allSections, activeKey],
   );
   const isNew = activeKey != null && !foundItem;
   const activePending = useMemo(
@@ -403,6 +443,54 @@ export default function PageEditor() {
       });
     } finally {
       setIsRenaming(false);
+    }
+  };
+
+  /** Create a brand-new product category page. The template (collection.html)
+   *  stays exactly the same — the new page is born with the same sections and
+   *  the editor immediately switches the preview to it, so the user can
+   *  replace its heading/intro (and product images via Dashboard → Products)
+   *  without touching any code. */
+  const handleAddCategory = async () => {
+    const name = newCatName.trim();
+    if (name.length < 2) {
+      addToast({
+        type: 'error',
+        title: 'Name too short',
+        description: 'Category names need at least 2 characters.',
+      });
+      return;
+    }
+    setIsCreatingCategory(true);
+    try {
+      const slug = newCatSlug.trim();
+      const created = await apiClient.post<{ id: string; name: string; slug: string }>(
+        '/admin/categories',
+        { name, ...(slug ? { slug } : {}) },
+      );
+      const cats = await apiClient.get<
+        Array<{ id: string; name: string; slug: string; _count?: { products?: number } }>
+      >('/categories');
+      setCategories(mapCategories(cats));
+      setIsAddingCategory(false);
+      setNewCatName('');
+      setNewCatSlug('');
+      // Show the new page in the live preview right away.
+      setCategorySlug(created.slug);
+      setFrameTick((t) => t + 1);
+      addToast({
+        type: 'success',
+        title: 'Category page created',
+        description: `“${created.name}” now has its own page (collection.html?cat=${created.slug}) with the same template. Edit the “Category page (${created.slug})” sections below to replace its contents, then assign products in Dashboard → Products.`,
+      });
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Could not create category page',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsCreatingCategory(false);
     }
   };
 
@@ -592,6 +680,78 @@ export default function PageEditor() {
               </span>
             );
           })}
+
+          {/* Add a brand-new category page — same template, fresh contents.
+              The company can add a new product category any time; the new
+              page is created with the identical template and the user just
+              replaces its contents (and product images via Dashboard →
+              Products). */}
+          {isAddingCategory ? (
+            <span className="inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-brand-400 bg-white px-2 py-1.5 shadow-sm">
+              <FolderOpen className="h-4 w-4 flex-shrink-0 text-brand-600" />
+              <input
+                autoFocus
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (newCatName.trim().length >= 2) void handleAddCategory();
+                  }
+                  if (e.key === 'Escape') setIsAddingCategory(false);
+                }}
+                placeholder="Category name (e.g. Trail Mixes)"
+                aria-label="New category name"
+                className="h-7 w-48 rounded-md border border-surface-200 px-2 text-sm text-surface-800 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40"
+              />
+              <input
+                value={newCatSlug}
+                onChange={(e) => setNewCatSlug(e.target.value.toLowerCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (newCatName.trim().length >= 2) void handleAddCategory();
+                  }
+                  if (e.key === 'Escape') setIsAddingCategory(false);
+                }}
+                placeholder="url-slug (optional)"
+                aria-label="New category URL slug"
+                title="Optional URL slug (collection.html?cat=…). Generated from the name when left empty."
+                className="h-7 w-36 rounded-md border border-surface-200 px-2 font-mono text-xs text-surface-800 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40"
+              />
+              <button
+                type="button"
+                title="Create category page"
+                disabled={isCreatingCategory || newCatName.trim().length < 2}
+                onClick={() => void handleAddCategory()}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                title="Cancel"
+                onClick={() => setIsAddingCategory(false)}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-surface-500 hover:bg-surface-100 hover:text-surface-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </span>
+          ) : (
+            <Button
+              variant="secondary"
+              title="Add a new category page — the template stays the same, you just replace the contents"
+              onClick={() => setIsAddingCategory(true)}
+            >
+              <Plus className="h-4 w-4 flex-shrink-0" />
+              <span>Add category page</span>
+            </Button>
+          )}
+          <span className="basis-full text-2xs text-surface-400">
+            Adding a category creates a new page with the same template — pick it above, replace its
+            heading/intro in “Template sections”, then assign products (with images) in Dashboard →
+            Products.
+          </span>
         </div>
       )}
 <div className="grid flex-1 gap-4 items-start lg:grid-cols-2">
@@ -603,7 +763,7 @@ export default function PageEditor() {
             </div>
             <div className="max-h-64 overflow-y-auto">
             <div className="flex flex-wrap gap-2">
-              {page.sections.map((section, idx) => {
+              {allSections.map((section, idx) => {
                 const item = items.find((i) => i.key === section.key);
                 const exists = !!item;
                 const isHidden = item?.isVisible === false;

@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
+  CreateCategoryDto,
   CreateProductDto,
   CreateVariantDto,
   ListProductsQueryDto,
@@ -133,6 +134,31 @@ export class CatalogService {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (!category) throw new NotFoundException('Category not found');
     return this.prisma.category.update({ where: { id }, data: dto });
+  }
+
+  /** Create a new product category page. The template (collection.html) is
+   *  shared — only the name/slug differ, so the new page immediately works:
+   *  it appears in the storefront category chips/sidebar and products can be
+   *  assigned to it from Dashboard → Products. */
+  async createCategory(dto: CreateCategoryDto) {
+    const slug =
+      dto.slug ??
+      dto.name
+        .toLowerCase()
+        .replace(/&/g, ' and ')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    if (!slug) throw new ConflictException('Could not derive a URL slug from that name — provide a slug.');
+    try {
+      return await this.prisma.category.create({
+        data: { name: dto.name.trim(), slug },
+      });
+    } catch {
+      // P2002 — unique constraint on name or slug
+      throw new ConflictException(
+        `A category with that ${dto.slug ? 'slug' : 'name or slug'} already exists.`,
+      );
+    }
   }
 
   /** Admin listing — everything the dashboard Products screen needs,

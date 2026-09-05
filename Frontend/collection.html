@@ -23,7 +23,7 @@
     <a href="index.html" class="logo"><img draggable="false" src="logo.png" alt="Aama ko Agro"></a>
     <div class="nav-links">
       <a href="shop.html" class="active">Shop</a>
-      <a href="process.html">Why Freeze-Dried</a>
+      <a href="process.html">The Process</a>
       <a href="story.html">Our Story</a>
       <a href="wholesale.html">Wholesale</a>
       <a href="journal.html">Learn</a>
@@ -38,7 +38,7 @@
   </nav>
 </header>
 <div class="mobile-drawer" id="mobileDrawer">
-  <a href="index.html">Home</a><a href="shop.html">Shop</a><a href="process.html">Why Freeze-Dried</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a>
+  <a href="index.html">Home</a><a href="shop.html">Shop</a><a href="process.html">The Process</a><a href="story.html">Our Story</a><a href="wholesale.html">Wholesale</a><a href="journal.html">Learn</a>
   <a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a>
 </div>
 
@@ -327,6 +327,7 @@
     if(titleEl&&!titleEl.hasAttribute('data-cms-applied'))titleEl.textContent=name;
     var descEl=document.getElementById('collDesc');
     if(descEl&&!descEl.hasAttribute('data-cms-applied'))descEl.innerHTML=(meta.desc||[]).map(function(p){return '<p>'+esc(p)+'</p>';}).join('');
+    applyCatOverrides(cats);
     var chips=document.getElementById('collCats');
     chips.innerHTML=(cats||[]).map(function(c){
       return '<a href="collection.html?cat='+encodeURIComponent(c.slug)+'" class="'+(c.slug===currentSlug?'is-current':'')+'">'+esc(c.name)+'</a>';
@@ -335,6 +336,47 @@
     if(side)side.innerHTML=(cats||[]).map(function(c){
       return '<a href="collection.html?cat='+encodeURIComponent(c.slug)+'" class="'+(c.slug===currentSlug?'is-current':'')+'">'+esc(c.name)+'</a>';
     }).join('');
+  }
+
+  /* ---------- per-category CMS overrides ----------
+   * Every category page — including brand-new ones added from Dashboard →
+   * Content → Pages → Product Category ("Add category page") — can override
+   * the shared heading/intro with its own published content keys:
+   *   page.collection.cat.<slug>.title   → overrides the big heading
+   *   page.collection.cat.<slug>.desc    → overrides the intro paragraphs
+   * The template stays the same; only the contents differ per category.
+   * Runs both after paintChrome and after the content API resolves, so the
+   * per-category edition always wins whenever it exists. */
+  function applyCatOverrides(cats){
+    if(!window.AamakoContent)return;
+    var cat=currentSlug?(cats||[]).filter(function(c){return c.slug===currentSlug;})[0]||{}:{};
+    var titleEl=document.getElementById('collTitle');
+    var descEl=document.getElementById('collDesc');
+    var t=window.AamakoContent.get('page.collection.cat.'+currentSlug+'.title');
+    if(t&&titleEl){
+      var plain=(t.title||'').replace(/<[^>]*>/g,'').trim();
+      if(plain){
+        titleEl.innerHTML=t.title;
+        titleEl.setAttribute('data-cms-applied','1');
+        if(currentSlug)document.title=plain+' — Aama ko Agro';
+      }
+    }
+    var d=window.AamakoContent.get('page.collection.cat.'+currentSlug+'.desc');
+    if(d&&descEl){
+      var html=d.longDescription||d.shortDescription||'';
+      if(html.replace(/<[^>]*>/g,'').trim()){
+        descEl.innerHTML=html;
+        descEl.setAttribute('data-cms-applied','1');
+      }
+    }
+    return cat;
+  }
+  // Re-apply once the published content API resolves (content.js caches the
+  // promise, so this is cheap and never double-fetches).
+  if(window.AamakoContent){
+    window.AamakoContent.load().then(function(){
+      applyCatOverrides([]);
+    });
   }
 
   /* ---------- load categories + product listing ---------- */

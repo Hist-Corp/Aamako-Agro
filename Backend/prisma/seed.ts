@@ -157,16 +157,35 @@ async function main() {
     },
   });
 
-  const cat = await prisma.category.upsert({
-    where: { slug: 'freeze-dried-fruits' },
-    update: {},
-    create: { name: 'Freeze-Dried Fruits', slug: 'freeze-dried-fruits', sortOrder: 1 },
-  });
+  const cats = [
+    { name: 'Freeze-Dried Fruits & Vegetables', slug: 'freeze-dried-fruits', sortOrder: 1 },
+    { name: 'Dehydrated Fruits & Vegetables', slug: 'dehydrated', sortOrder: 2 },
+    { name: 'Milled Powders', slug: 'powders', sortOrder: 3 },
+  ];
+  const catIds: Record<string, string> = {};
+  for (const c of cats) {
+    const cat = await prisma.category.upsert({
+      where: { slug: c.slug },
+      update: {},
+      create: c,
+    });
+    catIds[c.slug] = cat.id;
+  }
 
   const products = [
-    { name: 'Freeze-Dried Apple Slices', slug: 'fd-apple-slices', sku: 'AA-APL-30G', variantName: '30g pack', unit: Unit.UNIT_30G, price: 25000 },
-    { name: 'Freeze-Dried Mango Chunks', slug: 'fd-mango-chunks', sku: 'AA-MNG-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 42000 },
-    { name: 'Freeze-Dried Strawberry', slug: 'fd-strawberry', sku: 'AA-STR-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 45000 },
+    // Freeze-dried
+    { name: 'Freeze-Dried Apple Slices', slug: 'fd-apple-slices', sku: 'AA-APL-30G', variantName: '30g pack', unit: Unit.UNIT_30G, price: 25000, cat: 'freeze-dried-fruits', imageUrl: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&q=80' },
+    { name: 'Freeze-Dried Mango Chunks', slug: 'fd-mango-chunks', sku: 'AA-MNG-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 42000, cat: 'freeze-dried-fruits', imageUrl: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=800&q=80' },
+    { name: 'Freeze-Dried Strawberry', slug: 'fd-strawberry', sku: 'AA-STR-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 45000, cat: 'freeze-dried-fruits', imageUrl: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&q=80' },
+    // Dehydrated (feeds the "Wholesome Dehydrated Choices" showcase)
+    { name: 'Dehydrated Apple Rings', slug: 'dehydrated-apple-rings', sku: 'AA-DAP-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 28000, cat: 'dehydrated', imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&q=80' },
+    { name: 'Dehydrated Banana Chips', slug: 'dehydrated-banana-chips', sku: 'AA-DBN-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 22000, cat: 'dehydrated', imageUrl: 'https://images.unsplash.com/photo-1550828520-4cb496926fc9?w=800&q=80' },
+    { name: 'Sun-Dried Tomatoes', slug: 'sun-dried-tomatoes', sku: 'AA-DTM-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 38000, cat: 'dehydrated', imageUrl: 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=800&q=80' },
+    { name: 'Dehydrated Mango Leather', slug: 'dehydrated-mango-leather', sku: 'AA-DML-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 32000, cat: 'dehydrated', imageUrl: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=800&q=80' },
+    // Milled powders
+    { name: 'Moringa Leaf Powder', slug: 'moringa-leaf-powder', sku: 'AA-MOR-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 35000, cat: 'powders', imageUrl: 'https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=800&q=80' },
+    { name: 'Ginger Powder', slug: 'ginger-powder', sku: 'AA-GIN-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 24000, cat: 'powders', imageUrl: 'https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=800&q=80' },
+    { name: 'Timur (Sichuan Pepper) Powder', slug: 'timur-powder', sku: 'AA-TIM-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 30000, cat: 'powders', imageUrl: 'https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=800&q=80' },
   ];
 
   for (const p of products) {
@@ -176,8 +195,9 @@ async function main() {
       create: {
         name: p.name,
         slug: p.slug,
-        description: `Nepali ${p.name.toLowerCase()}, freeze-dried to lock in flavour.`,
-        categoryId: cat.id,
+        description: `Nepali ${p.name.toLowerCase()} from partner farms, processed to lock in flavour.`,
+        imageUrl: p.imageUrl,
+        categoryId: catIds[p.cat],
         isPublished: true,
         variants: {
           create: {
@@ -209,6 +229,13 @@ async function main() {
       });
     }
   }
+
+  // Attach the dashboard-demo sample product to the dehydrated category so it
+  // also appears in the "Wholesome Dehydrated Choices" showcase.
+  await prisma.product.updateMany({
+    where: { slug: 'dehydrated-apple', categoryId: null },
+    data: { categoryId: catIds['dehydrated'] },
+  });
 
   console.log('Seed complete: staff admin + customers + tiers + catalog + wholesale price lists');
 }

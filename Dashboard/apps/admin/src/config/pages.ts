@@ -257,12 +257,13 @@ export const SITE_PAGES: SitePage[] = [
     ],
   },
   {
-    slug: 'why-we-freeze',
-    name: 'Why We Freeze',
+    slug: 'the-process',
+    name: 'The Process',
     route: 'process.html',
     previewPath: '/process.html',
     badge: 'Story',
-    description: '“Why freeze-dried, not just dried.” — hero stats, all six steps, comparison and CTA.',
+    description:
+      'How we make everything — the freeze-dried, dehydrated and stone-milled powder journeys, side-by-side comparisons and CTA.',
     sections: [
       ...trustBar(),
       { key: 'page.process.hero.eyebrow', label: 'Eyebrow', description: '“The science of less” tag line.', group: 'Hero' },
@@ -278,6 +279,32 @@ export const SITE_PAGES: SitePage[] = [
         description: 'Step name (title) and description (short).',
         group: 'Process steps',
       })),
+      { key: 'page.process.dehy.steps.eyebrow', label: 'Eyebrow', description: '“Step by step” tag line for the dehydrated section.', group: 'Dehydrated steps' },
+      { key: 'page.process.dehy.steps', label: 'Heading & sub-line', description: '“The dehydrated process” heading and description.', group: 'Dehydrated steps' },
+      ...([1, 2, 3, 4, 5, 6] as const).map((n): PageTemplateSection => ({
+        key: `page.process.dehy.step${n}`,
+        label: `Step ${n}`,
+        description: 'Step name (title) and description (short).',
+        group: 'Dehydrated steps',
+      })),
+      { key: 'page.process.dehy.compare', label: 'Heading & sub-line', description: 'Dehydrated comparison heading and description.', group: 'Dehydrated comparison' },
+      { key: 'page.process.dehy.compare.good', label: 'Dehydrated column', description: 'Column title (title) and blurb (short).', group: 'Dehydrated comparison' },
+      { key: 'page.process.dehy.compare.good.stats', label: 'Dehydrated stats', description: 'Stat numbers/captions for the dehydrated column (rich text).', group: 'Dehydrated comparison' },
+      { key: 'page.process.dehy.compare.bad', label: 'Sun/heat-dried column', description: 'Column title (title) and blurb (short).', group: 'Dehydrated comparison' },
+      { key: 'page.process.dehy.compare.bad.stats', label: 'Dried stats', description: 'Stat numbers/captions for the sun/heat column (rich text).', group: 'Dehydrated comparison' },
+      { key: 'page.process.powder.steps.eyebrow', label: 'Eyebrow', description: '“Step by step” tag line for the powdered section.', group: 'Powdered steps' },
+      { key: 'page.process.powder.steps', label: 'Heading & sub-line', description: '“The powdered process” heading and description.', group: 'Powdered steps' },
+      ...([1, 2, 3, 4, 5, 6] as const).map((n): PageTemplateSection => ({
+        key: `page.process.powder.step${n}`,
+        label: `Step ${n}`,
+        description: 'Step name (title) and description (short).',
+        group: 'Powdered steps',
+      })),
+      { key: 'page.process.powder.compare', label: 'Heading & sub-line', description: 'Powdered comparison heading and description.', group: 'Powdered comparison' },
+      { key: 'page.process.powder.compare.good', label: 'Stone-milled column', description: 'Column title (title) and blurb (short).', group: 'Powdered comparison' },
+      { key: 'page.process.powder.compare.good.stats', label: 'Stone-milled stats', description: 'Stat numbers/captions for the stone-milled column (rich text).', group: 'Powdered comparison' },
+      { key: 'page.process.powder.compare.bad', label: 'Generic powders column', description: 'Column title (title) and blurb (short).', group: 'Powdered comparison' },
+      { key: 'page.process.powder.compare.bad.stats', label: 'Generic stats', description: 'Stat numbers/captions for the generic column (rich text).', group: 'Powdered comparison' },
       { key: 'page.process.compare.tear', label: 'Divider text', description: 'The dotted tear-strip caption between sections.', group: 'Comparison' },
       { key: 'page.process.compare', label: 'Heading & sub-line', description: 'Comparison section heading and description.', group: 'Comparison' },
       { key: 'page.process.compare.good', label: 'Freeze-dried column', description: 'Column title (title) and blurb (short).', group: 'Comparison' },
@@ -426,7 +453,7 @@ export const SITE_PAGES: SitePage[] = [
     previewPath: '/collection.html',
     badge: 'Catalogue',
     description:
-      'Category collection pages (collection.html?cat=…). When you add a product in Dashboard → Products and pick its category, it is listed here automatically. The current categories — Freeze-Dried Fruits & Vegetables, Dehydrated Fruits & Vegetables and Milled Powders — are created in Dashboard → Products; this template edits the page copy around the grid.',
+      'Category collection pages (collection.html?cat=…). When you add a product in Dashboard → Products and pick its category, it is listed here automatically. Need a new category page (e.g. the company adds a new category)? Use "Add category page" below — the template stays the same and you just replace the contents. The current categories — Freeze-Dried Fruits & Vegetables, Dehydrated Fruits & Vegetables and Milled Powders — are created in Dashboard → Products; this template edits the page copy around the grid.',
     sections: [
       ...trustBar(),
       { key: 'page.collection.title', label: 'Page title', description: 'The big heading. A category’s own name overrides it; hide or edit it for a custom title.', group: 'Heading' },
@@ -437,6 +464,30 @@ export const SITE_PAGES: SitePage[] = [
     ],
   },
 ];
+
+/**
+ * Per-category template overrides for the Product Category template.
+ * Every category page (including brand-new ones added via "Add category
+ * page") gets its own edition of the same template: these keys override the
+ * shared heading/intro for that category only, so contents are replaced per
+ * category while the layout stays identical.
+ */
+export function collectionCategorySections(slug: string): PageTemplateSection[] {
+  return [
+    {
+      key: `page.collection.cat.${slug}.title`,
+      label: 'Category heading',
+      description: `Overrides the shared page title on “${slug}”. The category’s name is used when this is empty.`,
+      group: `Category page (${slug})`,
+    },
+    {
+      key: `page.collection.cat.${slug}.desc`,
+      label: 'Category intro',
+      description: `Overrides the shared intro text on “${slug}” — rich-text paragraphs under the heading.`,
+      group: `Category page (${slug})`,
+    },
+  ];
+}
 
 export function getSitePage(slug: string): SitePage | undefined {
   return SITE_PAGES.find((p) => p.slug === slug);

@@ -394,8 +394,9 @@ export default function ContentPage() {
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Content' }]}
         actions={
           canCreate ? (
-            <Button onClick={openNewDialog}>
-              <Plus className="h-4 w-4" /> New Page
+            <Button onClick={openNewDialog} className="whitespace-nowrap">
+              <Plus className="h-4 w-4 flex-shrink-0" />
+              <span>New Page</span>
             </Button>
           ) : undefined
         }
