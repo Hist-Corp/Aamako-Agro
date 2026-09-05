@@ -251,8 +251,8 @@ nav.wrap{display:flex; align-items:center; justify-content:space-between; paddin
 .page-header{padding:var(--space-8) 0 var(--space-7); border-bottom:1px solid var(--line);}
 .page-header-grid{display:flex; justify-content:space-between; align-items:flex-end; gap:var(--space-6); flex-wrap:wrap;}
 
-/* --- process hero: dark split layout with image right --- */
-.process-hero{position:relative; overflow:hidden; background:var(--ink); color:#EDE7CC; border-bottom:none; padding:0;}
+/* --- process hero: dark green split layout with image right --- */
+.process-hero{position:relative; overflow:hidden; background:var(--sage-deep); color:#EDE7CC; border-bottom:none; padding:0;}
 .process-hero .wrap{display:grid; grid-template-columns:1fr 1fr; min-height:480px; gap:0; padding:0;}
 .process-hero-left{padding:var(--space-9) var(--space-8) var(--space-9) var(--space-7); display:flex; flex-direction:column; justify-content:center;}
 .process-hero-right{position:relative; display:flex; align-items:center; justify-content:center; padding:var(--space-7);}
@@ -266,30 +266,54 @@ nav.wrap{display:flex; align-items:center; justify-content:space-between; paddin
 .process-hero-stamp{position:absolute; bottom:var(--space-7); right:var(--space-7); z-index:2; opacity:0.15; transform:rotate(-8deg);}
 @media (max-width:900px){ .process-hero .wrap{grid-template-columns:1fr; min-height:auto;} .process-hero-right{height:240px;} .process-hero-left{padding:var(--space-7) var(--space-5);} }
 
-/* --- story hero: warm gradient + overlapping photos --- */
-.story-hero{position:relative; overflow:hidden; background:linear-gradient(145deg, var(--cream) 0%, #EDE4CC 50%, var(--sage) 100%); padding:var(--space-9) 0; border-bottom:none;}
+/* "From harvest to sealed pack" — centered intro panel on the process page */
+.process-intro .wrap{display:flex; justify-content:center;}
+.process-intro-box{
+  background:#E2F0E2;
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-sm);
+  padding:var(--space-7) var(--space-8);
+  max-width:720px;
+  width:100%;
+  text-align:center;
+}
+.process-intro-box .section-title{font-size:clamp(1.5rem,2.8vw,2.1rem);}
+.process-intro-box .section-desc{margin-left:auto; margin-right:auto;}
+@media (max-width:560px){ .process-intro-box{padding:var(--space-5) var(--space-5);} }
+
+/* --- story hero: dark green + overlapping photos --- */
+.story-hero{position:relative; overflow:hidden; background:var(--sage-deep); padding:var(--space-9) 0; border-bottom:none;}
 .story-hero .wrap{display:grid; grid-template-columns:1.2fr 1fr; gap:var(--space-8); align-items:center; min-height:440px;}
 .story-hero-text{position:relative; z-index:2;}
-.story-hero-text .eyebrow{color:var(--sage-deep);}
-.story-hero-text h1{font-family:var(--display); font-weight:700; font-size:clamp(2rem,4vw,3.4rem); line-height:1.05; max-width:16ch; color:var(--ink);}
-.story-hero-text .hero-desc{margin-top:var(--space-5); font-size:16px; color:var(--ink-soft); max-width:44ch; line-height:1.65;}
+.story-hero-text .eyebrow{color:var(--gold);}
+.story-hero-text h1{font-family:var(--display); font-weight:700; font-size:clamp(2rem,4vw,3.4rem); line-height:1.05; max-width:16ch; color:#FFFDF7;}
+.story-hero-text .hero-desc{margin-top:var(--space-5); font-size:16px; color:#C4BCA0; max-width:44ch; line-height:1.65;}
 .story-hero-photos{position:relative; height:380px;}
 .story-hero-photos img{position:absolute; border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); object-fit:cover;}
 .story-hero-photos img:nth-child(1){width:70%; height:80%; top:0; right:10%; z-index:2;}
 .story-hero-photos img:nth-child(2){width:55%; height:65%; bottom:0; left:0; z-index:1; border:4px solid var(--paper);}
 .story-hero-stamp{position:absolute; top:var(--space-5); right:var(--space-5); z-index:3;}
 @media (max-width:900px){ .story-hero .wrap{grid-template-columns:1fr; min-height:auto;} .story-hero-photos{height:260px; margin-top:var(--space-6);} }
+/* story hero sits on dark green — stat card goes light-on-dark (journal keeps its light .on-light variant) */
+.story-hero .hero-stat-card.on-light{background:rgba(255,253,247,0.12); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,253,247,0.15);}
+.story-hero .hero-stat-card.on-light .hsc-num{color:var(--gold);}
+.story-hero .hero-stat-card.on-light .hsc-label{color:rgba(255,253,247,0.7);}
 
-/* --- journal hero: cream bg split layout --- */
-.journal-hero{position:relative; overflow:hidden; background:var(--paper); border-bottom:none; padding:0;}
+/* --- journal hero: dark green split layout --- */
+.journal-hero{position:relative; overflow:hidden; background:var(--sage-deep); color:#EDE7CC; border-bottom:none; padding:0;}
 .journal-hero .wrap{display:grid; grid-template-columns:1fr 1fr; min-height:480px; gap:0; padding:0;}
 .journal-hero-left{padding:var(--space-9) var(--space-8) var(--space-9) var(--space-7); display:flex; flex-direction:column; justify-content:center;}
 .journal-hero-right{position:relative; display:flex; align-items:center; justify-content:center; padding:var(--space-7);}
-.journal-hero .eyebrow{color:var(--sage-deep);}
+.journal-hero .eyebrow{color:var(--gold);}
 .journal-hero .eyebrow::before{background:var(--gold);}
-.journal-hero h1{font-family:var(--display); font-weight:700; font-size:clamp(2.2rem,4vw,3.4rem); line-height:1.05; max-width:14ch; color:var(--ink);}
-.journal-hero .hero-desc{margin-top:var(--space-5); font-size:16px; color:var(--ink-soft); max-width:44ch; line-height:1.65;}
+.journal-hero h1{font-family:var(--display); font-weight:700; font-size:clamp(2.2rem,4vw,3.4rem); line-height:1.05; max-width:14ch; color:#FFFDF7;}
+.journal-hero .hero-desc{margin-top:var(--space-5); font-size:16px; color:#C4BCA0; max-width:44ch; line-height:1.65;}
 @media (max-width:900px){ .journal-hero .wrap{grid-template-columns:1fr; min-height:auto;} .journal-hero-right{padding:var(--space-7) var(--space-5);} .journal-hero-left{padding:var(--space-7) var(--space-5);} }
+/* journal hero sits on dark green — stat card goes light-on-dark */
+.journal-hero .hero-stat-card.on-light{background:rgba(255,253,247,0.12); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,253,247,0.15);}
+.journal-hero .hero-stat-card.on-light .hsc-num{color:var(--gold);}
+.journal-hero .hero-stat-card.on-light .hsc-label{color:rgba(255,253,247,0.7);}
 
 /* --- shop hero: clean dark layout like wholesale --- */
 .shop-hero{position:relative; overflow:hidden; background:var(--ink); color:#EDE7CC; padding:var(--space-9) 0; border-bottom:none;}

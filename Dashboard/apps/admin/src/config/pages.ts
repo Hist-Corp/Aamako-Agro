@@ -266,13 +266,14 @@ export const SITE_PAGES: SitePage[] = [
       'How we make everything — the freeze-dried, dehydrated and stone-milled powder journeys, side-by-side comparisons and CTA.',
     sections: [
       ...trustBar(),
-      { key: 'page.process.hero.eyebrow', label: 'Eyebrow', description: '“The science of less” tag line.', group: 'Hero' },
+      { key: 'page.process.hero.eyebrow', label: 'Eyebrow', description: '“The process” tag line.', group: 'Hero' },
       { key: 'page.process.hero', label: 'Headline & sub-line', description: 'Hero headline (title) and paragraph (short).', group: 'Hero' },
       statSection('page.process.stat1', 'Stat 1', 'Hero stats'),
       statSection('page.process.stat2', 'Stat 2', 'Hero stats'),
       statSection('page.process.stat3', 'Stat 3', 'Hero stats'),
       { key: 'page.process.steps.eyebrow', label: 'Eyebrow', description: '“Step by step” tag line.', group: 'Process steps' },
-      { key: 'page.process.steps', label: 'Heading & sub-line', description: '“From harvest to sealed pack” heading and description.', group: 'Process steps' },
+      { key: 'page.process.steps.intro', label: 'Intro panel', description: '“From harvest to sealed pack” headline and description in the centered intro box.', group: 'Process steps' },
+      { key: 'page.process.steps', label: 'Heading & sub-line', description: '“Why freeze-dried, not just dried.” heading and description for the freeze-dried steps.', group: 'Process steps' },
       ...([1, 2, 3, 4, 5, 6] as const).map((n): PageTemplateSection => ({
         key: `page.process.step${n}`,
         label: `Step ${n}`,
