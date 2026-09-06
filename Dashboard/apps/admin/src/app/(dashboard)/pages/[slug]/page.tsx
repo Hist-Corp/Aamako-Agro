@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/config/auth-context';
@@ -294,7 +294,10 @@ export default function PageEditor() {
     [pending, activeKey],
   );
 
-  const handleSave = async () => {
+  // Save the active section AND publish it in one step, then commit any
+  // pending page-hide/unhide the user toggled. Single source of truth for "make
+  // my edits live": Hide/Unhide is just an intent, Save & publish acts on it.
+  const handleSaveAndPublish = async () => {
     if (!activeKey) return;
     if (!form.title.replace(/<[^>]*>/g, '').trim()) {
       addToast({ type: 'error', title: 'Title required', description: 'Give this section a title.' });
@@ -311,19 +314,12 @@ export default function PageEditor() {
           body: form.body,
         },
       );
-      addToast(
-        res?.live
-          ? {
-              type: 'success',
-              title: isNew ? 'Template section created & published' : 'Template section updated & published',
-              description: activeKey,
-            }
-          : {
-              type: 'success',
-              title: 'Sent for approval',
-              description: res?.message ?? 'A Manager must approve this change before it appears on the storefront.',
-            },
-      );
+      await apiClient.post(`/content/${encodeURIComponent(activeKey)}/publish`);
+      addToast({
+        type: 'success',
+        title: isNew ? 'Template section created & published' : 'Template section saved & published',
+        description: activeKey,
+      });
       const data = await apiClient.get<CmsItem[]>('/content/manage');
       setItems(data);
       try {
@@ -332,34 +328,12 @@ export default function PageEditor() {
       } catch {
         /* best-effort */
       }
-      // Refresh the live preview so approved/published changes are visible
-      // immediately without the user having to hit "Reload preview".
+      await commitPendingVisibility();
       setFrameTick((t) => t + 1);
     } catch (err) {
       addToast({
         type: 'error',
-        title: 'Save failed',
-        description: err instanceof ApiError ? err.message : 'Unexpected error',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handlePublish = async () => {
-    if (!activeKey) return;
-    setIsSaving(true);
-    try {
-      await apiClient.post(`/content/${encodeURIComponent(activeKey)}/publish`);
-      addToast({ type: 'success', title: 'Section published', description: activeKey });
-      const data = await apiClient.get<CmsItem[]>('/content/manage');
-      setItems(data);
-      // Refresh the live preview so the newly published content shows up right away
-      setFrameTick((t) => t + 1);
-    } catch (err) {
-      addToast({
-        type: 'error',
-        title: 'Publish failed',
+        title: 'Save & publish failed',
         description: err instanceof ApiError ? err.message : 'Unexpected error',
       });
     } finally {
@@ -553,6 +527,41 @@ export default function PageEditor() {
     );
   }
 
+  // Page-level hide/unhide. Hide/Unhide ONLY toggle a PENDING local flag — no
+  // backend call, no storefront effect yet. The change is actually committed (the
+  // site.page.<slug> visibility is patched and the section published) when the
+  // user clicks Save or Publish. This keeps those two buttons the single source
+  // of truth for "make my edits live": Hide is just an intent, Save/Publish acts.
+  const pageVisibilityKey = `site.page.${page.slug}`;
+  const pageIsHidden = useMemo(() => {
+    // Committed state: does a published visibility flag exist saying "hidden"?
+    const item = items.find((i) => i.key === pageVisibilityKey);
+    return item ? item.isVisible === false : false;
+  }, [items, pageVisibilityKey]);
+  const [pendingHidden, setPendingHidden] = useState<boolean | null>(null);
+  const willBeHidden = pendingHidden !== null ? pendingHidden : pageIsHidden;
+  // Reset the pending flag whenever the committed state changes (e.g. after a
+  // Save/Publish commits the change and refetches items).
+  useEffect(() => {
+    setPendingHidden(null);
+  }, [pageIsHidden]);
+
+  const togglePageHidden = () =>
+    setPendingHidden((prev) => {
+      const current = prev !== null ? prev : pageIsHidden;
+      return !current;
+    });
+
+  // Commit any pending hide/unhide alongside a section save or publish. Called at
+  // the end of handleSave/handlePublish once the section operation succeeded.
+  const commitPendingVisibility = useCallback(async () => {
+    if (pendingHidden === null || pendingHidden === pageIsHidden) return;
+    await apiClient.patch(`/content/${encodeURIComponent(pageVisibilityKey)}`, {
+      isVisible: !pendingHidden,
+    });
+    await apiClient.post(`/content/${encodeURIComponent(pageVisibilityKey)}/publish`);
+  }, [pendingHidden, pageIsHidden, pageVisibilityKey]);
+
   return (
     <div className="flex flex-col">
       <PageHeader
@@ -560,24 +569,53 @@ export default function PageEditor() {
         description={`Editing the "${page.name}" website page template — changes are previewed against the real page.`}
         breadcrumbs={[{ label: 'Content' }, { label: 'Pages', href: '/pages' }, { label: page.name }]}
         actions={
-          <div className="flex items-center gap-2">
-            <Link href="/pages">
-              <Button variant="ghost">
-                <ChevronLeft className="h-4 w-4" /> Back
+          <div className="flex flex-col gap-2 items-end">
+            <div className="flex items-center gap-2 justify-end">
+              <Link href="/pages">
+                <Button variant="ghost">
+                  <ChevronLeft className="h-4 w-4" /> Back
+                </Button>
+              </Link>
+              <Button
+                variant="secondary"
+                onClick={() => setFrameTick((t) => t + 1)}
+                title="Reload preview"
+              >
+                <RefreshCw className="h-4 w-4" /> Reload preview
               </Button>
-            </Link>
-            <Button
-              variant="secondary"
-              onClick={() => setFrameTick((t) => t + 1)}
-              title="Reload preview"
-            >
-              <RefreshCw className="h-4 w-4" /> Reload preview
-            </Button>
-            <a href={previewUrl} target="_blank" rel="noreferrer">
-              <Button variant="secondary">
-                <ExternalLink className="h-4 w-4" /> Open live
+              <a href={previewUrl} target="_blank" rel="noreferrer">
+                <Button variant="secondary">
+                  <ExternalLink className="h-4 w-4" /> Open live
+                </Button>
+              </a>
+            </div>
+            <div className="flex items-center gap-2 justify-end">
+              <Button
+                variant="primary"
+                onClick={handleSaveAndPublish}
+                disabled={isSaving || !activeKey}
+                title="Save and publish the active section (applies pending hide/unhide too)"
+              >
+                <Save className="h-4 w-4" /> Save &amp; publish
               </Button>
-            </a>
+              <Button
+                variant={willBeHidden ? 'danger' : 'primary'}
+                onClick={togglePageHidden}
+                disabled={isSaving}
+                title={
+                  willBeHidden
+                    ? 'Page is hidden — click Save & publish to bring it back'
+                    : 'Hide this page on the storefront (apply via Save & publish)'
+                }
+              >
+                {willBeHidden ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                {willBeHidden ? 'Unhide page' : 'Hide page'}
+              </Button>
+            </div>
           </div>
         }
       />
@@ -907,7 +945,7 @@ export default function PageEditor() {
                 />
 
                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <Button onClick={handleSave} isLoading={isSaving}>
+                  <Button onClick={handleSaveAndPublish} isLoading={isSaving}>
                     <Save className="h-4 w-4" />
                     {isNew
                       ? isContentManager
@@ -917,11 +955,6 @@ export default function PageEditor() {
                         ? 'Submit for approval'
                         : 'Save & publish section'}
                   </Button>
-                  {foundItem && !foundItem.isPublished && (
-                    <Button variant="secondary" onClick={handlePublish} isLoading={isSaving}>
-                      <Globe className="h-4 w-4" /> Publish
-                    </Button>
-                  )}
                   {foundItem && (
                     <Button variant="ghost" onClick={handleToggleVisible} isLoading={isSaving}>
                       {foundItem.isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

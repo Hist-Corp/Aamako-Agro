@@ -416,8 +416,32 @@ export class ContentController {
     @Body() dto: SetVisibilityDto,
     @CurrentUser() actor?: { id: string; role: Role },
   ) {
-    const item = await this.prisma.contentItem.findUnique({ where: { key } });
-    if (!item) throw new NotFoundException('Content item not found');
+    const existing = await this.prisma.contentItem.findUnique({ where: { key } });
+
+    // A page/section that has never been edited has no row yet. Hiding it
+    // creates a lightweight, PUBLISHED visibility stub (empty body — no copy is
+    // ever leaked through the public feed) so the storefront can detect and hide
+    // it. Showing a never-touched key is a no-op: the built-in default markup is
+    // already visible, so there is nothing to restore.
+    if (!existing) {
+      if (dto.isVisible) return { success: true, key, isVisible: true, created: false };
+      const item = await this.prisma.contentItem.create({
+        data: {
+          key,
+          title: '',
+          shortDescription: null,
+          longDescription: null,
+          category: null,
+          body: '',
+          isPublished: true,
+          isVisible: false,
+          updatedById: actor!.id,
+        },
+      });
+      return { success: true, key, isVisible: item.isVisible, created: true };
+    }
+
+    // Existing row — plain toggle (section/page hide, unchanged behavior).
     await this.prisma.contentItem.update({
       where: { key },
       data: { isVisible: dto.isVisible, updatedById: actor!.id },

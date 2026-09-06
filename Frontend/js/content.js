@@ -136,6 +136,9 @@
         }
         apply(node, item, field);
       }
+      // Page-level hide runs AFTER content is loaded (all()) and after section
+      // hydration — never before, or it would read an empty list and no-op.
+      applyPageVisibility();
       return content;
     });
   }
@@ -189,13 +192,102 @@
     }, true);
   }
 
+  /**
+   * Map of page slugs (the <slug> in a "site.page.<slug>" key) to the pathname
+   * that slug lives at on the storefront. Kept in sync with the dashboard's
+   * pages config (Dashboard/apps/admin/src/config/pages.ts).
+   */
+  var SLUG_TO_PATH = {
+    home: '/index.html',
+    shop: '/shop.html',
+    product: '/product.html',
+    'the-process': '/the-process.html',
+    'our-story': '/our-story.html',
+    wholesale: '/wholesale.html',
+    journal: '/journal.html',
+    'product-category': '/collection.html',
+  };
+
+  /**
+   * Page-level hide/unhide. The dashboard sets a "site.page.<slug>" item's
+   * isVisible to false to take a whole page offline without deleting any of its
+   * section content. On the storefront we then:
+   *   1. If the visitor is currently ON a hidden page, replace the page body
+   *      with a friendly "unavailable" notice (the page is gone, not a 404).
+   *   2. Site-wide, dim every link that points at a hidden page so the
+   *      navigation no longer advertises something that isn't there.
+   */
+  function applyPageVisibility() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    var items = all();
+    if (!items.length) return;
+
+    var hiddenPaths = {};
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (!it || it.isVisible !== false) continue;
+      var m = /^site\.page\.([a-z0-9-]+)$/.exec(it.key);
+      if (!m) continue;
+      var path = SLUG_TO_PATH[m[1]];
+      if (path) hiddenPaths[path] = true;
+    }
+    var hiddenKeys = Object.keys(hiddenPaths);
+    if (!hiddenKeys.length) return;
+
+    // 1. Current page is hidden → swap the body for an "unavailable" notice.
+    var here = window.location.pathname.replace(/\/+$/, '') || '/';
+    if (hiddenPaths[here] || hiddenPaths[here.replace(/^\//, '')]) {
+      var main = document.querySelector('main') || document.body;
+      var notice = document.createElement('div');
+      notice.setAttribute('data-cms-unavailable', '1');
+      notice.style.cssText =
+        'min-height:60vh;display:flex;flex-direction:column;align-items:center;' +
+        'justify-content:center;text-align:center;padding:4rem 1.5rem;color:#475569;';
+      notice.innerHTML =
+        '<div style="font-size:3rem;line-height:1;margin-bottom:1rem;opacity:.5">&#128274;</div>' +
+        '<h1 style="font-size:1.5rem;font-weight:600;color:#0f172a;margin:0 0 .5rem;">This page is currently unavailable</h1>' +
+        '<p style="max-width:36rem;margin:0;">' +
+        'It has been temporarily hidden by the site team. The content is still safe ' +
+        'and will reappear here as soon as the page is unhidden and republished.';
+      while (main.firstChild) main.removeChild(main.firstChild);
+      main.appendChild(notice);
+      // Stop — the page body is replaced, so per-section hydration would only
+      // try to write into elements that no longer exist.
+      return;
+    }
+
+    // 2. Remove links pointing at any hidden page, across the whole site.
+    //    Zero trace: the <a> is removed from the DOM entirely, so there is no
+    //    dimmed/strikethrough remnant ("light text cutting from middle"). Menu
+    //    items, footer links, inline references — all gone until the page is
+    //    unhidden and republished.
+    var links = document.querySelectorAll('a[href]');
+    for (var j = 0; j < links.length; j++) {
+      var a = links[j];
+      var href = a.getAttribute('href') || '';
+      var path;
+      try { path = new URL(href, window.location.origin).pathname; }
+      catch (_) { path = href.split('?')[0].split('#')[0]; }
+      path = (path || '').replace(/\/+$/, '') || '/';
+      if (hiddenPaths[path]) {
+        // For list-based navs (<li><a>...</a></li>), drop the whole item so the
+        // menu doesn't leave a blank bullet/row. Otherwise just remove the link.
+        var li = (a.parentElement && a.parentElement.tagName === 'LI') ? a.parentElement : null;
+        var target = li || a;
+        target.parentNode && target.parentNode.removeChild(target);
+      }
+    }
+  }
+
   // Auto-hydrate after the DOM is ready, unless explicitly deferred via
   // window.AAMAKO_CONTENT_DEFER = true before this script runs.
   if (typeof window !== 'undefined') {
-    window.AamakoContent = { load: load, get: get, all: all, hydrate: hydrate };
+    window.AamakoContent = { load: load, get: get, all: all, hydrate: hydrate, applyPageVisibility: applyPageVisibility };
     initEditorBridge();
     if (!window.AAMAKO_CONTENT_DEFER) {
       if (document.readyState === 'loading') {
+        // hydrate() now runs applyPageVisibility() internally once content is
+        // loaded — calling it here too would race the fetch and read nothing.
         document.addEventListener('DOMContentLoaded', function () { hydrate(); });
       } else {
         hydrate();
