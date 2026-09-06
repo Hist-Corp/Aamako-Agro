@@ -1,0 +1,17 @@
+{
+  "name": "aamako-qa-harness",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Read-only QA automation harness for Aamako-Agro (does not modify app code)",
+  "scripts": {
+    "test": "node runner.js",
+    "test:api": "node runner.js 01 02 03 04 05",
+    "test:ui": "node runner.js 06 07 08 09 10",
+    "test:security": "node runner.js 11 12",
+    "report": "node report.js"
+  },
+  "dependencies": {
+    "axe-core": "^4.9.1",
+    "playwright": "^1.49.0"
+  }
+}

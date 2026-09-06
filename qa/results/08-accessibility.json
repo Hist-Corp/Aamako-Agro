@@ -1,0 +1,39 @@
+[
+  {
+    "status": "PASS",
+    "name": "A11y storefront /index.html: no critical/serious WCAG 2.1 A/AA violations",
+    "detail": "clean"
+  },
+  {
+    "status": "FAIL",
+    "name": "A11y storefront /collection.html: no critical/serious WCAG 2.1 A/AA violations",
+    "detail": "serious: link-name (5 nodes)",
+    "evidence": "artifacts/08-axe-storefront-collection-html.png"
+  },
+  {
+    "status": "PASS",
+    "name": "A11y storefront /cart.html: no critical/serious WCAG 2.1 A/AA violations",
+    "detail": "clean"
+  },
+  {
+    "status": "PASS",
+    "name": "A11y storefront /signin.html: no critical/serious WCAG 2.1 A/AA violations",
+    "detail": "clean"
+  },
+  {
+    "status": "FAIL",
+    "name": "A11y dashboard /login: no critical/serious WCAG 2.1 A/AA violations",
+    "detail": "serious: color-contrast (1 nodes)",
+    "evidence": "artifacts/08-axe-dashboard-login.png"
+  },
+  {
+    "status": "PASS",
+    "name": "Keyboard: Tab reaches interactive elements on storefront",
+    "detail": "25/25 stops interactive"
+  },
+  {
+    "status": "PASS",
+    "name": "Keyboard: visible focus indicator detected",
+    "detail": "25 stops show outline/box-shadow"
+  }
+]

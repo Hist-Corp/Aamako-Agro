@@ -1,0 +1,72 @@
+[
+  {
+    "status": "PASS",
+    "name": "No X-Powered-By banner on API",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CSP header present on API responses",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "HSTS header",
+    "detail": "max-age=31536000; includeSubDomains"
+  },
+  {
+    "status": "PASS",
+    "name": "CORS: unknown origin gets no Access-Control-Allow-Origin",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CORS: allowed origin (localhost:8080) accepted",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No API keys/secrets patterns in served JS",
+    "detail": "14 JS files scanned"
+  },
+  {
+    "status": "PASS",
+    "name": "GET /auth/google-client-id is public-by-design",
+    "detail": "clientId=null (disabled)"
+  },
+  {
+    "status": "PASS",
+    "name": "XSS probe not reflected unescaped on /product.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "XSS probe not reflected unescaped on /collection.html",
+    "detail": ""
+  },
+  {
+    "status": "WARN",
+    "name": "Stored payload kept verbatim in DB",
+    "detail": "name stored raw — safe only because React escapes on render"
+  },
+  {
+    "status": "PASS",
+    "name": "Cleanup: XSS probe product deleted",
+    "detail": ""
+  },
+  {
+    "status": "FAIL",
+    "name": "Admin login not indexable (robots.txt or noindex)",
+    "detail": "robots.txt=404, no noindex meta"
+  },
+  {
+    "status": "PASS",
+    "name": "IDOR: /orders/mine returns only the caller’s orders",
+    "detail": "A=0 orders, B=0 orders"
+  },
+  {
+    "status": "PASS",
+    "name": "Login rate limiting active (429 observed)",
+    "detail": ""
+  }
+]

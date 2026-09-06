@@ -1,0 +1,107 @@
+[
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /index.html @ 375px",
+    "detail": ""
+  },
+  {
+    "status": "FAIL",
+    "name": "Tap targets >=44px on mobile: /index.html",
+    "detail": "<a logo 41x36> | <button hamburger 40x40> | <a link-arrow 146x22> | <a link-arrow 129x22> | <a link-arrow 239x22> | <button btn btn-primary 127x43>"
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /collection.html @ 375px",
+    "detail": ""
+  },
+  {
+    "status": "FAIL",
+    "name": "Tap targets >=44px on mobile: /collection.html",
+    "detail": "<a logo 41x36> | <button hamburger 40x40> | <a  36x18> | <a  85x18> | <a omback-btn 92x42> | <a  153x35>"
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /cart.html @ 375px",
+    "detail": ""
+  },
+  {
+    "status": "FAIL",
+    "name": "Tap targets >=44px on mobile: /cart.html",
+    "detail": "<a logo 41x36> | <button hamburger 40x40> | <a  102x42> | <a  142x42> | <a  117x42> | <a is-active 60x42>"
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /login @ 375px",
+    "detail": ""
+  },
+  {
+    "status": "FAIL",
+    "name": "Tap targets >=44px on mobile: /login",
+    "detail": "<button jsx-ee210f68dd737e54 absolute  24x24> | <button inline-flex items-center justi 295x36>"
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /index.html @ 768px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /collection.html @ 768px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /cart.html @ 768px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /login @ 768px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /index.html @ 1024px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /collection.html @ 1024px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /cart.html @ 1024px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /login @ 1024px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /index.html @ 1440px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /collection.html @ 1440px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /cart.html @ 1440px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No horizontal overflow: /login @ 1440px",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Mobile: no header/content overlap detected",
+    "detail": ""
+  }
+]

@@ -1,0 +1,72 @@
+[
+  {
+    "status": "PASS",
+    "name": "Buyer registered",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Buyer storefront login",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Product fetched for cart journey",
+    "detail": "slug=timur-powder"
+  },
+  {
+    "status": "PASS",
+    "name": "Variant fetched",
+    "detail": "variantId=925dc924-41bc-42ec-8462-912db0ac7c3a"
+  },
+  {
+    "status": "PASS",
+    "name": "POST /cart/items adds line",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Negative quantity rejected 400",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "PATCH /cart/items updates quantity",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "GET /cart shows line",
+    "detail": "lines=1"
+  },
+  {
+    "status": "PASS",
+    "name": "Checkout without Idempotency-Key → 400",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Checkout creates order",
+    "detail": "orderNumber=AA-1788675672787-3F8A totalCents=90000"
+  },
+  {
+    "status": "PASS",
+    "name": "Idempotent replay returns same order (no duplicate)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Order visible in GET /orders/mine",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Order visible to staff in GET /orders",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Checkout with empty cart rejected",
+    "detail": "status=400"
+  }
+]

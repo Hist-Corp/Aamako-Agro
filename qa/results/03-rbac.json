@@ -1,0 +1,132 @@
+[
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /admin/overview (STAFF_READ)",
+    "detail": "allowed=STAFF_SUPPORT,CONTENT_MANAGER,STAFF_MANAGER,STAFF_SALES,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /admin/users (USER_MANAGEMENT)",
+    "detail": "allowed=STAFF_SALES,STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: POST /admin/users (USER_CREATION) — probe w/ invalid body",
+    "detail": "allowed=STAFF_SALES,STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: DELETE /admin/users/:id (ADMIN/SUPER only)",
+    "detail": "allowed=STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /admin/products (catalog adminList)",
+    "detail": "allowed=STAFF_ADMIN,STAFF_MANAGER,CONTENT_MANAGER,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: POST /admin/products (catalog write) — probe w/ invalid body",
+    "detail": "allowed=STAFF_ADMIN,STAFF_MANAGER,CONTENT_MANAGER,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /admin/orders (staff order list)",
+    "detail": "allowed=STAFF_SALES,STAFF_SUPPORT,STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "FAIL",
+    "name": "RBAC: POST /orders (checkout) — customers must pass role gate",
+    "detail": "violations → SUPER_ADMIN:400(expected 403) | STAFF_ADMIN:400(expected 403) | STAFF_MANAGER:400(expected 403) | STAFF_SUPPORT:400(expected 403)"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /admin/support/tickets",
+    "detail": "allowed=STAFF_SUPPORT,STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /admin/wholesale/inquiries",
+    "detail": "allowed=STAFF_SUPPORT,STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /content/manage (CONTENT_EDITORS)",
+    "detail": "allowed=CONTENT_MANAGER,STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /admin/rbac/permissions",
+    "detail": "allowed=STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /notifications (DASHBOARD_ROLES)",
+    "detail": "allowed=STAFF_SALES,STAFF_SUPPORT,CONTENT_MANAGER,STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /admin/customers (CUSTOMER_VIEW)",
+    "detail": "allowed=STAFF_SALES,STAFF_SUPPORT,STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /users/wholesale-accounts",
+    "detail": "allowed=STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /tasks",
+    "detail": "allowed=STAFF_SALES,STAFF_SUPPORT,CONTENT_MANAGER,STAFF_MANAGER,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /admin/reports/sales",
+    "detail": "allowed=STAFF_SUPPORT,CONTENT_MANAGER,STAFF_MANAGER,STAFF_SALES,STAFF_ADMIN,SUPER_ADMIN"
+  },
+  {
+    "status": "PASS",
+    "name": "RBAC: GET /auth/me (any authenticated role)",
+    "detail": "allowed=SUPER_ADMIN,STAFF_ADMIN,STAFF_MANAGER,STAFF_SALES,CONTENT_MANAGER,STAFF_SUPPORT,RETAIL_CUSTOMER,WHOLESALE_CUSTOMER"
+  },
+  {
+    "status": "PASS",
+    "name": "All staff endpoints reject unauthenticated requests with 401",
+    "detail": "17 endpoints checked"
+  },
+  {
+    "status": "PASS",
+    "name": "Hierarchy: SUPER_ADMIN can create STAFF_SUPPORT user",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Hierarchy: STAFF_ADMIN cannot create another STAFF_ADMIN (403)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Hierarchy: STAFF_SALES cannot create STAFF_ADMIN (403)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Hierarchy: STAFF_ADMIN cannot modify SUPER_ADMIN (403)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Hierarchy: STAFF_MANAGER cannot DELETE users (403)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Cleanup: STAFF_ADMIN deleted qa test user",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "SUPER_ADMIN bypasses role list (guard contract)",
+    "detail": ""
+  }
+]

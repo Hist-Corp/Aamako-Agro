@@ -1,0 +1,67 @@
+[
+  {
+    "status": "PASS",
+    "name": "Page loads: /index.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Page loads: /collection.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Page loads: /cart.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Page loads: /signin.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Page loads: /account.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Page loads: /orders.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Page loads: /journal.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Page loads: /process.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No 4xx/5xx same-origin assets during crawl",
+    "detail": "21 unique links checked"
+  },
+  {
+    "status": "PASS",
+    "name": "UI: invalid login shows error message",
+    "detail": "msg~\"Invalid\""
+  },
+  {
+    "status": "PASS",
+    "name": "UI: storefront login succeeds (200 from /auth/login)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "UI: session token persisted client-side",
+    "detail": "key length=263"
+  },
+  {
+    "status": "PASS",
+    "name": "UI: logout clears stored session",
+    "detail": ""
+  }
+]

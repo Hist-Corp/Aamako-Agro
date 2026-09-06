@@ -1,0 +1,47 @@
+[
+  {
+    "status": "PASS",
+    "name": "SEO: unique <title> per page",
+    "detail": "6/6 unique"
+  },
+  {
+    "status": "FAIL",
+    "name": "SEO: meta description present on all pages",
+    "detail": "index.html, collection.html, cart.html, signin.html, journal.html, process.html"
+  },
+  {
+    "status": "FAIL",
+    "name": "SEO: canonical tag present on all pages",
+    "detail": "index.html, collection.html, cart.html, signin.html, journal.html, process.html"
+  },
+  {
+    "status": "FAIL",
+    "name": "SEO: Open Graph (og:title/og:description) present",
+    "detail": "index.html, collection.html, cart.html, signin.html, journal.html, process.html"
+  },
+  {
+    "status": "WARN",
+    "name": "SEO: twitter:card present on all pages",
+    "detail": "missing on: index.html, collection.html, cart.html, signin.html, journal.html, process.html"
+  },
+  {
+    "status": "FAIL",
+    "name": "Storefront robots.txt present (200)",
+    "detail": "status=404"
+  },
+  {
+    "status": "FAIL",
+    "name": "Storefront sitemap.xml present and well-formed",
+    "detail": "status=404"
+  },
+  {
+    "status": "FAIL",
+    "name": "Structured data (JSON-LD) on homepage",
+    "detail": "no ld+json block found"
+  },
+  {
+    "status": "FAIL",
+    "name": "og:image resolves (200)",
+    "detail": "no og:image on homepage"
+  }
+]

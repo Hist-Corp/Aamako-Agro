@@ -38,3 +38,6 @@ run-*.log
 
 # Runtime image uploads
 Backend/uploads/
+
+# QA harness screenshots (results/*.json and REPORT.md stay tracked)
+qa/artifacts/

@@ -1,0 +1,72 @@
+[
+  {
+    "status": "PASS",
+    "name": "POST /auth/register creates account",
+    "detail": "email=qa-1788675594563@aamako.test"
+  },
+  {
+    "status": "PASS",
+    "name": "Duplicate registration rejected (409/400)",
+    "detail": "status=409"
+  },
+  {
+    "status": "PASS",
+    "name": "Weak password rejected with 400",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Login with wrong password → 401",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Storefront login for retail user 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Staff account blocked from storefront login (surface separation)",
+    "detail": "status=403"
+  },
+  {
+    "status": "FAIL",
+    "name": "Customer account blocked from dashboard login (surface separation)",
+    "detail": "status=200"
+  },
+  {
+    "status": "PASS",
+    "name": "GET /auth/me returns profile",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "GET /auth/me does not leak passwordHash",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "POST /auth/refresh issues new tokens",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Old refresh token revoked after rotation",
+    "detail": "status=401"
+  },
+  {
+    "status": "PASS",
+    "name": "POST /auth/logout 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Refresh token unusable after logout",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Garbage bearer token → 401",
+    "detail": ""
+  }
+]

@@ -1,0 +1,77 @@
+[
+  {
+    "status": "PASS",
+    "name": "Load time OK: storefront index",
+    "detail": "996ms (DCL=214ms FCP~264ms)"
+  },
+  {
+    "status": "PASS",
+    "name": "Page weight: storefront index",
+    "detail": "1685 KB across 30 requests"
+  },
+  {
+    "status": "PASS",
+    "name": "No requests >1s: storefront index",
+    "detail": ""
+  },
+  {
+    "status": "FAIL",
+    "name": "No images >2x rendered size: storefront index",
+    "detail": "logo.png nat=2913 rendered=50 | logo-footer.png nat=4979 rendered=106"
+  },
+  {
+    "status": "PASS",
+    "name": "All images have alt text: storefront index",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Load time OK: storefront collection",
+    "detail": "962ms (DCL=121ms FCP~128ms)"
+  },
+  {
+    "status": "PASS",
+    "name": "Page weight: storefront collection",
+    "detail": "1007 KB across 18 requests"
+  },
+  {
+    "status": "PASS",
+    "name": "No requests >1s: storefront collection",
+    "detail": ""
+  },
+  {
+    "status": "FAIL",
+    "name": "No images >2x rendered size: storefront collection",
+    "detail": "logo.png nat=2913 rendered=50 | photo-1532336414038-cf19250c5757?w=800&q=80 nat=800 rendered=277 | photo-1532336414038-cf19250c5757?w=800&q=80 nat=800 rendered=277 | photo-1532336414038-cf19250c5757?w=800&q=80 nat=800 rendered=277"
+  },
+  {
+    "status": "PASS",
+    "name": "All images have alt text: storefront collection",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Load time OK: dashboard login",
+    "detail": "694ms (DCL=29ms FCP~92ms)"
+  },
+  {
+    "status": "PASS",
+    "name": "Page weight: dashboard login",
+    "detail": "245 KB across 10 requests"
+  },
+  {
+    "status": "PASS",
+    "name": "No requests >1s: dashboard login",
+    "detail": ""
+  },
+  {
+    "status": "FAIL",
+    "name": "No images >2x rendered size: dashboard login",
+    "detail": "logo-mark.png nat=1198 rendered=520 | logo-mark.png nat=1198 rendered=340 | logo.png nat=2913 rendered=96"
+  },
+  {
+    "status": "FAIL",
+    "name": "All images have alt text: dashboard login",
+    "detail": "logo-mark.png | logo-mark.png"
+  }
+]

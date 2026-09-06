@@ -1,0 +1,77 @@
+[
+  {
+    "status": "PASS",
+    "name": "CMS: create product (draft) 201",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: invalid product payload rejected 400",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: draft product NOT publicly visible (404 on storefront API)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: publish product (PATCH isPublished)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: published product reflects on public API",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: edit reflects on public API",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: unpublish hides product from public API",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: CONTENT_MANAGER cannot DELETE product (403)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: STAFF_MANAGER cannot DELETE product (403)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: cleanup — product deleted by ADMIN",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: CONTENT_MANAGER creates content (goes to review queue)",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: unapproved content NOT publicly visible",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: MANAGER approves revision",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: approved+published content IS publicly visible",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "CMS: cleanup — content block deleted",
+    "detail": ""
+  }
+]

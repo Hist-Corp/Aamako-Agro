@@ -1,0 +1,57 @@
+[
+  {
+    "status": "PASS",
+    "name": "Dashboard UI: SUPER_ADMIN login 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Dashboard UI: redirected into app after login",
+    "detail": "url=http://localhost:3001/dashboard"
+  },
+  {
+    "status": "PASS",
+    "name": "Dashboard page //dashboard renders 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Dashboard page //products renders 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Dashboard page //orders renders 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Dashboard page //users renders 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Dashboard page //content renders 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Dashboard page //settings renders 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "No 5xx API calls while browsing dashboard",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Dashboard UI: STAFF_SUPPORT gets 403 from /admin/users (server-enforced)",
+    "detail": ""
+  },
+  {
+    "status": "FAIL",
+    "name": "Dashboard UI: customer login rejected at the door",
+    "detail": "status=200 (server issues dashboard tokens to customers — see suite 02)"
+  }
+]

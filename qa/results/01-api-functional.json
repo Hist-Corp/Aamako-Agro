@@ -1,0 +1,72 @@
+[
+  {
+    "status": "PASS",
+    "name": "GET /api health returns status ok",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "GET /products paginated list 200",
+    "detail": "count=5"
+  },
+  {
+    "status": "PASS",
+    "name": "Pagination page=2 returns different items than page=1",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "GET /products?page=0 rejected with 400",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Error shape is { error: { code, message } }",
+    "detail": "code=BAD_REQUEST"
+  },
+  {
+    "status": "PASS",
+    "name": "GET /categories returns categories",
+    "detail": "count=3"
+  },
+  {
+    "status": "PASS",
+    "name": "GET /products/timur-powder detail 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "GET /products/:unknown → 404",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "GET /products?search=… 200",
+    "detail": "results=1"
+  },
+  {
+    "status": "PASS",
+    "name": "GET /products?categorySlug=freeze-dried-fruits 200",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "GET /pricing/quote reachable (no 500)",
+    "detail": "status=404"
+  },
+  {
+    "status": "PASS",
+    "name": "GET /admin/users without token → 401",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "401 response uses standard error shape",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Unknown DTO fields rejected (whitelist enforcement)",
+    "detail": "status=400"
+  }
+]
