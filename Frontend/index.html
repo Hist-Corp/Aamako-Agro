@@ -84,28 +84,36 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <h2 class="section-title" data-cms="home.categories.title">With love, from Aama's kitchen</h2>
-        <p class="section-desc" data-cms="home.categories" data-cms-field="short">Six ranges, one standard: picked ripe, processed fast, nothing added.</p>
+        <h2 class="section-title" data-cms="home.categories.title">With love, Explore Aamako Shop by category</h2>
+        <p class="section-desc" data-cms="home.categories" data-cms-field="short">Picked ripe, processed fast, nothing added — three ways to shop our range.</p>
       </div>
+      <a href="shop.html" class="link-arrow" data-cms="home.categories.link">View all products</a>
     </div>
-    <div class="cat-grid">
-      <a href="shop.html" class="cat-card">
-        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&q=80" alt="Fruits"></div>
-        <div class="cat-body"><div class="cat-name" data-cms="home.categories.card1">Fruits</div><div class="cat-count" data-cms="home.categories.card1" data-cms-field="short">[N] products</div></div>
+    <div class="cat-grid cat-grid-triple">
+      <a href="collection.html?cat=freeze-dried-fruits" class="cat-card">
+        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&q=80" alt="Freeze-Dried Fruits &amp; Vegetables"></div>
+        <div class="cat-body">
+          <div class="cat-name" data-cms="home.categories.card1">Freeze-Dried Fruits &amp; Vegetables</div>
+          <div class="cat-count" data-cms="home.categories.card1" data-cms-field="short">Bright, crisp &amp; 100% fruit and veg</div>
+          <span class="cat-cta">Shop now</span>
+        </div>
       </a>
-      <a href="shop.html" class="cat-card">
-        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80" alt="Vegetables"></div>
-        <div class="cat-body"><div class="cat-name" data-cms="home.categories.card2">Vegetables</div><div class="cat-count" data-cms="home.categories.card2" data-cms-field="short">[N] products</div></div>
+      <a href="collection.html?cat=dehydrated" class="cat-card">
+        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80" alt="Dehydrated Fruits &amp; Vegetables"></div>
+        <div class="cat-body">
+          <div class="cat-name" data-cms="home.categories.card2">Dehydrated Fruits &amp; Vegetables</div>
+          <div class="cat-count" data-cms="home.categories.card2" data-cms-field="short">Slow-dried, chewy &amp; naturally sweet</div>
+          <span class="cat-cta">Shop now</span>
+        </div>
       </a>
-      <a href="shop.html" class="cat-card">
-        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&q=80" alt="Spices & Powders"></div>
-        <div class="cat-body"><div class="cat-name" data-cms="home.categories.card3">Spices &amp; Powders</div><div class="cat-count" data-cms="home.categories.card3" data-cms-field="short">[N] products</div></div>
+      <a href="collection.html?cat=powders" class="cat-card">
+        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=600&q=80" alt="Milled Powders"></div>
+        <div class="cat-body">
+          <div class="cat-name" data-cms="home.categories.card3">Milled Powders</div>
+          <div class="cat-count" data-cms="home.categories.card3" data-cms-field="short">Stone-milled for everyday staples</div>
+          <span class="cat-cta">Shop now</span>
+        </div>
       </a>
-      <a href="shop.html" class="cat-card">
-        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1547592180-85f173990554?w=600&q=80" alt="Ready Meals"></div>
-        <div class="cat-body"><div class="cat-name" data-cms="home.categories.card4">Ready Meals</div><div class="cat-count" data-cms="home.categories.card4" data-cms-field="short">[N] products</div></div>
-      </a>
-
     </div>
   </div>
 </section>
@@ -144,35 +152,89 @@
       </div>
       <a href="shop.html" class="link-arrow" data-cms="home.bestsellers.link">Shop best sellers</a>
     </div>
-    <div class="cat-grid">
-      <a href="product.html" class="cat-card">
-        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=600&q=80" alt="Freeze-Dried Mango"></div>
-        <div class="cat-body">
-          <div class="cat-name" data-cms="home.bestsellers.card1">Freeze-Dried Mango</div>
-          <div class="cat-count" data-cms="home.bestsellers.card1" data-cms-field="short">50g pouch · 100% fruit · Rs 450</div>
+    <div class="prod-grid prod-grid--best" id="bestSellerGrid">
+      <div class="prod-card prod-card--best">
+        <a class="prod-photo" href="product.html?slug=fd-strawberry" aria-label="Freeze-Dried Strawberry">
+          <img draggable="false" src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&q=80" alt="Freeze-Dried Strawberry">
+          <span class="prod-tag">Best seller</span>
+        </a>
+        <div class="prod-body">
+          <span class="prod-cat">Freeze-Dried Fruits &amp; Vegetables</span>
+          <a class="prod-name" href="product.html?slug=fd-strawberry" data-cms="home.bestsellers.card1">Freeze-Dried Strawberry</a>
+          <div class="prod-meta" data-cms="home.bestsellers.card1" data-cms-field="short">50g pack · 100% fruit</div>
+          <div class="prod-foot">
+            <div class="prod-price"><span class="prod-rs">Rs</span><span class="prod-amt">450</span></div>
+            <button class="add-btn" type="button" aria-label="Add Freeze-Dried Strawberry to cart">Add to cart</button>
+          </div>
         </div>
-      </a>
-      <a href="product.html" class="cat-card">
-        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&q=80" alt="Himalayan Spice Box"></div>
-        <div class="cat-body">
-          <div class="cat-name" data-cms="home.bestsellers.card2">Himalayan Spice Box</div>
-          <div class="cat-count" data-cms="home.bestsellers.card2" data-cms-field="short">4 spices · gift-ready · Rs 1,200</div>
+      </div>
+      <div class="prod-card prod-card--best">
+        <a class="prod-photo" href="product.html?slug=fd-mango-chunks" aria-label="Freeze-Dried Mango Chunks">
+          <img draggable="false" src="https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=600&q=80" alt="Freeze-Dried Mango Chunks">
+          <span class="prod-tag">Best seller</span>
+        </a>
+        <div class="prod-body">
+          <span class="prod-cat">Freeze-Dried Fruits &amp; Vegetables</span>
+          <a class="prod-name" href="product.html?slug=fd-mango-chunks" data-cms="home.bestsellers.card2">Freeze-Dried Mango Chunks</a>
+          <div class="prod-meta" data-cms="home.bestsellers.card2" data-cms-field="short">50g pack · 100% fruit</div>
+          <div class="prod-foot">
+            <div class="prod-price"><span class="prod-rs">Rs</span><span class="prod-amt">420</span></div>
+            <button class="add-btn" type="button" aria-label="Add Freeze-Dried Mango Chunks to cart">Add to cart</button>
+          </div>
         </div>
-      </a>
-      <a href="product.html" class="cat-card">
-        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&q=80" alt="Freeze-Dried Strawberry"></div>
-        <div class="cat-body">
-          <div class="cat-name" data-cms="home.bestsellers.card3">Freeze-Dried Strawberry</div>
-          <div class="cat-count" data-cms="home.bestsellers.card3" data-cms-field="short">40g pouch · 100% fruit · Rs 420</div>
+      </div>
+      <div class="prod-card prod-card--best">
+        <a class="prod-photo" href="product.html?slug=fd-apple-slices" aria-label="Freeze-Dried Apple Slices">
+          <img draggable="false" src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&q=80" alt="Freeze-Dried Apple Slices">
+          <span class="prod-tag">Best seller</span>
+        </a>
+        <div class="prod-body">
+          <span class="prod-cat">Freeze-Dried Fruits &amp; Vegetables</span>
+          <a class="prod-name" href="product.html?slug=fd-apple-slices" data-cms="home.bestsellers.card3">Freeze-Dried Apple Slices</a>
+          <div class="prod-meta" data-cms="home.bestsellers.card3" data-cms-field="short">30g pack · crisp &amp; light</div>
+          <div class="prod-foot">
+            <div class="prod-price"><span class="prod-rs">Rs</span><span class="prod-amt">250</span></div>
+            <button class="add-btn" type="button" aria-label="Add Freeze-Dried Apple Slices to cart">Add to cart</button>
+          </div>
         </div>
-      </a>
-      <a href="product.html" class="cat-card">
-        <div class="photo cat-photo"><img draggable="false" src="https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&q=80" alt="Rehydrate Rice Bowl"></div>
-        <div class="cat-body">
-          <div class="cat-name" data-cms="home.bestsellers.card4">Rehydrate Rice Bowl</div>
-          <div class="cat-count" data-cms="home.bestsellers.card4" data-cms-field="short">Serves 1 · ready in 8 min · Rs 280</div>
+      </div>
+      <div class="prod-card prod-card--best">
+        <a class="prod-photo" href="product.html?slug=dehydrated-mango-leather" aria-label="Dehydrated Mango Leather">
+          <img draggable="false" src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=600&q=80" alt="Dehydrated Mango Leather">
+          <span class="prod-tag">Best seller</span>
+        </a>
+        <div class="prod-body">
+          <span class="prod-cat">Dehydrated Fruits &amp; Vegetables</span>
+          <a class="prod-name" href="product.html?slug=dehydrated-mango-leather" data-cms="home.bestsellers.card4">Dehydrated Mango Leather</a>
+          <div class="prod-meta" data-cms="home.bestsellers.card4" data-cms-field="short">50g pack · chewy &amp; sweet</div>
+          <div class="prod-foot">
+            <div class="prod-price"><span class="prod-rs">Rs</span><span class="prod-amt">320</span></div>
+            <button class="add-btn" type="button" aria-label="Add Dehydrated Mango Leather to cart">Add to cart</button>
+          </div>
         </div>
-      </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY DEHYDRATED -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="why-wrap why-wrap--dehydrated">
+      <div class="why-grid">
+        <div>
+          <div class="eyebrow" data-cms="home.whydehydrated.eyebrow">Why dehydrated</div>
+          <h2 class="section-title" data-cms="home.whydehydrated" style="max-width:13ch;">Slower heat. Deeper flavour.</h2>
+          <p class="section-desc" data-cms="home.whydehydrated" data-cms-field="short" style="margin-top:12px;">Dehydration coaxes moisture out with low, steady warmth — concentrating natural sugars into chewy fruit and crisp veggies that carry the taste of harvest for months.</p>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-num" data-cms="home.whydehydrated.time">48–72h</div><div class="stat-label" data-cms="home.whydehydrated.time" data-cms-field="short">Gentle drying time</div></div>
+            <div class="stat"><div class="stat-num" data-cms="home.whydehydrated.water">~80%</div><div class="stat-label" data-cms="home.whydehydrated.water" data-cms-field="short">Water removed</div></div>
+            <div class="stat"><div class="stat-num" data-cms="home.whydehydrated.shelf">12+ mo</div><div class="stat-label" data-cms="home.whydehydrated.shelf" data-cms-field="short">Pantry shelf life</div></div>
+          </div>
+          <a href="collection.html?cat=dehydrated" class="link-arrow" data-cms="home.whydehydrated.link" style="display:inline-block; margin-top:24px;">Shop the dehydrated range</a>
+        </div>
+        <div class="photo" style="height:340px;"><img draggable="false" src="https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=800&q=80" alt="Sun-ripened dehydrated produce"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -212,24 +274,30 @@
 </section>
 
 <!-- WHOLESALE CTA -->
-<section class="reveal">
+<section class="reveal wholesale-band">
   <div class="wrap">
     <div class="wholesale">
-      <div>
+      <div class="wholesale-copy">
         <div class="eyebrow" data-cms="home.wholesale.eyebrow" style="color:var(--gold);">For retailers &amp; distributors</div>
-        <h2 data-cms="home.wholesale">Built for shelves, kitchens and growing brands.</h2>
+        <h2 data-cms="home.wholesale">Built for shelves, <em class="wholesale-em">kitchens</em> and growing brands.</h2>
         <p data-cms="home.wholesale" data-cms-field="short">Tiered wholesale pricing, sample requests and private-label production — the part of the business most suppliers make you call a phone number to find out about.</p>
         <div class="wholesale-list" data-cms="home.wholesale.items" data-cms-field="body">
-          <div>Wholesale pricing by volume tier</div>
-          <div>Sample kits before you commit</div>
-          <div>Private-label &amp; custom packaging</div>
+          <div class="wholesale-item">Wholesale pricing by volume tier</div>
+          <div class="wholesale-item">Sample kits before you commit</div>
+          <div class="wholesale-item">Private-label &amp; custom packaging</div>
         </div>
         <div class="wholesale-cta">
           <a href="wholesale.html" class="btn btn-on-dark" data-cms="home.wholesale.cta1">Request wholesale access</a>
           <a href="wholesale.html#catalogue" class="btn btn-outline-dark" data-cms="home.wholesale.cta2">Download catalogue</a>
         </div>
       </div>
-      <div class="photo ink" style="height:320px;"><img draggable="false" src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80" alt="Facility packaging"></div>
+      <div class="wholesale-media">
+        <div class="wholesale-frame">
+          <img draggable="false" src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80" alt="Facility packaging">
+          <div class="wholesale-stamp"><div class="stamp-grade">B2B</div><div class="stamp-sub">Wholesale<br>Access</div></div>
+        </div>
+        <div class="wholesale-tiers"><span>Starter</span><i></i><span>Growth</span><i></i><span>Enterprise</span></div>
+      </div>
     </div>
   </div>
 </section>
@@ -249,6 +317,28 @@
         <div><span>Quality check</span><span data-cms="home.trace.batch.quality">Passed</span></div>
       </div>
       <a href="story.html" class="link-arrow" data-cms="home.trace.link" style="display:inline-block; margin-top:20px;">Meet the people behind the batch</a>
+    </div>
+  </div>
+</section>
+
+<!-- WHY MILLED POWDERS -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="why-wrap why-wrap--powder">
+      <div class="why-grid">
+        <div>
+          <div class="eyebrow" data-cms="home.whypowder.eyebrow">Why milled powders</div>
+          <h2 class="section-title" data-cms="home.whypowder" style="max-width:14ch;">Ground fine. Nothing wasted.</h2>
+          <p class="section-desc" data-cms="home.whypowder" data-cms-field="short" style="margin-top:12px;">Stone-milled from dried fruits, herbs and Himalayan spices — whole plant goodness in a spoonful, ready to stir, blend or bake into everyday cooking.</p>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-num" data-cms="home.whypowder.grain">100%</div><div class="stat-label" data-cms="home.whypowder.grain" data-cms-field="short">Whole-food source</div></div>
+            <div class="stat"><div class="stat-num" data-cms="home.whypowder.fiber">Fine</div><div class="stat-label" data-cms="home.whypowder.fiber" data-cms-field="short">Stone-ground fineness</div></div>
+            <div class="stat"><div class="stat-num" data-cms="home.whypowder.uses">100s</div><div class="stat-label" data-cms="home.whypowder.uses" data-cms-field="short">Ways to use every pack</div></div>
+          </div>
+          <a href="collection.html?cat=powders" class="link-arrow" data-cms="home.whypowder.link" style="display:inline-block; margin-top:24px;">Shop the milled powders</a>
+        </div>
+        <div class="photo" style="height:340px;"><img draggable="false" src="https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=800&q=80" alt="Stone-milled Himalayan powders"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -443,6 +533,13 @@
       localStorage.setItem('aka-cart',JSON.stringify(cart)); updateBadge(); b.classList.add('is-added'); setTimeout(function(){b.classList.remove('is-added');},500);
     });
   });
+  /* Shared add-to-cart for cards rendered asynchronously (e.g. best sellers
+     hydrated from the catalog in the same order as shop.html). */
+  window.akaAddToCart = function(name, meta, price){
+    var ex=cart.find(function(i){return i.name===name;});
+    if(ex){ex.qty++;} else {cart.push({name:name,meta:meta,price:price,qty:1});}
+    localStorage.setItem('aka-cart', JSON.stringify(cart)); updateBadge();
+  };
   // account-menu.js may restore this user's saved cart after sign-in —
   // re-read storage so the badge/drawer reflect it without a manual refresh.
   window.addEventListener('aamako-cart-restored', function () {
@@ -451,6 +548,71 @@
   });
   updateBadge();
 })();
+</script>
+
+<script>
+  /* Best sellers — mirrors shop.html "Customer favourites → Bestsellers".
+     Same load path (categories → per-category products merged in category
+     order), top 4 rendered here so the homepage always matches the shop page.
+     If the catalog API is unavailable the static cards above remain. */
+  (function () {
+    var grid = document.getElementById('bestSellerGrid');
+    if (!grid || !window.AamakoAPI) return;
+    function firstVariant(p) {
+      var vs = p.variants || [];
+      for (var i = 0; i < vs.length; i++) { if (vs[i].isActive !== false) return vs[i]; }
+      return vs[0] || null;
+    }
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function fmtAmt(n) { n = Math.round(n); return n.toLocaleString('en-IN'); }
+    function render(items) {
+      if (!items || !items.length) return; /* keep fallback cards */
+      grid.innerHTML = items.map(function (p) {
+        var v = firstVariant(p);
+        if (!v) return '';
+        var price = v.basePriceCents / 100;
+        var slug = encodeURIComponent(p.slug || v.id);
+        var cat = (p.category && p.category.name) || 'Shop';
+        return '<div class="prod-card prod-card--best">'
+          + '<a class="prod-photo" href="product.html?slug=' + slug + '" aria-label="' + esc(p.name) + '">'
+          + '<img draggable="false" src="' + esc(p.imageUrl || '') + '" alt="' + esc(p.name) + '" onerror="this.style.display=\'none\';">'
+          + '<span class="prod-tag">Best seller</span>'
+          + '</a>'
+          + '<div class="prod-body">'
+          + '<span class="prod-cat">' + esc(cat) + '</span>'
+          + '<a class="prod-name" href="product.html?slug=' + slug + '">' + esc(p.name) + '</a>'
+          + '<div class="prod-meta">' + esc(v.name) + '</div>'
+          + '<div class="prod-foot">'
+          + '<div class="prod-price"><span class="prod-rs">Rs</span><span class="prod-amt">' + fmtAmt(price) + '</span></div>'
+          + '<button class="add-btn" type="button" aria-label="Add ' + esc(p.name) + ' to cart">Add to cart</button>'
+          + '</div></div></div>';
+      }).join('');
+      grid.querySelectorAll('.add-btn').forEach(function (b) {
+        var card = b.closest('.prod-card');
+        var name = ((card && card.querySelector('.prod-name')) || {}).textContent || '';
+        var meta = ((card && card.querySelector('.prod-meta')) || {}).textContent || '';
+        var amtEl = card && card.querySelector('.prod-amt');
+        var price = amtEl ? (parseInt(amtEl.textContent.replace(/[^0-9]/g, ''), 10) || 0) : 0;
+        b.addEventListener('click', function () {
+          if (window.akaAddToCart) window.akaAddToCart(name, meta, price);
+          b.classList.add('is-added'); setTimeout(function () { b.classList.remove('is-added'); }, 500);
+        });
+      });
+    }
+    window.AamakoAPI.getCategories().then(function (cats) {
+      return Promise.all((cats || []).map(function (c) {
+        return window.AamakoAPI.listProducts(1, c.slug).catch(function () { return { items: [] }; });
+      }));
+    }).then(function (perCat) {
+      var seen = {}, merged = [];
+      (perCat || []).forEach(function (r) {
+        (r && r.items || []).forEach(function (p) {
+          if (seen[p.id]) return; seen[p.id] = 1; merged.push(p);
+        });
+      });
+      render(merged.slice(0, 4));
+    }).catch(function () { /* keep static fallback */ });
+  })();
 </script>
 
 </body>
