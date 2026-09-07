@@ -5,7 +5,7 @@ const PORT = 8080;
 const MIME = {'.html':'text/html','.css':'text/css','.js':'application/javascript','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.json':'application/json','.ico':'image/x-icon'};
 const ROOT = __dirname;
 http.createServer((req, res) => {
-  let url = req.url.split('?')[0];
+    let url = decodeURIComponent(req.url.split('?')[0]);
   if (url === '/') url = '/index.html';
   const fp = path.join(ROOT, url);
   fs.readFile(fp, (err, data) => {

@@ -228,4 +228,16 @@
     document.body.appendChild(overlay);
     return false;
   };
+
+  /* Prevent header/CSS-transition flicker on page load.
+     During initial render the header may receive scroll-based classes
+     (is-scrolled / is-hidden) from the inline scroll handler; without
+     this guard the 0.35s transitions fire and cause a visible flicker
+     on refresh and page navigation. Once the whole page (incl. images)
+     is loaded we re-enable transitions for smooth interactive behavior. */
+  window.addEventListener('load', function(){
+    requestAnimationFrame(function(){
+      document.documentElement.classList.add('loaded');
+    });
+  });
 })();

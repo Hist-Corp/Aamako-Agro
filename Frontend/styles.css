@@ -120,6 +120,9 @@ header{position:sticky; top:0; z-index:50; background:var(--bg); border-bottom:1
 header.is-hidden{transform:translateY(-100%);}
 header.is-scrolled{box-shadow:0 4px 20px rgba(33,31,23,0.1);}
 header.is-hidden.is-scrolled{box-shadow:none;}
+/* Prevent header transition flicker during initial page load.
+   Transitions are re-enabled by js/api.js once the page is fully loaded. */
+html:not(.loaded) header{transition:none !important;}
 body.drawer-open header{border-bottom-color:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; box-shadow:none;}
 nav.wrap{display:flex; align-items:center; justify-content:space-between; padding-top:var(--space-4); padding-bottom:var(--space-4);}
 .logo{display:inline-flex; align-items:center;}
@@ -302,8 +305,8 @@ nav.wrap{display:flex; align-items:center; justify-content:space-between; paddin
 .process-hero .eyebrow::before{background:var(--gold);}
 .process-hero h1{font-family:var(--display); font-weight:700; font-size:clamp(2.2rem,4vw,3.4rem); line-height:1.05; max-width:14ch; color:#FFFDF7;}
 .process-hero .hero-desc{margin-top:var(--space-5); font-size:16px; color:#C4BCA0; max-width:44ch; line-height:1.65;}
-.process-hero-stamp{position:absolute; top:var(--space-6); right:var(--space-6); z-index:3; opacity:0.85; transform:rotate(-8deg);}
-@media (max-width:900px){ .process-hero .wrap{grid-template-columns:1fr; min-height:auto;} .process-hero-left{padding:var(--space-7) var(--space-5);} .process-hero-stamp{top:var(--space-4); right:var(--space-4); opacity:0.9;} }
+.process-hero-stamp{position:absolute; top:140px; right:var(--space-5); z-index:3; opacity:0.85; transform:rotate(-8deg);}
+@media (max-width:900px){ .process-hero .wrap{grid-template-columns:1fr; min-height:auto;} .process-hero-left{padding:var(--space-7) var(--space-5);} .process-hero-stamp{top:110px; right:var(--space-3); opacity:0.9;} }
 
 /* "From harvest to sealed pack" — centered intro panel on the process page */
 .process-intro .wrap{display:flex; justify-content:center;}
@@ -332,8 +335,8 @@ nav.wrap{display:flex; align-items:center; justify-content:space-between; paddin
 .story-hero-photos img{position:absolute; border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); object-fit:cover;}
 .story-hero-photos img:nth-child(1){width:70%; height:80%; top:0; right:10%; z-index:2;}
 .story-hero-photos img:nth-child(2){width:55%; height:65%; bottom:0; left:0; z-index:1; border:4px solid var(--paper);}
-.story-hero-stamp{position:absolute; top:var(--space-5); right:var(--space-5); z-index:3;}
-@media (max-width:900px){ .story-hero .wrap{grid-template-columns:1fr; min-height:auto;} .story-hero-photos{height:260px; margin-top:var(--space-6);} }
+.story-hero-stamp{position:absolute; top:140px; right:100px; z-index:3;}
+@media (max-width:900px){ .story-hero .wrap{grid-template-columns:1fr; min-height:auto;} .story-hero-photos{height:260px; margin-top:var(--space-6);} .story-hero-stamp{top:110px; right:50px;} }
 /* story hero sits on dark green — stat card goes light-on-dark (journal keeps its light .on-light variant) */
 .story-hero .hero-stat-card.on-light{background:rgba(255,253,247,0.12); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,253,247,0.15);}
 .story-hero .hero-stat-card.on-light .hsc-num{color:var(--gold);}
@@ -398,14 +401,14 @@ h1.page-title{
 .page-sub{margin-top:var(--space-4); font-size:16px; color:var(--ink-soft); max-width:52ch; line-height:1.6;}
 
 /* --- translucent hero stat card --- */
-.hero-stat-card{display:flex; gap:var(--space-6); padding:var(--space-5) var(--space-6); background:rgba(255,253,247,0.12); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,253,247,0.15); border-radius:var(--radius-lg); margin-top:var(--space-7);}
-.hero-stat-card .hsc-item{border-top:2px solid var(--gold); padding-top:var(--space-3);}
-.hero-stat-card .hsc-num{font-family:var(--display); font-size:28px; font-weight:700; color:var(--gold);}
-.hero-stat-card .hsc-label{font-size:12px; color:rgba(255,253,247,0.7); margin-top:4px;}
+.hero-stat-card{display:flex; gap:var(--space-5); padding:var(--space-4) var(--space-5); background:rgba(255,253,247,0.12); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,253,247,0.15); border-radius:var(--radius-lg); margin-top:var(--space-5);}
+.hero-stat-card .hsc-item{border-top:2px solid var(--gold); padding-top:var(--space-2); flex:1;}
+.hero-stat-card .hsc-num{font-family:var(--display); font-size:22px; font-weight:700; color:var(--gold);}
+.hero-stat-card .hsc-label{font-size:11px; color:rgba(255,253,247,0.7); margin-top:2px;}
 .hero-stat-card.on-light{background:rgba(33,31,23,0.08); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(33,31,23,0.1);}
 .hero-stat-card.on-light .hsc-num{color:var(--sage-deep);}
 .hero-stat-card.on-light .hsc-label{color:var(--ink-soft);}
-@media (max-width:600px){ .hero-stat-card{flex-direction:column; gap:var(--space-3); padding:var(--space-4) var(--space-5);} }
+@media (max-width:600px){ .hero-stat-card{flex-direction:column; gap:var(--space-3); padding:var(--space-3) var(--space-4);} }
 
 
 /* ---------- section shell ---------- */

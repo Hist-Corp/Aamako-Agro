@@ -7,6 +7,37 @@
     <link rel="icon" type="image/png" href="favicon.png?v=2">
 <title>Order History — Aama ko Agro</title>
 <link rel="stylesheet" href="styles.css">
+<script>
+/* PRE-PAINT NAV GUARD — runs synchronously while the <head> is parsed, before
+   the header markup below exists, so it can never flicker. Reads the cached
+   content snapshot and injects CSS that hides every link to a page hidden in
+   the dashboard (and blanks the content if THIS page is the hidden one).
+   js/content.js stays the source of truth: when fresh data arrives it removes
+   those links from the DOM and clears this guard. Keep the cache key and the
+   slug-to-path map in sync with js/content.js (SLUG_TO_PATH). */
+(function(){try{
+  var MAP={home:'/index.html',shop:'/shop.html',product:'/product.html','the-process':'/process.html','our-story':'/story.html',wholesale:'/wholesale.html',journal:'/journal.html','product-category':'/collection.html'};
+  var arr=JSON.parse(localStorage.getItem('aamako_content_cache_v1')||'null');
+  if(!arr||!arr.length)return;
+  var css=[],here=location.pathname.replace(/\/+$/,'')||'/';
+  if(here==='/')here='/index.html';
+  for(var i=0;i<arr.length;i++){
+    var it=arr[i];if(!it||it.isVisible!==false)continue;
+    var m=/^site\.page\.([a-z0-9-]+)$/.exec(it.key||'');if(!m)continue;
+    var p=MAP[m[1]];if(!p)continue;
+    css.push('a[href="'+p.slice(1)+'"]','li:has(> a[href="'+p.slice(1)+'"])');
+    if(p===here)document.documentElement.setAttribute('data-page-hidden','1');
+  }
+  if(!css.length)return;
+  var s=document.createElement('style');s.id='aamako-nav-guard';
+  s.textContent=css.join(',')+'{display:none!important}'+
+    'html[data-page-hidden] body>*:not(header):not(.mobile-drawer):not(.trust-strip):not(footer):not(script):not(template):not(noscript):not(style):not(link):not(meta){visibility:hidden!important}';
+  (document.head||document.documentElement).appendChild(s);
+  /* Safety valve: if content.js can never land (offline / API blocked), stop
+     blanking a hidden page after 3s instead of leaving it empty forever. */
+  setTimeout(function(){document.documentElement.removeAttribute('data-page-hidden');},3000);
+}catch(e){}})();
+</script>
 </head>
 <body>
 <div class="trust-strip"><span>DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span><span>MADE IN NEPAL</span><span>NO ADDED PRESERVATIVES</span></div>

@@ -201,8 +201,8 @@
     home: '/index.html',
     shop: '/shop.html',
     product: '/product.html',
-    'the-process': '/the-process.html',
-    'our-story': '/our-story.html',
+    'the-process': '/process.html',
+    'our-story': '/story.html',
     wholesale: '/wholesale.html',
     journal: '/journal.html',
     'product-category': '/collection.html',
@@ -212,14 +212,34 @@
    * Page-level hide/unhide. The dashboard sets a "site.page.<slug>" item's
    * isVisible to false to take a whole page offline without deleting any of its
    * section content. On the storefront we then:
-   *   1. If the visitor is currently ON a hidden page, replace the page body
-   *      with a friendly "unavailable" notice (the page is gone, not a 404).
-   *   2. Site-wide, dim every link that points at a hidden page so the
+   *   1. If the visitor is currently ON a hidden page, replace the page
+   *      CONTENT with a friendly "unavailable" notice (the page is gone, not
+   *      a 404). Site chrome (header, mobile drawer, trust strip, footer) is
+   *      always kept — wiping it used to make the header vanish after load,
+   *      which read as a flicker on every visit to the hidden page.
+   *   2. Site-wide, remove every link that points at a hidden page so the
    *      navigation no longer advertises something that isn't there.
+   *
+   * `itemsOverride` lets a caller apply a specific snapshot (exposed for the
+   * editor bridge / custom callers); it defaults to the freshly loaded items
+   * from all(). A call WITHOUT an override means fresh data has arrived — at
+   * that point the inline pre-paint guard each page's <head> installs is
+   * cleared, because the real DOM enforcement below takes over.
    */
-  function applyPageVisibility() {
+  function applyPageVisibility(itemsOverride) {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    var items = all();
+    var items = itemsOverride || all();
+    // Fresh data has landed — clear the inline PRE-PAINT NAV GUARD (see each
+    // page's <head>). It exists only to bridge the gap until real data
+    // arrives; from here the DOM edits below are the single source of truth,
+    // so a page unhidden in the dashboard comes back on the very next fetch.
+    if (!itemsOverride) {
+      try {
+        var guard = document.getElementById('aamako-nav-guard');
+        if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
+        document.documentElement.removeAttribute('data-page-hidden');
+      } catch (_) { /* ignore */ }
+    }
     if (!items.length) return;
 
     var hiddenPaths = {};
@@ -234,10 +254,12 @@
     var hiddenKeys = Object.keys(hiddenPaths);
     if (!hiddenKeys.length) return;
 
-    // 1. Current page is hidden → swap the body for an "unavailable" notice.
+    // 1. Current page is hidden → swap the page CONTENT for an "unavailable"
+    //    notice. Guarded so re-runs (cached pass + fresh pass) never rebuild
+    //    it — rebuilding after paint would itself read as a flicker.
     var here = window.location.pathname.replace(/\/+$/, '') || '/';
-    if (hiddenPaths[here] || hiddenPaths[here.replace(/^\//, '')]) {
-      var main = document.querySelector('main') || document.body;
+    var isHiddenHere = !!(hiddenPaths[here] || hiddenPaths[here.replace(/^\//, '')]);
+    if (isHiddenHere && !document.querySelector('[data-cms-unavailable]')) {
       var notice = document.createElement('div');
       notice.setAttribute('data-cms-unavailable', '1');
       notice.style.cssText =
@@ -249,11 +271,26 @@
         '<p style="max-width:36rem;margin:0;">' +
         'It has been temporarily hidden by the site team. The content is still safe ' +
         'and will reappear here as soon as the page is unhidden and republished.';
-      while (main.firstChild) main.removeChild(main.firstChild);
-      main.appendChild(notice);
-      // Stop — the page body is replaced, so per-section hydration would only
-      // try to write into elements that no longer exist.
-      return;
+      var main = document.querySelector('main');
+      if (main) {
+        while (main.firstChild) main.removeChild(main.firstChild);
+        main.appendChild(notice);
+      } else {
+        // No <main> landmark: strip only the page content and keep the site
+        // chrome (header, mobile drawer, trust strip, footer, scripts).
+        // Wiping document.body used to take the header with it.
+        var chrome = 'header, .mobile-drawer, .trust-strip, footer, script, template, noscript';
+        var kids = Array.prototype.slice.call(document.body.children);
+        for (var k = 0; k < kids.length; k++) {
+          var kid = kids[k];
+          if (kid.nodeType === 1 && !kid.matches(chrome)) {
+            kid.parentNode && kid.parentNode.removeChild(kid);
+          }
+        }
+        var anchor = document.querySelector('.mobile-drawer') || document.querySelector('header');
+        if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(notice, anchor.nextSibling);
+        else document.body.insertBefore(notice, document.body.firstChild);
+      }
     }
 
     // 2. Remove links pointing at any hidden page, across the whole site.
@@ -277,7 +314,20 @@
         target.parentNode && target.parentNode.removeChild(target);
       }
     }
+
+    // The current page's content was replaced — stop here so any per-section
+    // hydration that follows never writes into elements that no longer exist.
+    if (isHiddenHere) return;
   }
+
+  // NOTE: there is deliberately NO pre-paint pass here anymore. A deferred
+  // script like this one can execute AFTER the browser's first paint, so a
+  // cached pass ran too late and the header still flickered on refresh.
+  // Pre-paint hiding is now done by the inline "PRE-PAINT NAV GUARD" script
+  // in each page's <head>, which runs synchronously during HTML parsing —
+  // before the header markup even exists. This file remains the source of
+  // truth: once fresh data lands, hydrate() → applyPageVisibility() removes
+  // the hidden links from the DOM for real and clears the guard.
 
   // Auto-hydrate after the DOM is ready, unless explicitly deferred via
   // window.AAMAKO_CONTENT_DEFER = true before this script runs.
