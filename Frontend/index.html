@@ -82,14 +82,11 @@
   <a href="signin.html" class="btn btn-primary" style="margin-top:12px;">Sign in</a>
 </div>
 
-<!-- HERO — full-width background image -->
-<section class="hero hero-entrance">
-    <div class="hero-bg">
-    <!-- Brand green hero background (set in CSS: .hero { background:var(--sage-deep); }).
-         To replace with a real photo later, uncomment the <img> below and set its src. -->
-    <!-- <img src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=1600&q=80" alt="Fresh produce from Nepali farms" loading="eager"> -->
-  </div>
-  <div class="wrap hero-grid">
+<!-- HERO — Withlocals-style: left copy column + right 5-tile staggered image mosaic.
+     Grid pattern copied 1:1 from withlocals.com home hero (staggered 3-col / 6-row
+     areas, square aspect, 1rem-radius tiles) on the brand-green section background. -->
+<section class="hero hero-entrance hero-mosaic-hero">
+  <div class="wrap hero-mosaic-grid">
     <div class="hero-content">
       <div class="eyebrow" data-cms="home.hero.eyebrow">Freeze-dried, since [placeholder year]</div>
       <h1 data-cms="home.hero">What Aama would pack, <em>kept honest.</em></h1>
@@ -99,12 +96,22 @@
         <a href="wholesale.html" class="btn btn-outline-dark" data-cms="home.hero.cta2">Wholesale &amp; bulk →</a>
       </div>
     </div>
-        <div class="hero-visual">
-      <!-- Withlocals-inspired hero image placement: a single, clean frame-less photo in a rounded
-           container with a deep drop-shadow, floating slightly over the section below
-           (no gold frame, no backdrop splash, no on-image badge). -->
-      <div class="hero-img-frame">
-        <img draggable="false" src="images/Freeze-Dried_Mango_as_a_Natural_Flavor_cubes_and_best_background_in_bowl.webp" alt="Freeze-dried mango — real fruit, flash-frozen and dried" loading="eager" width="1600" height="896">
+    <div class="hero-mosaic">
+      <!-- Tile order maps to grid areas: 1=one 2=two 3=three 4=four 5=five -->
+      <div class="hero-mosaic-tile">
+        <img draggable="false" src="images/Freeze-Dried_Mango_as_a_Natural_Flavor_cubes_and_best_background_in_bowl.webp" alt="Freeze-dried mango cubes in a bowl" loading="eager" fetchpriority="high">
+      </div>
+      <div class="hero-mosaic-tile">
+        <img draggable="false" src="images/power fruits packaging.jpeg" alt="Aamako power fruits packaging" loading="eager" fetchpriority="high">
+      </div>
+      <div class="hero-mosaic-tile">
+        <img draggable="false" src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&q=80&auto=format&fit=crop" alt="Freshly harvested berries" loading="lazy">
+      </div>
+      <div class="hero-mosaic-tile">
+        <img draggable="false" src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=800&q=80&auto=format&fit=crop" alt="Stone-milled fruit and vegetable powders" loading="lazy">
+      </div>
+      <div class="hero-mosaic-tile">
+        <img draggable="false" src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&q=80&auto=format&fit=crop" alt="Dehydrated vegetables straight from the farm" loading="lazy">
       </div>
     </div>
   </div>

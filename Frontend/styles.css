@@ -289,6 +289,87 @@ nav.wrap{display:flex; align-items:center; justify-content:space-between; paddin
   .hero-content h1{font-size:clamp(2rem,8vw,2.8rem);}
 }
 
+/* ---------- home hero — Withlocals-style 5-tile mosaic on the brand-green section ----------
+   3-col × 6-row grid with staggered areas and reserved empty slots ("nothing", "empty",
+   "controls"), square aspect-ratio, 1rem-radius cover tiles; the green runs the full
+   height of the section. */
+.hero-mosaic-hero{
+  display:block; min-height:0; overflow:visible;
+  /* green background + paper text come from the base .hero rule (sage-deep) */
+  padding:3rem 0 2.5rem; margin-bottom:2rem; /* green extends below the mosaic */
+}
+.hero-mosaic-grid{position:relative; z-index:1; display:flex; flex-direction:column;}
+.hero-mosaic-hero .hero-content{padding:0; display:flex; flex-direction:column; text-align:center;}
+.hero-mosaic-hero .eyebrow{justify-content:center;}
+.hero-mosaic-hero .hero-sub{margin-left:auto; margin-right:auto;}
+.hero-mosaic-hero .hero-cta{justify-content:center;}
+
+/* The mosaic — exact withlocals.com grid areas at every breakpoint */
+.hero-mosaic{
+  position:relative;
+  display:grid;
+  gap:1rem;
+  width:100%; min-width:0; align-self:start; /* width from the track only — aspect-ratio must never inflate width from a stretched height */
+  grid-template-columns:3fr 5fr 3fr;
+  grid-template-rows:repeat(6,1fr);
+  grid-template-areas:
+    "one nothing three"
+    "one two three"
+    "one two three"
+    "four two five"
+    "four two five"
+    "four controls five";
+  aspect-ratio:1/1;
+  margin-top:1rem;
+}
+.hero-mosaic-tile{position:relative; overflow:hidden; border-radius:1rem; background:var(--bg);}
+.hero-mosaic-tile:nth-child(1){grid-area:one;}
+.hero-mosaic-tile:nth-child(2){grid-area:two;}
+.hero-mosaic-tile:nth-child(3){grid-area:three;}
+.hero-mosaic-tile:nth-child(4){grid-area:four;}
+.hero-mosaic-tile:nth-child(5){grid-area:five;}
+.hero-mosaic-tile img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+@media (max-width:639px){ /* slight edge bleed on phones */
+  .hero-mosaic-hero{overflow:hidden;}
+  .hero-mosaic{width:calc(100% + 2rem); margin-left:-1rem;}
+}
+@media (min-width:480px){
+  .hero-mosaic{gap:0.75rem; grid-template-columns:3fr 4fr 3fr;}
+}
+@media (min-width:768px){
+  .hero-mosaic-hero{padding:3rem 0 3.5rem;}
+  .hero-mosaic-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:1.25rem; align-items:stretch;} /* even split — full-size mosaic */
+  .hero-mosaic-hero .hero-content{text-align:left; margin-top:2.5rem; min-width:0;}
+  .hero-mosaic-hero .eyebrow{justify-content:flex-start;}
+  .hero-mosaic-hero .hero-sub{margin-left:0; margin-right:0;}
+  .hero-mosaic-hero .hero-cta{justify-content:flex-start;}
+  .hero-mosaic{
+    align-self:start; /* no stretch: height derives from track width via aspect-ratio, never the reverse */
+    grid-template-columns:repeat(3,1fr); margin-top:4rem;
+    grid-template-areas:
+      "nothing two five"
+      "nothing two five"
+      "one two four"
+      "one three four"
+      "one three four"
+      "controls controls controls";
+  }
+}
+@media (min-width:992px){
+  .hero-mosaic-hero::before{height:7rem; max-height:17%;}
+  .hero-mosaic{
+    gap:1.25rem; margin-top:0;
+    grid-template-areas:
+      "nothing empty four"
+      "nothing two four"
+      "one two four"
+      "one two five"
+      "one three five"
+      "controls three five";
+  }
+}
+
+/* ---------- page header (sub-pages) ---------- */
 /* ---------- page header (sub-pages) ---------- */
 .page-header{padding:var(--space-8) 0 var(--space-7); border-bottom:1px solid var(--line);}
 .page-header-grid{display:flex; justify-content:space-between; align-items:flex-end; gap:var(--space-6); flex-wrap:wrap;}
@@ -989,6 +1070,16 @@ footer{border-top:1px solid var(--line); margin-top:var(--space-8); padding:var(
   opacity:0; transform:rotate(-8deg) scale(0.8);
   animation: stamp-in var(--motion-page) var(--ease-out) 400ms forwards;
 }
+/* mosaic tiles follow the copy, staggering into place */
+.hero-entrance .hero-mosaic-tile{
+  opacity:0; transform:translateY(24px);
+  animation: hero-in var(--motion-component) var(--ease-out) forwards;
+}
+.hero-entrance .hero-mosaic-tile:nth-child(1){animation-delay:150ms;}
+.hero-entrance .hero-mosaic-tile:nth-child(2){animation-delay:250ms;}
+.hero-entrance .hero-mosaic-tile:nth-child(3){animation-delay:350ms;}
+.hero-entrance .hero-mosaic-tile:nth-child(4){animation-delay:450ms;}
+.hero-entrance .hero-mosaic-tile:nth-child(5){animation-delay:550ms;}
 @keyframes hero-in{ to{opacity:1; transform:translateY(0);} }
 @keyframes stamp-in{ to{opacity:1; transform:rotate(-8deg) scale(1);} }
 
