@@ -83,6 +83,10 @@ model MediaAsset {
   category     String   @default("General") // e.g. Product, Homepage, Journal, Banner, Team
   size         String?
   dimensions   String?
+  // Provenance for assets uploaded from the dashboard page-template editor:
+  // which page and section the file was uploaded from (null for library/URL adds).
+  sourcePage   String?
+  sourceSection String?
   isPublished  Boolean  @default(true)
   uploadedById String?
   createdAt    DateTime @default(now())

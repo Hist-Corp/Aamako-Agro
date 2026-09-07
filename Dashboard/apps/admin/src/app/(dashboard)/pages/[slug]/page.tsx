@@ -17,6 +17,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
@@ -29,7 +30,9 @@ import {
   Eye,
   EyeOff,
   FolderOpen,
+  ImagePlus,
   LayoutTemplate,
+  Library,
   Pencil,
   Plus,
   RefreshCw,
@@ -299,7 +302,14 @@ export default function PageEditor() {
   // my edits live": Hide/Unhide is just an intent, Save & publish acts on it.
   const handleSaveAndPublish = async () => {
     if (!activeKey) return;
-    if (!form.title.replace(/<[^>]*>/g, '').trim()) {
+    // Image sections carry their value (an image URL) in `body` — the title is
+    // optional and defaults to the section label so records stay readable.
+    const isImageSection = activeSection?.kind === 'image';
+    const effectiveTitle =
+      isImageSection && !form.title.replace(/<[^>]*>/g, '').trim()
+        ? activeSection?.label ?? 'Image'
+        : form.title;
+    if (!effectiveTitle.replace(/<[^>]*>/g, '').trim()) {
       addToast({ type: 'error', title: 'Title required', description: 'Give this section a title.' });
       return;
     }
@@ -308,7 +318,7 @@ export default function PageEditor() {
       const res = await apiClient.put<{ live?: boolean; message?: string }>(
         `/content/${encodeURIComponent(activeKey)}`,
         {
-          title: form.title.trim(),
+          title: effectiveTitle.trim(),
           shortDescription: form.shortDescription,
           longDescription: form.longDescription,
           body: form.body,
@@ -340,6 +350,89 @@ export default function PageEditor() {
       setIsSaving(false);
     }
   };
+
+  // ── Image sections: upload from the local device or pick from the media
+  // library. The chosen URL is stored in the section body and published with
+  // the standard save flow; fresh uploads are registered in the media library
+  // tagged with the page and section they came from.
+  interface MediaSummary {
+    id: string;
+    name: string;
+    url: string;
+    category: string;
+    isPublished: boolean;
+    createdAt: string;
+  }
+  const isImageSection = activeSection?.kind === 'image';
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [libraryImages, setLibraryImages] = useState<MediaSummary[]>([]);
+  const [libraryQuery, setLibraryQuery] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  /** The image URL this section currently points at (stored raw in `body`). */
+  const currentImageUrl = useMemo(() => {
+    const m = form.body.match(/<img[^>]*src=["']([^"']+)["']/i);
+    return (m?.[1] ?? form.body).trim();
+  }, [form.body]);
+
+  const loadLibraryImages = useCallback(async () => {
+    try {
+      const data = await apiClient.get<MediaSummary[]>('/admin/media?type=IMAGE');
+      setLibraryImages(data);
+    } catch {
+      addToast({ type: 'error', title: 'Could not load media library', description: 'Try again in a moment.' });
+    }
+  }, [addToast]);
+
+  useEffect(() => {
+    if (pickerOpen) void loadLibraryImages();
+  }, [pickerOpen, loadLibraryImages]);
+
+  const uploadImageFile = useCallback(
+    async (file: File) => {
+      if (!activeSection) return;
+      if (!file.type.startsWith('image/')) {
+        addToast({ type: 'error', title: 'Images only', description: `${file.name} is not an image file.` });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        addToast({ type: 'error', title: 'Image too large', description: `${file.name} is larger than 5 MB.` });
+        return;
+      }
+      setIsUploadingImage(true);
+      try {
+        const res = await apiClient.upload<{ url: string; name?: string; size: number }>('/admin/media/upload', file);
+        const kb = res.size / 1024;
+        const sizeLabel = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`;
+        await apiClient.post('/admin/media', {
+          name: file.name,
+          url: res.url,
+          category: 'Page content',
+          altText: activeSection.label,
+          size: sizeLabel,
+          sourcePage: page?.name ?? page?.slug ?? '',
+          sourceSection: activeSection.label,
+        });
+        setForm((f) => ({ ...f, body: res.url }));
+        addToast({
+          type: 'success',
+          title: 'Image uploaded to media library',
+          description: `${file.name} · from ${page?.name ?? page?.slug} — ${activeSection.label}. Press “Save & publish” to apply it to the page.`,
+        });
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Upload failed',
+          description: err instanceof ApiError ? err.message : 'Unexpected error',
+        });
+      } finally {
+        setIsUploadingImage(false);
+      }
+    },
+    [activeSection, page, addToast],
+  );
 
   // Hide/show a section on the storefront without deleting it. The layout
   // reflows (the page stays responsive) and the section can be restored anytime.
@@ -913,6 +1006,73 @@ export default function PageEditor() {
                   </p>
                 </div>
 
+                {isImageSection && (
+                  <div className="space-y-3">
+                    {/* Current image preview */}
+                    <div className="rounded-lg border border-surface-200 bg-white p-3">
+                      <p className="mb-2 text-2xs font-mono uppercase tracking-wide text-surface-400">Current image</p>
+                      {currentImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={currentImageUrl} alt={activeSection.label} className="h-40 w-full rounded-md object-cover" />
+                      ) : (
+                        <div className="flex h-40 items-center justify-center rounded-md bg-surface-100 text-xs text-surface-400">
+                          No image set yet
+                        </div>
+                      )}
+                      {currentImageUrl && (
+                        <p className="mt-2 truncate text-2xs text-surface-400">{currentImageUrl}</p>
+                      )}
+                    </div>
+
+                    {/* Dropzone: drag & drop, browse local files, or pick from library */}
+                    <div
+                      className={cn(
+                        'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
+                        dragOver ? 'border-brand-500 bg-brand-50' : 'border-surface-300 bg-surface-50',
+                      )}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOver(true);
+                      }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragOver(false);
+                        const f = e.dataTransfer.files?.[0];
+                        if (f) void uploadImageFile(f);
+                      }}
+                    >
+                      <ImagePlus className="h-5 w-5 text-surface-400" />
+                      <p className="text-xs text-surface-600">
+                        Drag &amp; drop an image here, or choose one
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <Button size="sm" variant="ghost" disabled={isUploadingImage} onClick={() => fileInputRef.current?.click()}>
+                          <ImagePlus className="h-3.5 w-3.5" /> Browse files
+                        </Button>
+                        <Button size="sm" variant="ghost" disabled={isUploadingImage} onClick={() => setPickerOpen(true)}>
+                          <Library className="h-3.5 w-3.5" /> Media library
+                        </Button>
+                      </div>
+                      {isUploadingImage && <p className="text-2xs text-brand-600">Uploading…</p>}
+                      <p className="text-2xs text-surface-400">
+                        Images only · up to 5 MB · saved to Media with this page &amp; section tagged
+                      </p>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void uploadImageFile(f);
+                        e.target.value = '';
+                      }}
+                    />
+                  </div>
+                )}
+
                 <RichTextEditor
                   variant="inline"
                   label="Section title *"
@@ -921,28 +1081,32 @@ export default function PageEditor() {
                   placeholder={`e.g. ${activeSection.label}`}
                   hint="Fonts, sizes, colors and emphasis supported — same controls as the descriptions."
                 />
-                <RichTextEditor
-                  variant="inline"
-                  label="Short description"
-                  value={form.shortDescription}
-                  onChange={(html) => setForm({ ...form, shortDescription: html })}
-                  placeholder="One-line summary shown in the section…"
-                  minHeight={64}
-                />
-                <RichTextEditor
-                  label="Long description"
-                  value={form.longDescription}
-                  onChange={(html) => setForm({ ...form, longDescription: html })}
-                  placeholder="Full rich-text description…"
-                  hint="Formatting supported: bold/italic, headings, lists, alignment, links and images."
-                />
-                <RichTextEditor
-                  label="Custom section (body)"
-                  value={form.body}
-                  onChange={(html) => setForm({ ...form, body: html })}
-                  placeholder="Extra custom section content…"
-                  minHeight={140}
-                />
+                {!isImageSection && (
+                  <>
+                    <RichTextEditor
+                      variant="inline"
+                      label="Short description"
+                      value={form.shortDescription}
+                      onChange={(html) => setForm({ ...form, shortDescription: html })}
+                      placeholder="One-line summary shown in the section…"
+                      minHeight={64}
+                    />
+                    <RichTextEditor
+                      label="Long description"
+                      value={form.longDescription}
+                      onChange={(html) => setForm({ ...form, longDescription: html })}
+                      placeholder="Full rich-text description…"
+                      hint="Formatting supported: bold/italic, headings, lists, alignment, links and images."
+                    />
+                    <RichTextEditor
+                      label="Custom section (body)"
+                      value={form.body}
+                      onChange={(html) => setForm({ ...form, body: html })}
+                      placeholder="Extra custom section content…"
+                      minHeight={140}
+                    />
+                  </>
+                )}
 
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <Button onClick={handleSaveAndPublish} isLoading={isSaving}>
@@ -967,6 +1131,52 @@ export default function PageEditor() {
                     </Button>
                   )}
                 </div>
+
+                {isImageSection && (
+                  <Dialog
+                    open={pickerOpen}
+                    onClose={() => setPickerOpen(false)}
+                    title="Choose from media library"
+                    description="Pick an existing image to use in this section. Fresh uploads land here too, tagged with this page and section."
+                    maxWidth="lg"
+                  >
+                    <div className="space-y-3">
+                      <input
+                        value={libraryQuery}
+                        onChange={(e) => setLibraryQuery(e.target.value)}
+                        placeholder="Search by name…"
+                        className="w-full rounded-md border border-surface-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
+                      />
+                      <div className="grid max-h-[50vh] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-4">
+                        {libraryImages
+                          .filter((m) => m.name.toLowerCase().includes(libraryQuery.trim().toLowerCase()))
+                          .map((m) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              title={m.name}
+                              onClick={() => {
+                                setForm((f) => ({ ...f, body: m.url }));
+                                setPickerOpen(false);
+                              }}
+                              className="group relative overflow-hidden rounded-md border border-surface-200 transition-shadow hover:shadow-md"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={m.url} alt={m.name} className="h-20 w-full object-cover" />
+                              <span className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-2xs text-white">
+                                {m.name}
+                              </span>
+                            </button>
+                          ))}
+                        {libraryImages.length === 0 && (
+                          <p className="col-span-full py-6 text-center text-xs text-surface-400">
+                            No images in the library yet — upload one above.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Dialog>
+                )}
               </div>
             )}
           </Card>

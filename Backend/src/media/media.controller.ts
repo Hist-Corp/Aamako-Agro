@@ -10,18 +10,22 @@ import { MediaService, MediaPayload } from './media.service';
 
 export class CreateMediaDto implements MediaPayload {
   @ApiProperty() @IsString() @MinLength(1) name!: string;
-  @ApiProperty({ description: 'Image URL (https)' })
-  @IsString() @Matches(/^https:\/\/.+/i, { message: 'url must be a secure https:// URL' })
+  @ApiProperty({ description: 'Image URL (https, or http for first-party uploaded files)' })
+  @IsString() @Matches(/^https?:\/\/.+/i, { message: 'url must be a valid http(s):// URL' })
   url!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(300) altText?: string;
   @ApiPropertyOptional({ default: 'General' }) @IsOptional() @IsString() @MaxLength(60) category?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() size?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() dimensions?: string;
+  @ApiPropertyOptional({ description: 'Dashboard page this file was uploaded from (template editor provenance)' })
+  @IsOptional() @IsString() @MaxLength(80) sourcePage?: string;
+  @ApiPropertyOptional({ description: 'Template section this file was uploaded from' })
+  @IsOptional() @IsString() @MaxLength(80) sourceSection?: string;
 }
 
 export class UpdateMediaDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MinLength(1) name?: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() @Matches(/^https:\/\/.+/i, { message: 'url must be a secure https:// URL' })
+  @ApiPropertyOptional() @IsOptional() @IsString() @Matches(/^https?:\/\/.+/i, { message: 'url must be a valid http(s):// URL' })
   url?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(300) altText?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(60) category?: string;

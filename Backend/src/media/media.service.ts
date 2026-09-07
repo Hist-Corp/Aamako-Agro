@@ -10,6 +10,8 @@ export interface MediaPayload {
   category?: string;
   size?: string;
   dimensions?: string;
+  sourcePage?: string;
+  sourceSection?: string;
 }
 
 @Injectable()
@@ -43,6 +45,8 @@ export class MediaService {
         category: data.category?.trim() || 'General',
         size: data.size || null,
         dimensions: data.dimensions || null,
+        sourcePage: data.sourcePage?.trim() || null,
+        sourceSection: data.sourceSection?.trim() || null,
         isPublished: true,
         uploadedById: actorId,
       },

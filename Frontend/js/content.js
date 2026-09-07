@@ -99,6 +99,19 @@
       el.setAttribute('data-cms-applied', '1');
       return;
     }
+    // Image sections — the stored value is an image URL (edited via the
+    // dashboard's upload / media-library picker on image-kind sections).
+    if (el.tagName === 'IMG') {
+      el.src = val;
+      el.setAttribute('data-cms-applied', '1');
+      return;
+    }
+    if (el.hasAttribute('data-cms-img')) {
+      var img = el.querySelector('img');
+      if (img) img.src = val;
+      el.setAttribute('data-cms-applied', '1');
+      return;
+    }
     var looksHtml = typeof val === 'string' && /<[a-z][\s\S]*>/i.test(val);
     var asHtml = el.hasAttribute('data-cms-html') ||
       field === 'body' || field === 'long' || looksHtml;
@@ -124,7 +137,11 @@
         var node = nodes[i];
         var key = node.getAttribute('data-cms');
         if (!key) continue;
-        var field = node.getAttribute('data-cms-field') || 'title';
+        var field = node.getAttribute('data-cms-field') ||
+          // Image sections store their URL in `body` (set via the dashboard's
+          // upload / media-library picker). Without an explicit data-cms-field
+          // they must read from body, not the default title field.
+          (node.hasAttribute('data-cms-img') ? 'body' : 'title');
         var item = get(key);
         if (!item) continue;
         // "Hide from page" in the dashboard removes the block from the live

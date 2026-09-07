@@ -49,9 +49,16 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.setGlobalPrefix('api');
 
-  // Serve uploaded product/media images at /api/uploads/<file>
+  // Serve uploaded product/media images at /api/uploads/<file>.
+  // CORP is relaxed to cross-origin because these images are legitimately
+  // embedded by the dashboard (:3001) and storefront (:8080) — helmet's
+  // default `same-origin` policy would block them from rendering there.
   const uploadsDir = path.join(process.cwd(), 'uploads');
-  app.use('/api/uploads', express.static(uploadsDir, { maxAge: '7d', immutable: true }));
+  app.use('/api/uploads', express.static(uploadsDir, {
+    maxAge: '7d',
+    immutable: true,
+    setHeaders: (res) => res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'),
+  }));
   app.useWebSocketAdapter(new WsAdapter(app));
 
   const config = new DocumentBuilder()
