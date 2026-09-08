@@ -39,6 +39,83 @@
 }catch(e){}})();
 </script>
 <script src="js/content.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script>
+/* Wholesale page scroll animations */
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+  /* Hero section - animate on page load */
+  var wholesaleHero = document.querySelector('.wholesale-hero');
+  if (wholesaleHero) {
+    var heroEls = wholesaleHero.querySelectorAll('.eyebrow, .page-title, .page-sub, .wholesale-cta, .stamp');
+    gsap.set(heroEls, { opacity: 0, y: 25 });
+    gsap.to(heroEls, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.12, delay: 0.2
+    });
+  }
+
+  /* Section headers */
+  document.querySelectorAll('.section-title, .section-desc').forEach(function(el){
+    var isDesc = el.classList.contains('section-desc');
+    gsap.set(el, { opacity: 0, y: isDesc ? 20 : 30 });
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: isDesc ? 0.7 : 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Tier cards */
+  var tierGrid = document.querySelector('.tier-grid');
+  if (tierGrid) {
+    gsap.set(tierGrid.querySelectorAll('.tier-card'), { opacity: 0, y: 30 });
+    gsap.to(tierGrid.querySelectorAll('.tier-card'), {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: tierGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Catalogue grid */
+  var catalogueGrid = document.querySelector('.catalogue-grid');
+  if (catalogueGrid) {
+    gsap.set(catalogueGrid.querySelectorAll('.cat-item'), { opacity: 0, y: 30 });
+    gsap.to(catalogueGrid.querySelectorAll('.cat-item'), {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: catalogueGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Steps */
+  document.querySelectorAll('.step').forEach(function(step){
+    gsap.set(step, { opacity: 0, y: 30 });
+    gsap.to(step, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: step, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Inquiry form */
+  var inquiryForm = document.querySelector('.inquiry-form');
+  if (inquiryForm) {
+    gsap.set(inquiryForm, { opacity: 0, y: 30 });
+    gsap.to(inquiryForm, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: inquiryForm, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Footer */
+  var footGrid = document.querySelector('.foot-grid');
+  if (footGrid) {
+    gsap.from(footGrid.querySelectorAll('.foot-col'), {
+      opacity: 0, y: 20, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: footGrid, start: 'top 92%', toggleActions: 'play none none none' }
+    });
+  }
+});
+</script>
 </head>
 <body>
 <div class="trust-strip"><span data-cms="site.trust.1">DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span><span data-cms="site.trust.2">MADE IN NEPAL</span><span data-cms="site.trust.3">NO ADDED PRESERVATIVES</span></div>

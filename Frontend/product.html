@@ -40,6 +40,207 @@
 }catch(e){}})();
 </script>
 <link rel="stylesheet" href="shop-om.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script>
+/* Product page scroll animations */
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+  /* Breadcrumb & back button */
+  var breadcrumb = document.querySelector('.ombreadcrumb');
+  if (breadcrumb) {
+    gsap.set(breadcrumb, { opacity: 0, y: -15 });
+    gsap.to(breadcrumb, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.1 });
+  }
+  var backBtn = document.querySelector('.omcoll-backrow');
+  if (backBtn) {
+    gsap.set(backBtn, { opacity: 0, x: -20 });
+    gsap.to(backBtn, { opacity: 1, x: 0, duration: 0.6, ease: 'power3.out', delay: 0.15 });
+  }
+
+  /* Product gallery */
+  var galleryMain = document.querySelector('.ompdp-gallery-main');
+  if (galleryMain) {
+    gsap.set(galleryMain, { opacity: 0, scale: 1.05 });
+    gsap.to(galleryMain, { opacity: 1, scale: 1, duration: 0.9, ease: 'power2.out', delay: 0.2 });
+  }
+  var thumbs = document.querySelector('.ompdp-thumbs');
+  if (thumbs) {
+    gsap.set(thumbs.querySelectorAll('.omthumb'), { opacity: 0, y: 15 });
+    gsap.to(thumbs.querySelectorAll('.omthumb'), {
+      opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', stagger: 0.08, delay: 0.3
+    });
+  }
+
+  /* Product info */
+  var pdTitle = document.querySelector('.ompdp-title');
+  if (pdTitle) {
+    gsap.set(pdTitle, { opacity: 0, y: 20 });
+    gsap.to(pdTitle, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', delay: 0.25 });
+  }
+  var pdRating = document.querySelector('.ompdp-rating');
+  if (pdRating) {
+    gsap.set(pdRating, { opacity: 0, y: 15 });
+    gsap.to(pdRating, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.3 });
+  }
+  var pdPrice = document.querySelector('.ompdp-price');
+  if (pdPrice) {
+    gsap.set(pdPrice, { opacity: 0, y: 15 });
+    gsap.to(pdPrice, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.35 });
+  }
+  var pdDesc = document.querySelector('.ompdp-desc');
+  if (pdDesc) {
+    gsap.set(pdDesc, { opacity: 0, y: 15 });
+    gsap.to(pdDesc, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.4 });
+  }
+  var highlights = document.querySelector('.omhighlights');
+  if (highlights) {
+    gsap.set(highlights, { opacity: 0, y: 20 });
+    gsap.to(highlights, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', delay: 0.45 });
+  }
+  var specRows = document.querySelectorAll('.spec-row');
+  if (specRows.length) {
+    gsap.set(specRows, { opacity: 0, x: -15 });
+    gsap.to(specRows, {
+      opacity: 1, x: 0, duration: 0.5, ease: 'power3.out', stagger: 0.08, delay: 0.5
+    });
+  }
+  var qtyRow = document.querySelector('.omqty-row');
+  if (qtyRow) {
+    gsap.set(qtyRow, { opacity: 0, y: 15 });
+    gsap.to(qtyRow, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.55 });
+  }
+  var cta = document.querySelector('.ompdp-cta');
+  if (cta) {
+    gsap.set(cta.querySelectorAll('button'), { opacity: 0, y: 15 });
+    gsap.to(cta.querySelectorAll('button'), {
+      opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.08, delay: 0.6
+    });
+  }
+
+  /* Batch traceability */
+  var tear = document.querySelector('.tear');
+  if (tear) {
+    gsap.set(tear, { opacity: 0, y: 20 });
+    gsap.to(tear, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: tear, start: 'top 92%', toggleActions: 'play none none none' }
+    });
+  }
+  var batchTag = document.querySelector('.batch-tag');
+  if (batchTag) {
+    gsap.set(batchTag, { opacity: 0, y: 20 });
+    gsap.to(batchTag, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: batchTag, start: 'top 92%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Tab panels - animate content when tab is clicked */
+  var omtabs = document.querySelectorAll('.omtab');
+  omtabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      var panel = document.querySelector('.omtab-panel.active');
+      if (panel) {
+        var panelEls = panel.querySelectorAll('h3, h4, p, ul, li, .omnut-rows');
+        gsap.set(panelEls, { opacity: 0, y: 15 });
+        gsap.to(panelEls, {
+          opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', stagger: 0.06
+        });
+      }
+    });
+  });
+
+  /* FAQ section */
+  var faqSection = document.querySelector('.omfaq');
+  if (faqSection) {
+    var faqTitle = faqSection.previousElementSibling;
+    if (faqTitle && faqTitle.classList.contains('omsec-title')) {
+      gsap.set(faqTitle, { opacity: 0, y: 25 });
+      gsap.to(faqTitle, {
+        opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+        scrollTrigger: { trigger: faqTitle, start: 'top 90%', toggleActions: 'play none none none' }
+      });
+    }
+    gsap.set(faqSection.querySelectorAll('.omfaq-item'), { opacity: 0, y: 20 });
+    gsap.to(faqSection.querySelectorAll('.omfaq-item'), {
+      opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: faqSection, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Reviews section */
+  var reviewSection = document.querySelector('.omsec');
+  if (reviewSection) {
+    var reviewHead = reviewSection.querySelector('.section-title');
+    if (reviewHead) {
+      gsap.set(reviewHead, { opacity: 0, y: 25 });
+      gsap.to(reviewHead, {
+        opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+        scrollTrigger: { trigger: reviewHead, start: 'top 90%', toggleActions: 'play none none none' }
+      });
+    }
+    var reviewSummary = reviewSection.querySelector('.omrev-summary');
+    if (reviewSummary) {
+      gsap.set(reviewSummary, { opacity: 0, y: 20 });
+      gsap.to(reviewSummary, {
+        opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+        scrollTrigger: { trigger: reviewSummary, start: 'top 90%', toggleActions: 'play none none none' }
+      });
+    }
+    var reviewCards = reviewSection.querySelectorAll('.omrev-card');
+    if (reviewCards.length) {
+      gsap.set(reviewCards, { opacity: 0, y: 24 });
+      gsap.to(reviewCards, {
+        opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.12,
+        scrollTrigger: { trigger: reviewSection, start: 'top 88%', toggleActions: 'play none none none' }
+      });
+    }
+  }
+
+  /* You might also like section */
+  var alsoLikeSection = document.querySelector('.omalso-like, .related-section');
+  if (alsoLikeSection) {
+    var alsoTitle = alsoLikeSection.querySelector('.section-title, .omsec-title');
+    if (alsoTitle) {
+      gsap.set(alsoTitle, { opacity: 0, y: 25 });
+      gsap.to(alsoTitle, {
+        opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+        scrollTrigger: { trigger: alsoTitle, start: 'top 90%', toggleActions: 'play none none none' }
+      });
+    }
+    var alsoCards = alsoLikeSection.querySelectorAll('.prod-card, .omalso-card');
+    if (alsoCards.length) {
+      gsap.set(alsoCards, { opacity: 0, y: 24 });
+      gsap.to(alsoCards, {
+        opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+        scrollTrigger: { trigger: alsoLikeSection, start: 'top 88%', toggleActions: 'play none none none' }
+      });
+    }
+  }
+
+  /* Section headers */
+  document.querySelectorAll('.section-title, .section-desc').forEach(function(el){
+    var isDesc = el.classList.contains('section-desc');
+    gsap.set(el, { opacity: 0, y: isDesc ? 20 : 30 });
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: isDesc ? 0.7 : 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Footer */
+  var footGrid = document.querySelector('.foot-grid');
+  if (footGrid) {
+    gsap.from(footGrid.querySelectorAll('.foot-col'), {
+      opacity: 0, y: 20, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: footGrid, start: 'top 92%', toggleActions: 'play none none none' }
+    });
+  }
+});
+</script>
 </head>
 <body>
 

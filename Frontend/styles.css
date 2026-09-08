@@ -736,7 +736,60 @@ footer{background:#E2F0E2;}
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23BE8A2A' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .wholesale-item:hover::before{transform:scale(1.15);}
+.process-cta {
+  background: var(--sage-deep);
+  border-radius: var(--radius-lg);
+  padding: var(--space-9) var(--space-7);
+  margin: var(--space-7) auto;
+  max-width: 900px;
+}
+.process-cta .eyebrow {
+  color: var(--gold);
+}
+.process-cta h2 {
+  color: #FFFDF7;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  margin-top: var(--space-4);
+}
+.process-cta p {
+  color: #C4BCA0;
+  margin-top: var(--space-4);
+  font-size: 15px;
+}
+.process-cta .wholesale-cta {
+  justify-content: center;
+  margin-top: var(--space-6);
+}
 .wholesale-cta{display:flex; gap:var(--space-4); margin-top:var(--space-7); flex-wrap:wrap;}
+/* process CTA section - centered card with curved corners */
+.process-cta {
+  background: var(--sage-deep);
+  border-radius: var(--radius-lg);
+  padding: var(--space-9) var(--space-7);
+  margin: var(--space-7) auto;
+  max-width: 900px;
+}
+.process-cta .eyebrow {
+  color: var(--gold);
+}
+.process-cta h2 {
+  color: #FFFDF7;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  margin-top: var(--space-4);
+}
+.process-cta p {
+  color: #C4BCA0;
+  margin-top: var(--space-4);
+  font-size: 15px;
+}
+.process-cta .wholesale-cta {
+  justify-content: center;
+  margin-top: var(--space-6);
+}
 /* media: framed photo + stamp + tier chip */
 .wholesale-media{display:flex; flex-direction:column; gap:var(--space-5); align-items:center;}
 .wholesale-frame{
@@ -922,6 +975,12 @@ footer{background:#E2F0E2;}
 .newsletter{background:var(--surface); border-radius:var(--radius-lg); padding:var(--space-7); text-align:center;}
 .newsletter h2{font-family:var(--display); font-weight:700; font-size:clamp(1.5rem,2.6vw,2.2rem); margin-bottom:var(--space-3);}
 .newsletter p{color:var(--ink-soft); max-width:44ch; margin:0 auto var(--space-6); line-height:1.6;}
+/* Green newsletter variant */
+.newsletter[style*="sage-deep"]{background:var(--sage-deep) !important;}
+.newsletter[style*="sage-deep"] h2{color:#FFFDF7;}
+.newsletter[style*="sage-deep"] p{color:#C4BCA0;}
+/* Prevent flicker - hide initially, GSAP will reveal */
+.newsletter h2, .newsletter p, .newsletter .wholesale-cta .btn{opacity:0;}
 .nl-form{display:flex; gap:var(--space-3); max-width:440px; margin:0 auto; flex-wrap:wrap; justify-content:center;}
 .nl-form input{
   flex:1; min-width:200px; padding:12px 16px; border:1.5px solid var(--line); border-radius:var(--radius-md);

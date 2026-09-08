@@ -38,6 +38,188 @@
 }catch(e){}})();
 </script>
 <link rel="stylesheet" href="shop-om.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script>
+/* Shop page scroll animations */
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+  /* Eyebrows */
+  document.querySelectorAll('.omsec-eyebrow, .omhero-eyebrow').forEach(function(el){
+    gsap.from(el, {
+      opacity: 0, y: 20, duration: 0.6, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 92%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Section titles */
+  document.querySelectorAll('.omsec-title, .omhero-title, .omshow2-title, .ombanner-title').forEach(function(el){
+    gsap.from(el, {
+      opacity: 0, y: 30, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Section descriptions / subtitles */
+  document.querySelectorAll('.omconcern-sub, .omhero-sub').forEach(function(el){
+    gsap.from(el, {
+      opacity: 0, y: 20, duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Shop by category tiles */
+  var sbcGrid = document.querySelector('#sbcGrid');
+  if (sbcGrid) {
+    gsap.from(sbcGrid.querySelectorAll('.omsbc-tile'), {
+      opacity: 0, y: 30, duration: 0.6, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: sbcGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Concern / need tiles */
+  var concernGrid = document.querySelector('.omconcern-grid');
+  if (concernGrid) {
+    gsap.from(concernGrid.querySelectorAll('.omconcern-tile'), {
+      opacity: 0, y: 24, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: concernGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Category banners */
+  var bannerGrid = document.querySelector('.ombanner-grid');
+  if (bannerGrid) {
+    gsap.from(bannerGrid.querySelectorAll('.ombanner-card'), {
+      opacity: 0, y: 30, duration: 0.7, ease: 'power3.out', stagger: 0.12,
+      scrollTrigger: { trigger: bannerGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Showcase grid products */
+  var showcaseGrid = document.querySelector('#showcaseGrid');
+  if (showcaseGrid) {
+    gsap.from(showcaseGrid.querySelectorAll('.product-card, .prod-card, .ombanner-card'), {
+      opacity: 0, y: 24, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: showcaseGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Hero slider content - animate on page load */
+  document.querySelectorAll('.omhero-slide.is-active').forEach(function(slide){
+    var textElements = slide.querySelectorAll('.omhero-eyebrow, .omhero-title, .omhero-sub, .omhero-btn');
+    gsap.set(textElements, { opacity: 0, y: 20 });
+    gsap.to(textElements, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.15, delay: 0.3
+    });
+    var heroImg = slide.querySelector('.omhero-img');
+    if (heroImg) {
+      gsap.set(heroImg, { opacity: 0, scale: 1.05 });
+      gsap.to(heroImg, {
+        opacity: 1, scale: 1, duration: 1.2, ease: 'power2.out', delay: 0.4
+      });
+    }
+  });
+
+  /* Showcase title bar */
+  var titleBar = document.querySelector('.omshow2-titlebar');
+  if (titleBar) {
+    gsap.from(titleBar, {
+      opacity: 0, y: 20, duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: titleBar, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Wholesome Dehydrated Choices section */
+  var showcaseSection = document.querySelector('#wholesomeShowcase');
+  if (showcaseSection) {
+    /* Title - use set + to for reliable animation */
+    var showTitle = showcaseSection.querySelector('.omshow2-title');
+    if (showTitle) {
+      gsap.set(showTitle, { opacity: 0, y: 30 });
+      gsap.to(showTitle, {
+        opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+        scrollTrigger: { trigger: showcaseSection, start: 'top 88%', toggleActions: 'play none none none' }
+      });
+    }
+    /* Category link */
+    var showCat = showcaseSection.querySelector('.omshow2-cat');
+    if (showCat) {
+      gsap.set(showCat, { opacity: 0, y: 20 });
+      gsap.to(showCat, {
+        opacity: 1, y: 0, duration: 0.6, ease: 'power3.out',
+        scrollTrigger: { trigger: showcaseSection, start: 'top 85%', toggleActions: 'play none none none' }
+      });
+    }
+    /* Product grid items */
+    var showcaseGrid = showcaseSection.querySelector('#showcaseGrid, .omshow2-grid');
+    if (showcaseGrid) {
+      /* Animate products as they are added to the grid */
+      var observer = new MutationObserver(function(mutations){
+        mutations.forEach(function(mutation){
+          mutation.addedNodes.forEach(function(node){
+            if (node.nodeType === 1 && (node.classList.contains('omfp-card') || node.classList.contains('product-card') || node.querySelector('.omfp-card'))) {
+              var cards = node.classList.contains('omfp-card') ? [node] : node.querySelectorAll('.omfp-card');
+              gsap.set(cards, { opacity: 0, y: 20 });
+              gsap.to(cards, {
+                opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', stagger: 0.06
+              });
+            }
+          });
+        });
+      });
+      observer.observe(showcaseGrid, { childList: true, subtree: true });
+
+      /* Initial animation for existing cards */
+      var existingCards = showcaseGrid.querySelectorAll('.omfp-card, .product-card');
+      if (existingCards.length) {
+        gsap.set(existingCards, { opacity: 0, y: 20 });
+        gsap.to(existingCards, {
+          opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', stagger: 0.06, delay: 0.3
+        });
+      }
+    }
+  }
+
+  /* Why Wholesale comparison section */
+  var compareSection = document.querySelector('.omcompare');
+  if (compareSection) {
+    /* Eyebrow */
+    var cmpEyebrow = compareSection.querySelector('.cmp-eyebrow');
+    if (cmpEyebrow) {
+      gsap.from(cmpEyebrow, {
+        opacity: 0, y: 20, duration: 0.6, ease: 'power3.out',
+        scrollTrigger: { trigger: compareSection, start: 'top 88%', toggleActions: 'play none none none' }
+      });
+    }
+    /* Heading */
+    var cmpHead = compareSection.querySelector('.cmp-head');
+    if (cmpHead) {
+      gsap.from(cmpHead, {
+        opacity: 0, y: 30, duration: 0.8, ease: 'power3.out',
+        scrollTrigger: { trigger: compareSection, start: 'top 85%', toggleActions: 'play none none none' }
+      });
+    }
+    /* Comparison cards */
+    var cmpCards = compareSection.querySelectorAll('.cmp-card');
+    if (cmpCards.length) {
+      gsap.from(cmpCards, {
+        opacity: 0, y: 30, duration: 0.7, ease: 'power3.out', stagger: 0.15,
+        scrollTrigger: { trigger: compareSection, start: 'top 80%', toggleActions: 'play none none none' }
+      });
+    }
+    /* Trust badges */
+    var cmpTrust = compareSection.querySelectorAll('.cmp-trust li');
+    if (cmpTrust.length) {
+      gsap.from(cmpTrust, {
+        opacity: 0, y: 20, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+        scrollTrigger: { trigger: compareSection, start: 'top 75%', toggleActions: 'play none none none' }
+      });
+    }
+  }
+});
+</script>
 </head>
 <body>
 

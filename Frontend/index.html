@@ -44,6 +44,58 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
 <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script>
+/* Section title + related content reveal animations for whole page */
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+  /* Section titles and descriptions */
+  document.querySelectorAll('.section-title, .section-desc').forEach(function(el){
+    var isDesc = el.classList.contains('section-desc');
+    gsap.from(el, {
+      opacity: 0, y: isDesc ? 20 : 30, duration: isDesc ? 0.7 : 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  });
+  /* Category cards */
+  var catGrid = document.querySelector('.cat-grid');
+  if (catGrid) {
+    gsap.from(catGrid.querySelectorAll('.cat-card'), {
+      opacity: 0, y: 30, duration: 0.6, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: catGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+  /* Product cards */
+  document.querySelectorAll('.prod-grid').forEach(function(grid){
+    gsap.from(grid.querySelectorAll('.prod-card'), {
+      opacity: 0, y: 24, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: grid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  });
+  /* Stat items */
+  document.querySelectorAll('.stat-row').forEach(function(row){
+    gsap.from(row.querySelectorAll('.stat'), {
+      opacity: 0, scale: 0.85, duration: 0.6, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: row, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  });
+  /* Gallery items */
+  var gallery = document.querySelector('.gallery-grid');
+  if (gallery) {
+    gsap.from(gallery.querySelectorAll('.gallery-item'), {
+      opacity: 0, y: 30, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: gallery, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+  /* Review cards */
+  var reviewGrid = document.querySelector('.review-grid');
+  if (reviewGrid) {
+    gsap.from(reviewGrid.querySelectorAll('.review-card'), {
+      opacity: 0, y: 24, duration: 0.7, ease: 'power3.out', stagger: 0.12,
+      scrollTrigger: { trigger: reviewGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+});
+</script>
 </head>
 <body>
 

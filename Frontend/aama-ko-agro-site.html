@@ -393,6 +393,150 @@ footer{border-top:1px solid var(--line); margin-top:var(--space-8); padding:var(
   .rstep-num{font-family:var(--mono); font-size:11px; color:var(--sage-deep);}
 
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script>
+/* Aama ko Agro Site - All content scroll animations */
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+  /* Hero section - animate on page load */
+  var hero = document.querySelector('.hero');
+  if (hero) {
+    var heroEls = hero.querySelectorAll('.eyebrow, h1, .hero-sub, .hero-cta, .hero-stamp');
+    gsap.set(heroEls, { opacity: 0, y: 25 });
+    gsap.to(heroEls, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.12, delay: 0.2
+    });
+    var heroImg = hero.querySelector('.hero-photo img, .hero-visual img');
+    if (heroImg) {
+      gsap.set(heroImg, { opacity: 0, scale: 1.05 });
+      gsap.to(heroImg, {
+        opacity: 1, scale: 1, duration: 1.2, ease: 'power2.out', delay: 0.3
+      });
+    }
+  }
+
+  /* Section headers */
+  document.querySelectorAll('.section-title, .section-desc').forEach(function(el){
+    var isDesc = el.classList.contains('section-desc');
+    gsap.set(el, { opacity: 0, y: isDesc ? 20 : 30 });
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: isDesc ? 0.7 : 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Category cards */
+  var catGrid = document.querySelector('.cat-grid');
+  if (catGrid) {
+    gsap.set(catGrid.querySelectorAll('.cat-card'), { opacity: 0, y: 30 });
+    gsap.to(catGrid.querySelectorAll('.cat-card'), {
+      opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: catGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Product cards */
+  document.querySelectorAll('.prod-grid').forEach(function(grid){
+    gsap.set(grid.querySelectorAll('.prod-card'), { opacity: 0, y: 24 });
+    gsap.to(grid.querySelectorAll('.prod-card'), {
+      opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: grid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Stat items */
+  document.querySelectorAll('.stat-row').forEach(function(row){
+    gsap.set(row.querySelectorAll('.stat'), { opacity: 0, scale: 0.85 });
+    gsap.to(row.querySelectorAll('.stat'), {
+      opacity: 1, scale: 1, duration: 0.6, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: row, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Gallery items */
+  var gallery = document.querySelector('.gallery-grid');
+  if (gallery) {
+    gsap.set(gallery.querySelectorAll('.gallery-item'), { opacity: 0, y: 30 });
+    gsap.to(gallery.querySelectorAll('.gallery-item'), {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: gallery, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Review cards */
+  var reviewGrid = document.querySelector('.review-grid');
+  if (reviewGrid) {
+    gsap.set(reviewGrid.querySelectorAll('.review-card'), { opacity: 0, y: 24 });
+    gsap.to(reviewGrid.querySelectorAll('.review-card'), {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.12,
+      scrollTrigger: { trigger: reviewGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Why section images */
+  document.querySelectorAll('.why-img, .why-photo').forEach(function(img){
+    gsap.set(img, { opacity: 0, scale: 1.05 });
+    gsap.to(img, {
+      opacity: 1, scale: 1, duration: 0.9, ease: 'power2.out',
+      scrollTrigger: { trigger: img, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Traceability section */
+  var trace = document.querySelector('.traceability');
+  if (trace) {
+    var traceEls = trace.querySelectorAll('.trace-img, .trace-content');
+    gsap.set(traceEls, { opacity: 0, y: 25 });
+    gsap.to(traceEls, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: trace, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Process steps */
+  document.querySelectorAll('.process-step').forEach(function(step){
+    gsap.set(step, { opacity: 0, y: 30 });
+    gsap.to(step, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: step, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* Team cards */
+  var teamGrid = document.querySelector('.team-grid');
+  if (teamGrid) {
+    gsap.set(teamGrid.querySelectorAll('.team-card'), { opacity: 0, y: 30 });
+    gsap.to(teamGrid.querySelectorAll('.team-card'), {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: teamGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Newsletter section */
+  var newsletter = document.querySelector('.newsletter');
+  if (newsletter) {
+    var nlEls = newsletter.querySelectorAll('h2, p, .btn');
+    gsap.set(nlEls, { opacity: 0, y: 20 });
+    gsap.to(nlEls, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: newsletter, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Footer */
+  var footGrid = document.querySelector('.foot-grid');
+  if (footGrid) {
+    gsap.set(footGrid.querySelectorAll('.foot-col'), { opacity: 0, y: 20 });
+    gsap.to(footGrid.querySelectorAll('.foot-col'), {
+      opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: footGrid, start: 'top 92%', toggleActions: 'play none none none' }
+    });
+  }
+});
+</script>
 </head>
 <body>
 

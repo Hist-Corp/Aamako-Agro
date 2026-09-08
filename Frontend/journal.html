@@ -39,6 +39,92 @@
 }catch(e){}})();
 </script>
 <script src="js/content.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script>
+/* Journal/Learn page scroll animations */
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+  /* Hero section - animate on page load */
+  var journalHero = document.querySelector('.journal-hero');
+  if (journalHero) {
+    var heroEls = journalHero.querySelectorAll('.eyebrow, h1, .hero-desc, .hsc-item');
+    gsap.set(heroEls, { opacity: 0, y: 25 });
+    gsap.to(heroEls, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.12, delay: 0.2
+    });
+    var heroImg = journalHero.querySelector('.hero-img-card img');
+    if (heroImg) {
+      gsap.set(heroImg, { opacity: 0, scale: 1.05 });
+      gsap.to(heroImg, {
+        opacity: 1, scale: 1, duration: 1.2, ease: 'power2.out', delay: 0.3
+      });
+    }
+  }
+
+  /* Featured article */
+  var featured = document.querySelector('.journal-featured');
+  if (featured) {
+    var featEls = featured.querySelectorAll('.eyebrow, h2, p, .btn, .journal-featured-img');
+    gsap.set(featEls, { opacity: 0, y: 25 });
+    gsap.to(featEls, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: featured, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Article grid */
+  var articleGrid = document.querySelector('.journal-grid');
+  if (articleGrid) {
+    gsap.set(articleGrid.querySelectorAll('.journal-card'), { opacity: 0, y: 30 });
+    gsap.to(articleGrid.querySelectorAll('.journal-card'), {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: articleGrid, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Section headers */
+  document.querySelectorAll('.section-title, .section-desc').forEach(function(el){
+    var isDesc = el.classList.contains('section-desc');
+    gsap.set(el, { opacity: 0, y: isDesc ? 20 : 30 });
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: isDesc ? 0.7 : 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  });
+
+  /* FAQ items */
+  var faqItems = document.querySelectorAll('.faq-item');
+  if (faqItems.length) {
+    gsap.set(faqItems, { opacity: 0, y: 20 });
+    gsap.to(faqItems, {
+      opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.1,
+      scrollTrigger: { trigger: faqItems[0], start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Contact form */
+  var contactForm = document.querySelector('.contact-form');
+  if (contactForm) {
+    gsap.set(contactForm, { opacity: 0, y: 30 });
+    gsap.to(contactForm, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: contactForm, start: 'top 88%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Footer */
+  var footGrid = document.querySelector('.foot-grid');
+  if (footGrid) {
+    gsap.from(footGrid.querySelectorAll('.foot-col'), {
+      opacity: 0, y: 20, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: footGrid, start: 'top 92%', toggleActions: 'play none none none' }
+    });
+  }
+});
+</script>
 </head>
 <body>
 <div class="trust-strip"><span data-cms="site.trust.1">DFTQC-COMPLIANT FACILITY · [PLACEHOLDER]</span><span data-cms="site.trust.2">MADE IN NEPAL</span><span data-cms="site.trust.3">NO ADDED PRESERVATIVES</span></div>

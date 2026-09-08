@@ -38,6 +38,109 @@
 }catch(e){}})();
 </script>
 <link rel="stylesheet" href="shop-om.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script>
+/* Collection page scroll animations */
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+  /* Banner title and description */
+  var banner = document.querySelector('.omcoll-banner');
+  if (banner) {
+    var bannerEls = banner.querySelectorAll('h1, p, #collDesc, #collTitle');
+    gsap.set(bannerEls, { opacity: 0, y: 25 });
+    gsap.to(bannerEls, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.12, delay: 0.2
+    });
+  }
+
+  /* Breadcrumb */
+  var breadcrumb = document.querySelector('.ombreadcrumb');
+  if (breadcrumb) {
+    gsap.set(breadcrumb, { opacity: 0, y: 15 });
+    gsap.to(breadcrumb, {
+      opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.1
+    });
+  }
+
+  /* Back button */
+  var backBtn = document.querySelector('.omcoll-backrow');
+  if (backBtn) {
+    gsap.set(backBtn, { opacity: 0, x: -15 });
+    gsap.to(backBtn, {
+      opacity: 1, x: 0, duration: 0.6, ease: 'power3.out', delay: 0.15
+    });
+  }
+
+  /* Sidebar categories */
+  var sideCats = document.querySelector('.omcoll-side');
+  if (sideCats) {
+    gsap.set(sideCats, { opacity: 0, x: -20 });
+    gsap.to(sideCats, {
+      opacity: 1, x: 0, duration: 0.7, ease: 'power3.out', delay: 0.3,
+      scrollTrigger: { trigger: sideCats, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Title bar */
+  var titleBar = document.querySelector('.omcoll-titlebar');
+  if (titleBar) {
+    gsap.from(titleBar, {
+      opacity: 0, y: 20, duration: 0.6, ease: 'power3.out',
+      scrollTrigger: { trigger: titleBar, start: 'top 90%', toggleActions: 'play none none none' }
+    });
+  }
+
+  /* Product grid items */
+  var collGrid = document.querySelector('#collGrid');
+  if (collGrid) {
+    /* Animate products as they are added to the grid */
+    var observer = new MutationObserver(function(mutations){
+      mutations.forEach(function(mutation){
+        mutation.addedNodes.forEach(function(node){
+          if (node.nodeType === 1 && (node.classList.contains('omfp-card') || node.classList.contains('product-card') || node.querySelector('.omfp-card'))) {
+            var cards = node.classList.contains('omfp-card') ? [node] : node.querySelectorAll('.omfp-card');
+            gsap.set(cards, { opacity: 0, y: 20 });
+            gsap.to(cards, {
+              opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', stagger: 0.06
+            });
+          }
+        });
+      });
+    });
+    observer.observe(collGrid, { childList: true, subtree: true });
+
+    /* Initial animation for existing cards */
+    var existingCards = collGrid.querySelectorAll('.omfp-card, .product-card');
+    if (existingCards.length) {
+      gsap.set(existingCards, { opacity: 0, y: 20 });
+      gsap.to(existingCards, {
+        opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', stagger: 0.06, delay: 0.4
+      });
+    }
+  }
+
+  /* Category filter pills */
+  var collCats = document.querySelector('#collCats');
+  if (collCats) {
+    gsap.set(collCats, { opacity: 0, y: 15 });
+    gsap.to(collCats, {
+      opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.35
+    });
+  }
+
+  /* Footer */
+  var footGrid = document.querySelector('.foot-grid');
+  if (footGrid) {
+    gsap.from(footGrid.querySelectorAll('.foot-col'), {
+      opacity: 0, y: 20, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: footGrid, start: 'top 92%', toggleActions: 'play none none none' }
+    });
+  }
+});
+</script>
 </head>
 <body>
 
