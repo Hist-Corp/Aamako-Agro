@@ -42,7 +42,7 @@
   {
     "status": "PASS",
     "name": "No 4xx/5xx same-origin assets during crawl",
-    "detail": "25 unique links checked"
+    "detail": "26 unique links checked"
   },
   {
     "status": "PASS",
@@ -55,8 +55,13 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
-    "name": "Suite completed without crash",
-    "detail": "page.screenshot: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n"
+    "status": "PASS",
+    "name": "UI: session token persisted client-side",
+    "detail": "key length=263"
+  },
+  {
+    "status": "PASS",
+    "name": "UI: logout clears stored session",
+    "detail": ""
   }
 ]

@@ -1,13 +1,13 @@
 [
   {
-    "status": "PASS",
+    "status": "FAIL",
     "name": "Load time OK: storefront index",
-    "detail": "996ms (DCL=214ms FCP~264ms)"
+    "detail": "9465ms (>5s)"
   },
   {
-    "status": "PASS",
+    "status": "WARN",
     "name": "Page weight: storefront index",
-    "detail": "1685 KB across 30 requests"
+    "detail": "4079 KB across 45 requests (heavy >3MB)"
   },
   {
     "status": "PASS",
@@ -17,7 +17,7 @@
   {
     "status": "FAIL",
     "name": "No images >2x rendered size: storefront index",
-    "detail": "logo.png nat=2913 rendered=50 | logo-footer.png nat=4979 rendered=106"
+    "detail": "logo.png nat=2913 rendered=50 | Freeze-Dried_Mango_as_a_Natural_Flavor_cubes_and_b nat=1600 rendered=175 | power%20fruits%20packaging.jpeg nat=500 rendered=175 | 1788801999342-612581aa9a67.jpg nat=590 rendered=175"
   },
   {
     "status": "PASS",
@@ -27,12 +27,12 @@
   {
     "status": "PASS",
     "name": "Load time OK: storefront collection",
-    "detail": "962ms (DCL=121ms FCP~128ms)"
+    "detail": "859ms (DCL=101ms FCP~104ms)"
   },
   {
     "status": "PASS",
     "name": "Page weight: storefront collection",
-    "detail": "1007 KB across 18 requests"
+    "detail": "1055 KB across 21 requests"
   },
   {
     "status": "PASS",
@@ -52,7 +52,7 @@
   {
     "status": "PASS",
     "name": "Load time OK: dashboard login",
-    "detail": "694ms (DCL=29ms FCP~92ms)"
+    "detail": "679ms (DCL=30ms FCP~88ms)"
   },
   {
     "status": "PASS",

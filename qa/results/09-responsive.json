@@ -7,7 +7,7 @@
   {
     "status": "FAIL",
     "name": "Tap targets >=44px on mobile: /index.html",
-    "detail": "<a logo 41x36> | <button hamburger 40x40> | <a link-arrow 146x22> | <a link-arrow 129x22> | <a link-arrow 239x22> | <button btn btn-primary 127x43>"
+    "detail": "<a logo 41x36> | <button hamburger 40x40> | <a link-arrow 129x22> | <a link-arrow 146x22> | <a link-arrow 129x22> | <a prod-name 293x21>"
   },
   {
     "status": "PASS",

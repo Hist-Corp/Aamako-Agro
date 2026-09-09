@@ -47,7 +47,7 @@
   {
     "status": "PASS",
     "name": "Checkout creates order",
-    "detail": "orderNumber=AA-1788675672787-3F8A totalCents=90000"
+    "detail": "orderNumber=AA-1788953795407-3F27 totalCents=90000"
   },
   {
     "status": "PASS",
