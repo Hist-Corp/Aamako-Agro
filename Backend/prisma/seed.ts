@@ -175,23 +175,29 @@ async function main() {
   const products = [
     // Freeze-dried
     { name: 'Freeze-Dried Apple Slices', slug: 'fd-apple-slices', sku: 'AA-APL-30G', variantName: '30g pack', unit: Unit.UNIT_30G, price: 25000, cat: 'freeze-dried-fruits', imageUrl: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&q=80' },
-    { name: 'Freeze-Dried Mango Chunks', slug: 'fd-mango-chunks', sku: 'AA-MNG-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 42000, cat: 'freeze-dried-fruits', imageUrl: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=800&q=80' },
+    { name: 'Freeze-Dried Mango Chunks', slug: 'fd-mango-chunks', sku: 'AA-MNG-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 42000, cat: 'freeze-dried-fruits', imageUrl: '/images/freeze-dried-mango-pouch.jpg' },
+    { name: 'Freeze-Dried Mango Bowl', slug: 'fd-mango', sku: 'AA-MNG-BOWL', variantName: '50g pack', unit: Unit.UNIT_50G, price: 42000, cat: 'freeze-dried-fruits', imageUrl: '/images/freeze-dried-mango-bowl.webp' },
     { name: 'Freeze-Dried Strawberry', slug: 'fd-strawberry', sku: 'AA-STR-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 45000, cat: 'freeze-dried-fruits', imageUrl: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&q=80' },
     // Dehydrated (feeds the "Wholesome Dehydrated Choices" showcase)
-    { name: 'Dehydrated Apple Rings', slug: 'dehydrated-apple-rings', sku: 'AA-DAP-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 28000, cat: 'dehydrated', imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&q=80' },
+    { name: 'Dehydrated Apple Rings', slug: 'dehydrated-apple-rings', sku: 'AA-DAP-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 28000, cat: 'dehydrated', imageUrl: '/images/dehydrated-apple.png' },
+    { name: 'Dehydrated Kiwi', slug: 'dehydrated-kiwi', sku: 'AA-DKI-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 35000, cat: 'dehydrated', imageUrl: '/images/dehydrated-kiwi.jpg' },
+    { name: 'Dehydrated Mixed Fruits', slug: 'dehydrated-mixed-fruits', sku: 'AA-DMF-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 32000, cat: 'dehydrated', imageUrl: '/images/dehydrated-mixed-fruits.png' },
     { name: 'Dehydrated Banana Chips', slug: 'dehydrated-banana-chips', sku: 'AA-DBN-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 22000, cat: 'dehydrated', imageUrl: 'https://images.unsplash.com/photo-1550828520-4cb496926fc9?w=800&q=80' },
     { name: 'Sun-Dried Tomatoes', slug: 'sun-dried-tomatoes', sku: 'AA-DTM-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 38000, cat: 'dehydrated', imageUrl: 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=800&q=80' },
-    { name: 'Dehydrated Mango Leather', slug: 'dehydrated-mango-leather', sku: 'AA-DML-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 32000, cat: 'dehydrated', imageUrl: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=800&q=80' },
+    { name: 'Dehydrated Mango Leather', slug: 'dehydrated-mango-leather', sku: 'AA-DML-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 32000, cat: 'dehydrated', imageUrl: '/images/freeze-dried-mango-bowl.webp' },
     // Milled powders
-    { name: 'Moringa Leaf Powder', slug: 'moringa-leaf-powder', sku: 'AA-MOR-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 35000, cat: 'powders', imageUrl: 'https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=800&q=80' },
-    { name: 'Ginger Powder', slug: 'ginger-powder', sku: 'AA-GIN-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 24000, cat: 'powders', imageUrl: 'https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=800&q=80' },
+    { name: 'Moringa Leaf Powder', slug: 'moringa-leaf-powder', sku: 'AA-MOR-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 35000, cat: 'powders', imageUrl: '/images/powder-packaging.jpg' },
+    { name: 'Ginger Powder', slug: 'ginger-powder', sku: 'AA-GIN-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 24000, cat: 'powders', imageUrl: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800&q=80' },
     { name: 'Timur (Sichuan Pepper) Powder', slug: 'timur-powder', sku: 'AA-TIM-50G', variantName: '50g pack', unit: Unit.UNIT_50G, price: 30000, cat: 'powders', imageUrl: 'https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=800&q=80' },
+    { name: 'Power Fruits Powder Blend', slug: 'power-fruits-powder', sku: 'AA-PFP-100G', variantName: '100g pack', unit: Unit.UNIT_100G, price: 39000, cat: 'powders', imageUrl: '/images/power-fruits-packaging.jpg' },
   ];
 
   for (const p of products) {
     const product = await prisma.product.upsert({
       where: { slug: p.slug },
-      update: {},
+      // Keep the image in sync on every seed so re-seeding fixes broken or
+      // unrelated product images instead of only applying to fresh records.
+      update: { imageUrl: p.imageUrl, categoryId: catIds[p.cat], isPublished: true },
       create: {
         name: p.name,
         slug: p.slug,
@@ -230,11 +236,19 @@ async function main() {
     }
   }
 
-  // Attach the dashboard-demo sample product to the dehydrated category so it
-  // also appears in the "Wholesome Dehydrated Choices" showcase.
+  // Attach the dashboard-demo sample product to the dehydrated category and
+  // give it a real image so it renders on the storefront product card.
   await prisma.product.updateMany({
     where: { slug: 'dehydrated-apple', categoryId: null },
     data: { categoryId: catIds['dehydrated'] },
+  });
+  await prisma.product.updateMany({
+    where: { slug: 'dehydrated-apple' },
+    data: {
+      imageUrl: '/images/dehydrated-apple.png',
+      name: 'Dehydrated Apple',
+      isPublished: true,
+    },
   });
 
   console.log('Seed complete: staff admin + customers + tiers + catalog + wholesale price lists');
