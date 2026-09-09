@@ -29,6 +29,32 @@ export interface SitePage {
   description: string;
   badge: string;
   sections: PageTemplateSection[];
+  /** Media-library category images for this page are filed under. Uploads
+   *  made from this page's template editor are auto-tagged with it, and the
+   *  storefront pulls matching published images into its empty image slots. */
+  mediaCategory: string;
+}
+
+/** Media-library categories — one per storefront page (+ General).
+ *  Keeping the list page-aligned means "an image uploaded for the home page
+ *  sits under Home", so the library reads like the website it feeds. */
+export const MEDIA_CATEGORIES = [
+  'Home',
+  'Shop',
+  'Product Detail',
+  'Product Category',
+  'The Process',
+  'Our Story',
+  'Wholesale',
+  'Journal',
+  'General',
+] as const;
+
+/** Map a site-page slug to its media-library category. Unknown/legacy slugs
+ *  fall back to "General" so uploads never land in a confusing bucket. */
+export function mediaCategoryForPage(slug?: string | null): string {
+  const page = slug ? SITE_PAGES.find((p) => p.slug === slug) : undefined;
+  return page?.mediaCategory ?? 'General';
 }
 
 /**
@@ -86,6 +112,7 @@ export const SITE_PAGES: SitePage[] = [
     previewPath: '/',
     badge: 'Marketing',
     description: 'The landing page — every block from the trust bar to the newsletter is editable.',
+    mediaCategory: 'Home',
     sections: [
       ...trustBar(),
       { key: 'home.hero.eyebrow', label: 'Eyebrow', description: 'Small line above the hero headline.', group: 'Hero' },
@@ -179,6 +206,7 @@ export const SITE_PAGES: SitePage[] = [
     badge: 'Catalogue',
     description:
       'The shop page — every block from the trust bar to the category showcase is editable. The product grids themselves come from the catalogue (Dashboard → Products).',
+    mediaCategory: 'Shop',
     sections: [
       ...trustBar(),
       ...([1, 2, 3, 4, 5] as const).flatMap((n): PageTemplateSection[] => [
@@ -280,6 +308,7 @@ export const SITE_PAGES: SitePage[] = [
     badge: 'Catalogue',
     description:
       'The product detail page — title, price, pack info and the five accordions. (Prices/images per product come from the catalogue; this template edits the static copy around them.)',
+    mediaCategory: 'Product Detail',
     sections: [
       { key: 'product-page.highlights', label: 'Key highlights heading', description: 'The “Key Highlights” heading above the highlights list.', group: 'Buy box' },
       { key: 'product-page.pack', label: 'Pack size label', description: 'The “Pack size” row label (the value comes from the catalogue).', group: 'Buy box' },
@@ -308,6 +337,7 @@ export const SITE_PAGES: SitePage[] = [
     badge: 'Story',
     description:
       'How we make everything — the freeze-dried, dehydrated and stone-milled powder journeys, side-by-side comparisons and CTA.',
+    mediaCategory: 'The Process',
     sections: [
       ...trustBar(),
       { key: 'page.process.hero.eyebrow', label: 'Eyebrow', description: '“The process” tag line.', group: 'Hero' },
@@ -392,6 +422,7 @@ export const SITE_PAGES: SitePage[] = [
     previewPath: '/story.html',
     badge: 'Story',
     description: 'Brand origin story — hero, stats, values, timeline, team and contact band.',
+    mediaCategory: 'Our Story',
     sections: [
       ...trustBar(),
       { key: 'page.story.hero.eyebrow', label: 'Eyebrow', description: '“Who we are” tag line.', group: 'Hero' },
@@ -451,6 +482,7 @@ export const SITE_PAGES: SitePage[] = [
     previewPath: '/wholesale.html',
     badge: 'B2B',
     description: 'B2B onboarding — hero, pricing tiers, sample kits and the access form band.',
+    mediaCategory: 'Wholesale',
     sections: [
       ...trustBar(),
       { key: 'page.wholesale.hero.eyebrow', label: 'Eyebrow', description: '“For retailers, distributors & food service” tag line.', group: 'Hero' },
@@ -498,6 +530,7 @@ export const SITE_PAGES: SitePage[] = [
     previewPath: '/journal.html',
     badge: 'Content',
     description: 'The blog and resources hub — hero, stats, article cards, FAQ and contact.',
+    mediaCategory: 'Journal',
     sections: [
       ...trustBar(),
       { key: 'page.journal.hero.eyebrow', label: 'Eyebrow', description: '“Recipes, guides & the journal” tag line.', group: 'Hero' },
@@ -541,6 +574,7 @@ export const SITE_PAGES: SitePage[] = [
     badge: 'Catalogue',
     description:
       'Category collection pages (collection.html?cat=…). When you add a product in Dashboard → Products and pick its category, it is listed here automatically. Need a new category page (e.g. the company adds a new category)? Use "Add category page" below — the template stays the same and you just replace the contents. The current categories — Freeze-Dried Fruits & Vegetables, Dehydrated Fruits & Vegetables and Milled Powders — are created in Dashboard → Products; this template edits the page copy around the grid.',
+    mediaCategory: 'Product Category',
     sections: [
       ...trustBar(),
       { key: 'page.collection.title', label: 'Page title', description: 'The big heading. A category’s own name overrides it; hide or edit it for a custom title.', group: 'Heading' },

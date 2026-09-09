@@ -9,6 +9,7 @@ import { apiClient, ApiError } from '@/lib/api-client';
 import {
   collectionCategorySections,
   getSitePage,
+  mediaCategoryForPage,
   storefrontUrl,
   type SitePage,
   type PageTemplateSection,
@@ -23,9 +24,18 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+
+/** Compact byte formatter for upload-toast size reporting (e.g. "2.4 MB"). */
+function formatBytesCompat(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+  const kb = bytes / 1024;
+  if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(kb))} KB`;
+}
 import {
   Check,
   ChevronLeft,
+  ChevronRight,
   ExternalLink,
   Eye,
   EyeOff,
@@ -88,6 +98,17 @@ interface FormState {
 }
 const EMPTY_FORM: FormState = { title: '', shortDescription: '', longDescription: '', body: '' };
 
+/** True when two forms describe identical content (a draft equals its saved
+ *  item). Used to decide which sections actually have unsaved changes. */
+function formsEqual(a: FormState, b: FormState): boolean {
+  return (
+    a.title === b.title &&
+    a.shortDescription === b.shortDescription &&
+    a.longDescription === b.longDescription &&
+    a.body === b.body
+  );
+}
+
 function toForm(item: CmsItem): FormState {
   return {
     title: item.title ?? '',
@@ -115,9 +136,21 @@ export default function PageEditor() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  /** Local draft store — one entry per section that has been touched since
+   *  the last publish. Keeps edits alive while the user hops between sections
+   *  so they can make ALL their changes first and publish everything at once
+   *  with "Save & publish all" (or save a single section whenever they want). */
+  const [drafts, setDrafts] = useState<Record<string, FormState>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [pending, setPending] = useState<PendingRevision[]>([]);
   const [frameTick, setFrameTick] = useState(0);
+  /** Brief spin animation for the "Reload preview" control. */
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const reloadPreview = useCallback(() => {
+    setFrameTick((t) => t + 1);
+    setIsRefreshing(true);
+    window.setTimeout(() => setIsRefreshing(false), 900);
+  }, []);
   // Product Category template: which category page (collection.html?cat=…) the
   // live preview shows. Defaults to the first seeded category — there is no
   // separate "all products" page, so the preview always targets a real category.
@@ -180,6 +213,19 @@ export default function PageEditor() {
     })();
   }, [user, allowed, router, page, addToast]);
 
+  // Auto-capture the active section's buffered form into the draft store on
+  // every edit — this is what lets the user make changes, hop to the next
+  // section and keep going without saving each section first. Idempotent:
+  // identical drafts are left untouched so the dirty computation stays lean.
+  useEffect(() => {
+    if (!activeKey) return;
+    setDrafts((prev) => {
+      const current = prev[activeKey];
+      if (current && formsEqual(current, form)) return prev;
+      return { ...prev, [activeKey]: form };
+    });
+  }, [activeKey, form]);
+
   // Product Category template: load the storefront categories (with product
   // counts) so the preview can be switched between the category pages.
   useEffect(() => {
@@ -236,9 +282,15 @@ export default function PageEditor() {
   }, [page, isCategoryTemplate, categorySlug]);
 
   const selectSection = (section: PageTemplateSection) => {
+    // Mid-upload / mid-save switches would mis-associate in-flight changes —
+    // wait for the operation to finish before moving on.
+    if (isSaving || isUploadingImage) return;
+    // Snapshot the current buffer before leaving, then load the next section
+    // preferring its DRAFT (unsaved edits) over the last-saved item.
+    if (activeKey) setDrafts((prev) => ({ ...prev, [activeKey]: form }));
     setActiveKey(section.key);
     const loaded = items.find((i) => i.key === section.key);
-    setForm(loaded ? toForm(loaded) : EMPTY_FORM);
+    setForm(drafts[section.key] ?? (loaded ? toForm(loaded) : EMPTY_FORM));
   };
 
   // Click-to-select: the storefront preview page runs the CMS editor bridge
@@ -297,6 +349,33 @@ export default function PageEditor() {
     [pending, activeKey],
   );
 
+  /** Sections whose draft differs from the saved item (or brand-new sections
+   *  that actually have content) — i.e. everything "Save & publish all" will
+   *  commit. Not-touched sections never appear here. */
+  const dirtyKeys = useMemo(() => {
+    if (Object.keys(drafts).length === 0) return [] as string[];
+    const out: string[] = [];
+    for (const [key, draft] of Object.entries(drafts)) {
+      const item = items.find((i) => i.key === key);
+      if (!item) {
+        // Brand-new section — only counts once it has real content.
+        if (
+          draft.title.trim() ||
+          draft.shortDescription.trim() ||
+          draft.longDescription.trim() ||
+          draft.body.trim()
+        ) {
+          out.push(key);
+        }
+        continue;
+      }
+      if (!formsEqual(toForm(item), draft)) out.push(key);
+    }
+    return out;
+  }, [drafts, items]);
+  const dirtyKeySet = useMemo(() => new Set(dirtyKeys), [dirtyKeys]);
+  const dirtyCount = dirtyKeys.length;
+
   // Save the active section AND publish it in one step, then commit any
   // pending page-hide/unhide the user toggled. Single source of truth for "make
   // my edits live": Hide/Unhide is just an intent, Save & publish acts on it.
@@ -332,6 +411,13 @@ export default function PageEditor() {
       });
       const data = await apiClient.get<CmsItem[]>('/content/manage');
       setItems(data);
+      // This section is now committed — drop its draft so the "edited" badge
+      // and the publish-all count stay accurate.
+      if (activeKey) setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[activeKey];
+        return next;
+      });
       try {
         const revs = await apiClient.get<PendingRevision[]>('/content/revisions');
         setPending(revs);
@@ -349,6 +435,143 @@ export default function PageEditor() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // ── Batch publish: publish every section with unsaved edits in one pass.
+  // Managers/Admins go live immediately; Content Managers submit all of them
+  // for approval at once (one button press instead of one per section). The
+  // existing single-section flow stays available for quick edits.
+  const saveOrder = useMemo(() => {
+    const order: string[] = [];
+    for (const s of allSections) if (dirtyKeySet.has(s.key)) order.push(s.key);
+    for (const k of dirtyKeys) if (!order.includes(k)) order.push(k);
+    return order;
+  }, [allSections, dirtyKeySet, dirtyKeys]);
+
+  const handleSaveAllDrafts = async () => {
+    if (isSaving) return;
+    const keys = saveOrder;
+    if (keys.length === 0 && pendingHidden === null) return;
+
+    setIsSaving(true);
+    const published: string[] = [];
+    const failed: Array<{ key: string; reason?: string }> = [];
+    try {
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const draft = drafts[key];
+        if (!draft) continue;
+        const section = allSections.find((s) => s.key === key);
+        const isImageSection = section?.kind === 'image';
+        const effectiveTitle =
+          isImageSection && !draft.title.replace(/<[^>]*>/g, '').trim()
+            ? section?.label ?? 'Image'
+            : draft.title;
+        if (!effectiveTitle.replace(/<[^>]*>/g, '').trim()) {
+          failed.push({ key, reason: 'title required' });
+          continue;
+        }
+        try {
+          await apiClient.put(`/content/${encodeURIComponent(key)}`, {
+            title: effectiveTitle.trim(),
+            shortDescription: draft.shortDescription,
+            longDescription: draft.longDescription,
+            body: draft.body,
+          });
+          await apiClient.post(`/content/${encodeURIComponent(key)}/publish`);
+          published.push(key);
+        } catch (err) {
+          failed.push({ key, reason: err instanceof ApiError ? err.message : 'unknown error' });
+        }
+      }
+
+      if (pendingHidden !== null && pendingHidden !== pageIsHidden) {
+        try {
+          await commitPendingVisibility();
+        } catch {
+          /* individual visibility failures surface in the summary toast below */
+        }
+      }
+
+      const data = await apiClient.get<CmsItem[]>('/content/manage');
+      setItems(data);
+      setDrafts((prev) => {
+        let next = prev;
+        for (const k of published) {
+          if (!next[k]) continue;
+          if (next === prev) next = { ...prev };
+          delete next[k];
+        }
+        return next;
+      });
+      try {
+        const revs = await apiClient.get<PendingRevision[]>('/content/revisions');
+        setPending(revs);
+      } catch {
+        /* best-effort */
+      }
+      setFrameTick((t) => t + 1);
+
+      const savedCount = published.length;
+      if (failed.length === 0) {
+        addToast({
+          type: 'success',
+          title:
+            savedCount === 0
+              ? 'Page visibility updated'
+              : isContentManager
+                ? `${savedCount} section${savedCount === 1 ? '' : 's'} submitted for approval`
+                : `${savedCount} section${savedCount === 1 ? '' : 's'} saved & published`,
+          description:
+            savedCount === 0
+              ? 'No section content changed — your page hide/show setting was applied.'
+              : isContentManager
+                ? 'All your changes are in the review queue — they appear on the storefront once a Manager approves them.'
+                : 'All changes are now live on the storefront.',
+        });
+      } else {
+        addToast({
+          type: 'warning',
+          title: `${savedCount} saved · ${failed.length} failed`,
+          description: failed.map((f) => `${f.key}${f.reason ? ` (${f.reason})` : ''}`).join(' · '),
+        });
+      }
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Save & publish all failed',
+        description: err instanceof ApiError ? err.message : 'Unexpected error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /** Keep the current section's edits as a draft and move to the next one —
+   *  nothing is saved to the site yet; "Save & publish all" commits everything
+   *  when the user is done. */
+  const handleKeepAndNext = () => {
+    if (isSaving || isUploadingImage || !activeKey) return;
+    const idx = allSections.findIndex((s) => s.key === activeKey);
+    const next = allSections[(idx + 1) % allSections.length];
+    if (next && next.key !== activeKey) selectSection(next);
+  };
+
+  /** Drop every unsaved edit for this page (confirm first). Nothing touches
+   *  the site — sections keep whatever was last published. */
+  const handleDiscardDrafts = () => {
+    if (dirtyCount === 0) return;
+    const ok = window.confirm(
+      'Discard all unsaved section changes for this page?\n\n' +
+        'Sections already on the site stay exactly as they are — only your unpublished edits will be thrown away.',
+    );
+    if (!ok) return;
+    setDrafts({});
+    if (activeKey) {
+      const loaded = items.find((i) => i.key === activeKey);
+      setForm(loaded ? toForm(loaded) : EMPTY_FORM);
+    }
+    addToast({ type: 'info', title: 'Unsaved changes discarded', description: 'The page keeps its last published state.' });
   };
 
   // ── Image sections: upload from the local device or pick from the media
@@ -397,29 +620,44 @@ export default function PageEditor() {
         addToast({ type: 'error', title: 'Images only', description: `${file.name} is not an image file.` });
         return;
       }
-      if (file.size > 5 * 1024 * 1024) {
-        addToast({ type: 'error', title: 'Image too large', description: `${file.name} is larger than 5 MB.` });
+      if (file.size > 25 * 1024 * 1024) {
+        addToast({ type: 'error', title: 'Image too large', description: `${file.name} is larger than 25 MB.` });
         return;
       }
       setIsUploadingImage(true);
       try {
-        const res = await apiClient.upload<{ url: string; name?: string; size: number }>('/admin/media/upload', file);
+        const res = await apiClient.upload<{
+          url: string;
+          name?: string;
+          size: number;
+          originalSize?: number;
+          optimized?: boolean;
+          dimensions?: string;
+        }>('/admin/media/upload', file);
         const kb = res.size / 1024;
         const sizeLabel = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`;
+        // File the image under this page's media category so the library stays
+        // organized by website page (Home, Shop, Product Category, …) and the
+        // storefront can pull matching images into its empty image slots.
+        const mediaCategory = mediaCategoryForPage(page?.slug);
         await apiClient.post('/admin/media', {
           name: file.name,
           url: res.url,
-          category: 'Page content',
+          category: mediaCategory,
           altText: activeSection.label,
           size: sizeLabel,
           sourcePage: page?.name ?? page?.slug ?? '',
           sourceSection: activeSection.label,
         });
         setForm((f) => ({ ...f, body: res.url }));
+        const optimizedNote =
+          res.optimized && res.originalSize && res.originalSize > res.size
+            ? ` · auto-optimized ${formatBytesCompat(res.originalSize)} → ${formatBytesCompat(res.size)} (${Math.round(((res.originalSize - res.size) / res.originalSize) * 100)}% smaller, same look)`
+            : '';
         addToast({
           type: 'success',
           title: 'Image uploaded to media library',
-          description: `${file.name} · from ${page?.name ?? page?.slug} — ${activeSection.label}. Press “Save & publish” to apply it to the page.`,
+          description: `${file.name} · filed under “${mediaCategory}” — ${activeSection.label}${optimizedNote}. It's kept as a draft — press “Save & publish section” now or “Save & publish all” when you're done with the page.`,
         });
       } catch (err) {
         addToast({
@@ -580,6 +818,12 @@ export default function PageEditor() {
       setItems(data);
       setActiveKey(null);
       setForm(EMPTY_FORM);
+      // A removed section can't hold a draft anymore.
+      if (activeKey) setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[activeKey];
+        return next;
+      });
       setFrameTick((t) => t + 1);
     } catch (err) {
       addToast({
@@ -659,37 +903,82 @@ export default function PageEditor() {
     <div className="flex flex-col">
       <PageHeader
         title={page.name}
-        description={`Editing the "${page.name}" website page template — changes are previewed against the real page.`}
+        description={`Editing the "${page.name}" website page template — changes are previewed against the real page. Edit any sections (keep your changes as you go), then "Save & publish all" once when you're done.`}
         breadcrumbs={[{ label: 'Content' }, { label: 'Pages', href: '/pages' }, { label: page.name }]}
         actions={
-          <div className="flex flex-col gap-2 items-end">
-            <div className="flex items-center gap-2 justify-end">
+          <div className="flex flex-wrap items-center gap-2 justify-end">
               <Link href="/pages">
-                <Button variant="ghost">
+                <Button variant="ghost" title="Back to the pages list">
                   <ChevronLeft className="h-4 w-4" /> Back
                 </Button>
               </Link>
-              <Button
-                variant="secondary"
-                onClick={() => setFrameTick((t) => t + 1)}
-                title="Reload preview"
+              {/* Preview actions — grouped segmented control so the two preview
+                  affordances read as one unit, with a spinning reload icon as
+                  feedback while the iframe remounts. */}
+              <div
+                className="inline-flex items-center overflow-hidden rounded-lg border border-surface-200 bg-white shadow-sm"
+                role="group"
+                aria-label="Preview actions"
               >
-                <RefreshCw className="h-4 w-4" /> Reload preview
-              </Button>
-              <a href={previewUrl} target="_blank" rel="noreferrer">
-                <Button variant="secondary">
-                  <ExternalLink className="h-4 w-4" /> Open live
+                <button
+                  type="button"
+                  onClick={reloadPreview}
+                  title="Reload the live preview (picks up your latest published changes)"
+                  className="inline-flex h-9 items-center gap-2 px-3 text-sm font-medium text-surface-700 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                >
+                  <RefreshCw className={cn('h-4 w-4 text-brand-600', isRefreshing && 'animate-spin')} />
+                  <span className="hidden xl:inline">Reload preview</span>
+                  <span className="xl:hidden">Reload</span>
+                </button>
+                <span aria-hidden className="h-5 w-px bg-surface-200" />
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open the live storefront page in a new tab"
+                  className="inline-flex h-9 items-center gap-2 px-3 text-sm font-medium text-surface-700 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                >
+                  <ExternalLink className="h-4 w-4 text-brand-600" />
+                  <span className="hidden xl:inline">Open live</span>
+                  <span className="xl:hidden">Live</span>
+                </a>
+              </div>
+              <span aria-hidden className="hidden h-6 w-px bg-surface-200 sm:block" />
+              {dirtyCount > 0 && (
+                <Button
+                  variant="ghost"
+                  onClick={handleDiscardDrafts}
+                  disabled={isSaving}
+                  title="Discard all unsaved section changes for this page"
+                >
+                  <X className="h-4 w-4" /> Discard
                 </Button>
-              </a>
-            </div>
-            <div className="flex items-center gap-2 justify-end">
+              )}
+              {dirtyCount > 0 && (
+                <span className="rounded-full border border-brand-300 bg-brand-50 px-2 py-0.5 text-2xs font-semibold text-brand-700">
+                  {dirtyCount} pending
+                </span>
+              )}
+              {/* Primary publish action + page visibility toggle — two separate
+                  buttons that always sit side by side in the same row. */}
               <Button
                 variant="primary"
-                onClick={handleSaveAndPublish}
-                disabled={isSaving || !activeKey}
-                title="Save and publish the active section (applies pending hide/unhide too)"
+                onClick={handleSaveAllDrafts}
+                disabled={isSaving || (dirtyCount === 0 && pendingHidden === null)}
+                title={
+                  dirtyCount > 0
+                    ? `${isContentManager ? 'Submit all' : 'Save & publish all'} ${dirtyCount} section${dirtyCount === 1 ? '' : 's'} with pending edits${pendingHidden !== null ? ' · also applies page hide/show' : ''}`
+                    : pendingHidden !== null
+                      ? 'No section edits — apply the pending page hide/show only'
+                      : 'No pending section edits on this page'
+                }
               >
-                <Save className="h-4 w-4" /> Save &amp; publish
+                <Save className="h-4 w-4" />
+                {dirtyCount > 0
+                  ? isContentManager
+                    ? `Submit all (${dirtyCount})`
+                    : `Save & publish all (${dirtyCount})`
+                  : 'Save & publish'}
               </Button>
               <Button
                 variant={willBeHidden ? 'danger' : 'primary'}
@@ -708,7 +997,6 @@ export default function PageEditor() {
                 )}
                 {willBeHidden ? 'Unhide page' : 'Hide page'}
               </Button>
-            </div>
           </div>
         }
       />
@@ -888,6 +1176,25 @@ export default function PageEditor() {
 <div className="grid flex-1 gap-4 items-start lg:grid-cols-2">
         {/* ── Left: editable template ── */}
         <div className="flex flex-col min-w-0">
+          {dirtyCount > 0 && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-brand-300 bg-brand-50 px-3 py-2 text-xs text-brand-700">
+              <Pencil className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="flex-1">
+                <span className="font-semibold">{dirtyCount} section{dirtyCount === 1 ? '' : 's'} with edits kept as
+                  drafts</span>{' '}
+                — they stay here while you move around the page. Review them, then publish everything at once.
+              </span>
+              <Button variant="primary" size="sm" onClick={handleSaveAllDrafts} isLoading={isSaving}>
+                <Save className="h-3.5 w-3.5" />
+                {isContentManager
+                  ? `Submit all for approval (${dirtyCount})`
+                  : `Save & publish all (${dirtyCount})`}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleDiscardDrafts} disabled={isSaving}>
+                <X className="h-3.5 w-3.5" /> Discard
+              </Button>
+            </div>
+          )}
           <Card className="mb-4 flex-shrink-0" padding="sm">
             <div className="mb-3 px-1 text-xs font-semibold uppercase tracking-wider text-surface-500">
               Template sections
@@ -900,6 +1207,7 @@ export default function PageEditor() {
                 const isHidden = item?.isVisible === false;
                 const hasPending = pending.some((r) => r.contentItem.key === section.key);
                 const isActive = section.key === activeKey;
+                const isDirty = dirtyKeySet.has(section.key);
                 const showGroup = !!section.group && page.sections[idx - 1]?.group !== section.group;
                 return (
                   <React.Fragment key={section.key}>
@@ -910,23 +1218,28 @@ export default function PageEditor() {
                     )}
                     <button
                     onClick={() => selectSection(section)}
+                    title={isDirty ? `${section.label} — has unsaved changes (publish with “Save & publish all”)` : section.description}
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
-                      isActive
+                      isDirty
                         ? 'border-brand-500 bg-brand-50 text-brand-700'
-                        : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50',
+                        : isActive
+                          ? 'border-brand-500 bg-white text-brand-700'
+                          : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50',
                     )}
                   >
                     <span
                       className={cn(
                         'h-1.5 w-1.5 rounded-full',
-                        hasPending
-                          ? 'bg-amber-500'
-                          : isHidden
-                            ? 'bg-surface-400'
-                            : exists
-                              ? 'bg-green-500'
-                              : 'bg-surface-300',
+                        isDirty
+                          ? 'bg-brand-600'
+                          : hasPending
+                            ? 'bg-amber-500'
+                            : isHidden
+                              ? 'bg-surface-400'
+                              : exists
+                                ? 'bg-green-500'
+                                : 'bg-surface-300',
                       )}
                     />
                     {section.label}
@@ -934,6 +1247,11 @@ export default function PageEditor() {
                     {hasPending && (
                       <span className="rounded bg-amber-100 px-1 text-2xs font-semibold text-amber-700">
                         pending
+                      </span>
+                    )}
+                    {isDirty && (
+                      <span className="rounded bg-brand-100 px-1 text-2xs font-semibold text-brand-700">
+                        edited
                       </span>
                     )}
                   </button>
@@ -1056,7 +1374,7 @@ export default function PageEditor() {
                       </div>
                       {isUploadingImage && <p className="text-2xs text-brand-600">Uploading…</p>}
                       <p className="text-2xs text-surface-400">
-                        Images only · up to 5 MB · saved to Media with this page &amp; section tagged
+                        Images only · up to 25 MB · saved to Media with this page &amp; section tagged
                       </p>
                     </div>
                     <input
@@ -1109,7 +1427,7 @@ export default function PageEditor() {
                 )}
 
                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <Button onClick={handleSaveAndPublish} isLoading={isSaving}>
+                  <Button onClick={handleSaveAndPublish} isLoading={isSaving} title="Save & publish ONLY this section (other pending edits are untouched)">
                     <Save className="h-4 w-4" />
                     {isNew
                       ? isContentManager
@@ -1119,17 +1437,46 @@ export default function PageEditor() {
                         ? 'Submit for approval'
                         : 'Save & publish section'}
                   </Button>
-                  {foundItem && (
-                    <Button variant="ghost" onClick={handleToggleVisible} isLoading={isSaving}>
-                      {foundItem.isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      {foundItem.isVisible ? 'Hide from page' : 'Show on page'}
-                    </Button>
-                  )}
-                  {foundItem && (
-                    <Button variant="danger" onClick={handleRemove} isLoading={isSaving}>
-                      <Trash2 className="h-4 w-4" /> Remove
-                    </Button>
-                  )}
+                  <Button
+                    variant="secondary"
+                    onClick={handleKeepAndNext}
+                    disabled={isSaving || isUploadingImage}
+                    title="Keep your edits here as a draft and move to the next section — publish everything together later with “Save & publish all”"
+                  >
+                    <ChevronRight className="h-4 w-4" /> Keep &amp; next section
+                  </Button>
+                  {/* Hide / Remove are ALWAYS rendered (disabled until the section
+                      exists) so they never "go missing" for new sections — the
+                      tooltip explains to publish first. */}
+                  <Button
+                    variant="ghost"
+                    onClick={handleToggleVisible}
+                    isLoading={isSaving}
+                    disabled={!foundItem || isSaving}
+                    title={
+                      foundItem
+                        ? foundItem.isVisible
+                          ? 'Hide this section from the storefront (layout reflows to fill the gap)'
+                          : 'Show this hidden section on the storefront again'
+                        : 'Publish this section first — hiding applies to published sections'
+                    }
+                  >
+                    {foundItem && !foundItem.isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    {foundItem && !foundItem.isVisible ? 'Show on page' : 'Hide from page'}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={handleRemove}
+                    isLoading={isSaving}
+                    disabled={!foundItem || isSaving}
+                    title={
+                      foundItem
+                        ? 'Remove this section from the template (storefront falls back to its built-in copy)'
+                        : 'Publish this section first — nothing to remove yet'
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" /> Remove section
+                  </Button>
                 </div>
 
                 {isImageSection && (
@@ -1154,7 +1501,7 @@ export default function PageEditor() {
                             <button
                               key={m.id}
                               type="button"
-                              title={m.name}
+                              title={`${m.name} — ${m.category}`}
                               onClick={() => {
                                 setForm((f) => ({ ...f, body: m.url }));
                                 setPickerOpen(false);
@@ -1165,6 +1512,9 @@ export default function PageEditor() {
                               <img src={m.url} alt={m.name} className="h-20 w-full object-cover" />
                               <span className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-2xs text-white">
                                 {m.name}
+                              </span>
+                              <span className="absolute left-1 top-1 rounded bg-black/60 px-1 py-0.5 text-2xs font-medium text-white">
+                                {m.category}
                               </span>
                             </button>
                           ))}
@@ -1183,15 +1533,36 @@ export default function PageEditor() {
         </div>
 {/* ── Right: live website preview ── */}
         <Card className="flex flex-col lg:sticky lg:top-4 h-[75vh] lg:h-[calc(100vh-2rem)]" padding="none">
-          <div className="flex items-center justify-between gap-2 border-b border-surface-200 px-3 py-2">
+          <div className="flex items-center justify-between gap-2 border-b border-surface-200 bg-surface-50/60 px-3 py-2">
             <div className="flex items-center gap-2 min-w-0">
-              <Globe className="h-4 w-4 flex-shrink-0 text-surface-400" />
-              <span className="truncate text-xs text-surface-500">{previewUrl}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="hidden text-2xs text-surface-400 sm:inline">
-                Tip: click any section in the preview to edit it
+              <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-brand-100">
+                <Globe className="h-3.5 w-3.5 text-brand-700" />
               </span>
+              <span className="truncate font-mono text-2xs text-surface-500">{previewUrl}</span>
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-1.5">
+              <span className="hidden text-2xs text-surface-400 md:inline">
+                Click any section in the preview to edit it
+              </span>
+              <button
+                type="button"
+                onClick={reloadPreview}
+                title="Reload the live preview"
+                aria-label="Reload the live preview"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-surface-500 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+              >
+                <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
+              </button>
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noreferrer"
+                title="Open the live page in a new tab"
+                aria-label="Open the live page in a new tab"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-surface-500 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
               <Badge variant="info">Live preview</Badge>
             </div>
           </div>

@@ -5,7 +5,9 @@ import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-valid
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../common/decorators/roles.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { ImageCompressionService } from './image-compression.service';
 import { MediaService, MediaPayload } from './media.service';
 
 export class CreateMediaDto implements MediaPayload {
@@ -43,8 +45,10 @@ export class ListMediaQueryDto {
 @ApiTags('media')
 @Controller('admin/media')
 export class MediaController {
-  constructor(private media: MediaService) {}
-
+  constructor(
+    private media: MediaService,
+    private compressor: ImageCompressionService,
+  ) {}
   /** Editors only. Content Manager may view the whole library. */
   @Roles(Role.CONTENT_MANAGER, Role.STAFF_MANAGER, Role.STAFF_ADMIN, Role.SUPER_ADMIN)
   @Get()
@@ -70,21 +74,28 @@ export class MediaController {
     return this.media.create(dto as Required<Pick<MediaPayload, 'name' | 'url'>> & MediaPayload, actor?.id);
   }
 
-  /** Upload an image straight from the user's device. Stores the file under
-   *  /uploads and returns its public URL (usable as a product imageUrl). */
+  /** Upload an image straight from the user's device. The image is optimized
+   *  exactly once at upload time (WebP re-encode + max 1920px edge + metadata
+   *  strip) and the optimized file is what gets stored & served — cutting
+   *  storage and page weight without visible quality loss. Animated/vector
+   *  files and already-optimal images are stored untouched. */
   @Roles(Role.CONTENT_MANAGER, Role.STAFF_MANAGER, Role.STAFF_ADMIN, Role.SUPER_ADMIN)
   @Post('upload')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+      // Generous pre-compression cap: large phone photos are exactly the
+      // files the optimizer shrinks best, so accept up to 25 MB and let
+      // ImageCompressionService store a fraction of it. (Multer's
+      // LIMIT_FILE_SIZE surfaces as a 413 via the global exception filter.)
+      limits: { fileSize: 25 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
         if (file.mimetype.startsWith('image/')) cb(null, true);
         else cb(new Error('Only image files are allowed'), false);
       },
     }),
   )
-  upload(
+  async upload(
     @UploadedFile()
     file?: { originalname?: string; mimetype: string; size: number; buffer: Buffer },
   ) {
@@ -96,12 +107,25 @@ export class MediaController {
     const crypto = require('crypto') as typeof import('crypto');
     const uploadsDir = path.join(process.cwd(), 'uploads');
     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-    const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
-    const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
-    fs.writeFileSync(path.join(uploadsDir, filename), file.buffer);
+
+    // One compression pass BEFORE storing — the optimized bytes are the only
+    // bytes that ever touch the disk or get served to visitors.
+    const optimized = await this.compressor.compress(file.buffer, file.mimetype);
+    const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${optimized.extension}`;
+    fs.writeFileSync(path.join(uploadsDir, filename), optimized.buffer);
+
     const baseUrl =
       process.env.PUBLIC_API_URL ?? `http://localhost:${process.env.PORT ?? 3000}/api`;
-    return { url: `${baseUrl.replace(/\/$/, '')}/uploads/${filename}`, name: file.originalname, size: file.size };
+    return {
+      url: `${baseUrl.replace(/\/$/, '')}/uploads/${filename}`,
+      name: file.originalname,
+      // `size` is the STORED size so the dashboard/library reflect reality.
+      size: optimized.storedBytes,
+      originalSize: optimized.originalBytes,
+      optimized: optimized.optimized,
+      dimensions: optimized.width && optimized.height ? `${optimized.width}×${optimized.height}` : undefined,
+      note: optimized.note,
+    };
   }
 
   /** Edit / customize an asset's name, alt text, category or URL. */
@@ -127,5 +151,25 @@ export class MediaController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.media.remove(id);
+  }
+}
+
+/**
+ * PUBLIC storefront feed — GET /media.
+ * Returns published images from the library (categorized by page: Home, Shop,
+ * Product Category, …) so the static storefront can hydrate its image
+ * sections (data-cms-img) with dashboard-uploaded photos. Provenance
+ * (sourcePage/sourceSection), uploader, size and unpublished assets are
+ * deliberately NOT exposed here.
+ */
+@ApiTags('media')
+@Controller('media')
+export class StorefrontMediaController {
+  constructor(private media: MediaService) {}
+
+  @Public()
+  @Get()
+  listPublic() {
+    return this.media.listPublic();
   }
 }

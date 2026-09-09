@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '@/config/auth-context';
 import { relativeTime, cn } from '@/lib/utils';
 import { canAct } from '@/config/rbac';
+import { MEDIA_CATEGORIES } from '@/config/pages';
 import { apiClient, ApiError } from '@/lib/api-client';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
@@ -26,6 +27,11 @@ import {
   RotateCcw,
   PackagePlus,
   Image as ImageIcon,
+  ImagePlus,
+  Link2,
+  Plus,
+  Check,
+  Info,
   X,
 } from 'lucide-react';
 
@@ -60,7 +66,64 @@ const TYPE_ICONS: Record<string, typeof ImageIcon> = {
   DOCUMENT: File,
 };
 
-const CATEGORY_PRESETS = ['Product', 'Homepage', 'Banner', 'Journal', 'Team', 'Wholesale', 'General'];
+/** Categories are aligned with the website's pages: an image uploaded for the
+ *  home page lives under "Home", shop imagery under "Shop", and so on — so the
+ *  library reads like the site it feeds and nothing feels out of place.
+ *  Uploads made inside a page's template editor are tagged automatically. */
+const CATEGORY_PRESETS: string[] = [...MEDIA_CATEGORIES];
+
+/** Visual "which page will this image be used on?" picker — a pill grid of
+ *  the site pages (plus General) instead of a plain dropdown, so the choice
+ *  that keeps the library organized is obvious and one click away. Shared by
+ *  the Add-image dialog (both tabs) and the Edit dialog. */
+function PageCategoryPicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium text-surface-700">Page (where will it be used?)</span>
+      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Page the image is used on">
+        {CATEGORY_PRESETS.map((c) => {
+          const active = c === value;
+          return (
+            <button
+              key={c}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={disabled}
+              onClick={() => onChange(c)}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-ring',
+                active
+                  ? 'border-brand-600 bg-brand-600 text-white shadow-sm'
+                  : 'border-surface-200 bg-white text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700',
+                disabled && 'pointer-events-none opacity-50',
+              )}
+            >
+              {active && <Check className="h-3 w-3" />}
+              {c}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-xs text-surface-500">
+        Images filed under a page appear in that page's section of the library and on the storefront automatically.
+      </p>
+    </div>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
 
 /** Screen: Media Library — real API-backed.
  *  Content Manager has full rights: add (from device via browse/drag & drop,
@@ -127,15 +190,38 @@ export default function MediaPage() {
     { value: 'DOCUMENT', label: 'Documents' },
   ];
 
-  const categoryChips = useMemo(
-    () => ['', ...Array.from(new Set(['General', ...categories])).sort()],
-    [categories],
-  );
+  const categoryChips = useMemo(() => {
+    // Page categories first (canonical order), then any legacy/extra
+    // categories alphabetically so older rows never disappear from the chips.
+    const inDb = Array.from(new Set(categories));
+    const pageCats = CATEGORY_PRESETS.filter((c) => inDb.includes(c) || c === 'General');
+    const extras = inDb.filter((c) => !pageCats.includes(c)).sort();
+    return ['', ...pageCats, ...extras];
+  }, [categories]);
+
+  /** With no category filter selected, render the library grouped by page
+   *  (Home, Shop, Product Category, …) in the site's own order, so browsing
+   *  mirrors the website instead of one undifferentiated wall of images.
+   *  Selecting a category chip (or filtering by type) shows a flat grid. */
+  const grouped = useMemo(() => {
+    if (categoryFilter || typeFilter) return null;
+    const byCat = new Map<string, MediaItem[]>();
+    filtered.forEach((m) => {
+      const list = byCat.get(m.category) ?? [];
+      list.push(m);
+      byCat.set(m.category, list);
+    });
+    // Canonical page order first, then anything extra alphabetically.
+    const order = [...CATEGORY_PRESETS, ...Array.from(byCat.keys()).filter((c) => !CATEGORY_PRESETS.includes(c)).sort()];
+    return order
+      .filter((c) => (byCat.get(c)?.length ?? 0) > 0)
+      .map((c) => ({ category: c, items: byCat.get(c)! }));
+  }, [filtered, categoryFilter, typeFilter]);
 
   // ── Upload dialog: from device (browse / drag & drop) or by URL ──
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadTab, setUploadTab] = useState<'device' | 'url'>('device');
-  const [uploadForm, setUploadForm] = useState({ name: '', url: '', category: 'Product', altText: '' });
+  const [uploadForm, setUploadForm] = useState({ name: '', url: '', category: 'General', altText: '' });
   const [isSaving, setIsSaving] = useState(false);
 
   // Device-upload state
@@ -147,7 +233,9 @@ export default function MediaPage() {
   // Tracks nested dragenter/dragleave pairs so the highlight doesn't flicker
   // when the pointer crosses child elements inside the drop zone.
   const dragDepth = useRef(0);
-  const MAX_UPLOAD_MB = 5;
+  // Must match the server cap (Backend /admin/media/upload): the server
+  // accepts 25 MB and compresses on store, so big photos are welcome.
+  const MAX_UPLOAD_MB = 25;
 
   const openUpload = () => {
     setUploadTab('device');
@@ -199,7 +287,13 @@ export default function MediaPage() {
     altText: string,
     origin?: { sourcePage?: string; sourceSection?: string },
   ) => {
-    const res = await apiClient.upload<{ url: string; name?: string; size: number }>('/admin/media/upload', file);
+    const res = await apiClient.upload<{
+      url: string;
+      name?: string;
+      size: number;
+      originalSize?: number;
+      optimized?: boolean;
+    }>('/admin/media/upload', file);
     const kb = res.size / 1024;
     const sizeLabel = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`;
     await apiClient.post('/admin/media', {
@@ -210,6 +304,9 @@ export default function MediaPage() {
       size: sizeLabel,
       ...(origin ? origin : {}),
     });
+    // Report what the server-side optimizer saved for the batch toast.
+    const saved = res.optimized && res.originalSize ? res.originalSize - res.size : 0;
+    return { savedBytes: Math.max(0, saved), originalBytes: res.originalSize ?? 0, storedBytes: res.size };
   };
 
   const handleDeviceUpload = async () => {
@@ -221,11 +318,15 @@ export default function MediaPage() {
     setUploadProgress({ done: 0, total: pickedFiles.length });
     const failed: PickedFile[] = [];
     let okCount = 0;
+    let savedTotal = 0;
+    let beforeTotal = 0;
     for (let i = 0; i < pickedFiles.length; i++) {
       const picked = pickedFiles[i];
       try {
-        await uploadOneFile(picked.file, uploadForm.category, uploadForm.altText);
+        const stat = await uploadOneFile(picked.file, uploadForm.category, uploadForm.altText);
         okCount++;
+        savedTotal += stat?.savedBytes ?? 0;
+        beforeTotal += stat?.originalBytes ?? 0;
         URL.revokeObjectURL(picked.preview);
       } catch {
         failed.push(picked);
@@ -238,9 +339,14 @@ export default function MediaPage() {
       addToast({
         type: 'success',
         title: `${okCount} image${okCount === 1 ? '' : 's'} uploaded`,
-        description: failed.length
-          ? `${failed.length} file${failed.length === 1 ? '' : 's'} could not be uploaded.`
-          : 'Published to the media library.',
+        description: [
+          failed.length ? `${failed.length} file${failed.length === 1 ? '' : 's'} could not be uploaded.` : '',
+          savedTotal > 0
+            ? `Auto-optimized for the web: ${formatBytes(beforeTotal)} → ${formatBytes(beforeTotal - savedTotal)} (${Math.round((savedTotal / beforeTotal) * 100)}% smaller), same visual quality.`
+            : 'Published to the media library.',
+        ]
+          .filter(Boolean)
+          .join(' '),
       });
       await load();
     }
@@ -269,7 +375,7 @@ export default function MediaPage() {
       });
       addToast({ type: 'success', title: 'Image added', description: 'Published to the media library.' });
       setUploadOpen(false);
-      setUploadForm({ name: '', url: '', category: 'Product', altText: '' });
+      setUploadForm({ name: '', url: '', category: 'General', altText: '' });
       await load();
     } catch (err) {
       addToast({ type: 'error', title: 'Upload failed', description: err instanceof ApiError ? err.message : 'Unexpected error' });
@@ -388,20 +494,93 @@ export default function MediaPage() {
     'flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ' +
     (active ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-800');
 
+  /** One media card — shared by the grouped (by page) and flat (filtered) grids. */
+  const mediaCard = (item: MediaItem) => (
+    <Card key={item.id} className="group relative overflow-hidden">
+      <div className="aspect-square bg-surface-100 flex items-center justify-center overflow-hidden">
+        {item.type === 'IMAGE' ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.url} alt={item.altText ?? item.name} className="h-full w-full object-cover" />
+        ) : (
+          (() => {
+            const Icon = TYPE_ICONS[item.type] ?? File;
+            return <Icon className="h-12 w-12 text-surface-300" />;
+          })()
+        )}
+        {!item.isPublished && (
+          <span className="absolute top-2 left-2 rounded-full bg-surface-900/80 px-2 py-0.5 text-2xs text-white">
+            UNPUBLISHED
+          </span>
+        )}
+      </div>
+
+      <div className="p-3">
+        <p className="text-sm font-medium text-surface-900 truncate">{item.name}</p>
+        <p className="text-2xs text-surface-500">{item.size ?? item.type}</p>
+        <Badge variant="neutral" className="mt-1.5 text-2xs">{item.category}</Badge>
+        {item.sourcePage && (
+          <p className="mt-1 flex items-center gap-1 text-2xs text-brand-600" title={`Uploaded from the ${item.sourcePage} template editor`}>
+            <FileText className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">From: {item.sourcePage}{item.sourceSection ? ` · ${item.sourceSection}` : ''}</span>
+          </p>
+        )}
+        <p className="mt-1 text-2xs text-surface-400">{relativeTime(item.createdAt)}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {item.type === 'IMAGE' && canEdit && (
+          <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Use for a product (replace product image)" onClick={() => openProductPicker(item)}>
+            <PackagePlus className="h-3.5 w-3.5 text-brand-600" />
+          </Button>
+        )}
+        {canEdit && (
+          <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Edit / customize image" onClick={() => openEdit(item)}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        {canPublish && (
+          <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title={item.isPublished ? 'Unpublish image' : 'Publish image'} onClick={() => handleTogglePublish(item)}>
+            {item.isPublished ? <RotateCcw className="h-3.5 w-3.5 text-amber-600" /> : <Globe className="h-3.5 w-3.5 text-green-600" />}
+          </Button>
+        )}
+        {canDelete && (
+          <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Delete image" onClick={() => setDeleteTarget(item)}>
+            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Media Library"
-        description="Add, categorize, edit, replace and publish images — then drop any image onto a product in one step."
+        description="Images are organized by the page they're used on — Home, Shop, Product Category and so on. Upload here or from any page's template editor, then drop any image onto a product in one step."
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Media' }]}
         actions={
           canUpload ? (
-            <Button onClick={openUpload}>
-              <Upload className="h-4 w-4" /> Add Image
+            <Button onClick={openUpload} size="lg" className="shadow-sm shadow-brand-600/25">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20">
+                <Plus className="h-3.5 w-3.5" />
+              </span>
+              Add Image
             </Button>
           ) : undefined
         }
       />
+
+      {/* How the library is organized */}
+      <div className="flex items-start gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-brand-700">
+        <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+        <span>
+          <span className="font-medium">Organized by page:</span> pick the page an image belongs to
+          (Home, Shop, Product Category, …) when uploading. Published images in a page's category
+          are automatically available to that page on the storefront — an image uploaded for the
+          home page shows up on the home page without any extra steps.
+        </span>
+      </div>
 
       {/* Category chips */}
       <div className="flex flex-wrap items-center gap-2">
@@ -420,7 +599,7 @@ export default function MediaPage() {
         <Select options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-48" />
       </div>
 
-      {/* Media grid */}
+      {/* Media grid — grouped by page when "All" is selected, flat when filtered */}
       {isLoading ? (
         <div className="py-16 text-center text-sm text-surface-500">Loading media…</div>
       ) : filtered.length === 0 ? (
@@ -430,75 +609,43 @@ export default function MediaPage() {
           description="Upload images from your device or add by URL to start building your library — then use them anywhere."
           action={canUpload ? { label: 'Add Image', onClick: openUpload } : undefined}
         />
+      ) : grouped ? (
+        <div className="space-y-8">
+          {grouped.map(({ category, items }) => (
+            <section key={category} aria-label={`${category} images`}>
+              <div className="mb-3 flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-surface-900">{category}</h2>
+                <span className="text-2xs text-surface-400">
+                  {items.length} image{items.length === 1 ? '' : 's'} · used on the{' '}
+                  {category === 'General' ? 'site generally' : `${category} page`}
+                </span>
+                <button
+                  type="button"
+                  className="text-2xs font-medium text-brand-600 hover:underline"
+                  onClick={() => setCategoryFilter(category)}
+                >
+                  View only {category}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {items.map((item) => mediaCard(item))}
+              </div>
+            </section>
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {filtered.map((item) => (
-            <Card key={item.id} className="group relative overflow-hidden">
-              <div className="aspect-square bg-surface-100 flex items-center justify-center overflow-hidden">
-                {item.type === 'IMAGE' ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.url} alt={item.altText ?? item.name} className="h-full w-full object-cover" />
-                ) : (
-                  (() => {
-                    const Icon = TYPE_ICONS[item.type] ?? File;
-                    return <Icon className="h-12 w-12 text-surface-300" />;
-                  })()
-                )}
-                {!item.isPublished && (
-                  <span className="absolute top-2 left-2 rounded-full bg-surface-900/80 px-2 py-0.5 text-2xs text-white">
-                    UNPUBLISHED
-                  </span>
-                )}
-              </div>
-
-              <div className="p-3">
-                <p className="text-sm font-medium text-surface-900 truncate">{item.name}</p>
-                <p className="text-2xs text-surface-500">{item.size ?? item.type}</p>
-                <Badge variant="neutral" className="mt-1.5 text-2xs">{item.category}</Badge>
-                {item.sourcePage && (
-                  <p className="mt-1 flex items-center gap-1 text-2xs text-brand-600" title={`Uploaded from the ${item.sourcePage} template editor`}>
-                    <FileText className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">From: {item.sourcePage}{item.sourceSection ? ` · ${item.sourceSection}` : ''}</span>
-                  </p>
-                )}
-                <p className="mt-1 text-2xs text-surface-400">{relativeTime(item.createdAt)}</p>
-              </div>
-
-              {/* Actions */}
-              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                {item.type === 'IMAGE' && canEdit && (
-                  <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Use for a product (replace product image)" onClick={() => openProductPicker(item)}>
-                    <PackagePlus className="h-3.5 w-3.5 text-brand-600" />
-                  </Button>
-                )}
-                {canEdit && (
-                  <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Edit / customize image" onClick={() => openEdit(item)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-                {canPublish && (
-                  <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title={item.isPublished ? 'Unpublish image' : 'Publish image'} onClick={() => handleTogglePublish(item)}>
-                    {item.isPublished ? <RotateCcw className="h-3.5 w-3.5 text-amber-600" /> : <Globe className="h-3.5 w-3.5 text-green-600" />}
-                  </Button>
-                )}
-                {canDelete && (
-                  <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Delete image" onClick={() => setDeleteTarget(item)}>
-                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                  </Button>
-                )}
-              </div>
-            </Card>
-          ))}
+          {filtered.map((item) => mediaCard(item))}
         </div>
       )}
 {/* Add image dialog — upload from device (browse / drag & drop) or add by URL */}
       {uploadOpen && (
         <Dialog
           open
-          maxWidth="md"
+          maxWidth="lg"
           onClose={() => { if (!isSaving) setUploadOpen(false); }}
           title="Add image"
-          description="Upload images straight from your computer — drag & drop or browse — or paste an image URL. Everything is published immediately and categorized for easy reuse."
+          description="Upload images straight from your computer — drag & drop or browse — or paste an image URL. Pick the page the image belongs to (Home, Shop, Product Category, …) so it stays organized and is available to that page on the storefront."
           primaryAction={
             uploadTab === 'device'
               ? {
@@ -516,7 +663,7 @@ export default function MediaPage() {
           <div className="space-y-4">
             {/* Upload source tabs */}
             <div className="flex gap-1 rounded-lg bg-surface-100 p-1" role="tablist" aria-label="Upload source">
-              {([['device', 'From device'], ['url', 'From URL']] as const).map(([tab, label]) => (
+              {([['device', 'From device', ImagePlus], ['url', 'From URL', Link2]] as const).map(([tab, label, TabIcon]) => (
                 <button
                   key={tab}
                   type="button"
@@ -525,12 +672,13 @@ export default function MediaPage() {
                   disabled={isSaving}
                   onClick={() => setUploadTab(tab)}
                   className={cn(
-                    'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                    'flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                     uploadTab === tab
                       ? 'bg-white text-surface-900 shadow-sm'
                       : 'text-surface-500 hover:text-surface-700',
                   )}
                 >
+                  <TabIcon className={cn('h-4 w-4', uploadTab === tab && 'text-brand-600')} />
                   {label}
                 </button>
               ))}
@@ -564,14 +712,21 @@ export default function MediaPage() {
                     if (!isSaving) addPickedFiles(e.dataTransfer.files);
                   }}
                   className={cn(
-                    'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors',
+                    'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-10 text-center transition-colors',
                     isDragOver
                       ? 'border-brand-500 bg-brand-50'
                       : 'border-surface-300 bg-surface-50 hover:border-brand-400 hover:bg-brand-50/40',
                     isSaving && 'pointer-events-none opacity-60',
                   )}
                 >
-                  <Upload className={cn('h-7 w-7', isDragOver ? 'text-brand-600' : 'text-surface-400')} />
+                  <span
+                    className={cn(
+                      'mb-1 flex h-12 w-12 items-center justify-center rounded-xl transition-colors',
+                      isDragOver ? 'bg-brand-600/10' : 'bg-surface-200/70',
+                    )}
+                  >
+                    <Upload className={cn('h-6 w-6', isDragOver ? 'text-brand-600' : 'text-surface-400')} />
+                  </span>
                   <p className="text-sm font-medium text-surface-700">
                     {isDragOver ? (
                       'Drop to upload'
@@ -582,9 +737,19 @@ export default function MediaPage() {
                       </>
                     )}
                   </p>
-                  <p className="text-2xs text-surface-400">
-                    PNG, JPG, WEBP or GIF · up to {MAX_UPLOAD_MB} MB each · multiple files welcome
-                  </p>
+                  <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
+                    {['PNG', 'JPG', 'WEBP', 'GIF'].map((fmt) => (
+                      <span
+                        key={fmt}
+                        className="rounded-full bg-white px-2 py-0.5 text-2xs font-medium text-surface-500 ring-1 ring-surface-200"
+                      >
+                        {fmt}
+                      </span>
+                    ))}
+                    <span className="text-2xs text-surface-400">
+                      up to {MAX_UPLOAD_MB} MB each · multiple files welcome
+                    </span>
+                  </div>
                 </div>
                 {/* Hidden native file picker ("browse your local store") */}
                 <input
@@ -600,6 +765,8 @@ export default function MediaPage() {
                   <div>
                     <p className="mb-2 text-xs font-medium text-surface-500">
                       {pickedFiles.length} image{pickedFiles.length === 1 ? '' : 's'} ready
+                      {' · '}
+                      {formatBytes(pickedFiles.reduce((sum, p) => sum + p.file.size, 0))}
                       {uploadProgress ? ` · uploading ${uploadProgress.done}/${uploadProgress.total}…` : ''}
                     </p>
                     <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
@@ -625,20 +792,17 @@ export default function MediaPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Select
-                    label="Category"
-                    value={uploadForm.category}
-                    onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value })}
-                    options={CATEGORY_PRESETS.map((c) => ({ value: c, label: c }))}
-                  />
-                  <Input
-                    label="Alt text (applied to all)"
-                    value={uploadForm.altText}
-                    onChange={(e) => setUploadForm({ ...uploadForm, altText: e.target.value })}
-                    placeholder="Accessible description"
-                  />
-                </div>
+                <PageCategoryPicker
+                  value={uploadForm.category}
+                  onChange={(category) => setUploadForm({ ...uploadForm, category })}
+                  disabled={isSaving}
+                />
+                <Input
+                  label="Alt text (applied to all)"
+                  value={uploadForm.altText}
+                  onChange={(e) => setUploadForm({ ...uploadForm, altText: e.target.value })}
+                  placeholder="Accessible description"
+                />
               </>
             ) : (
               <>
@@ -654,20 +818,17 @@ export default function MediaPage() {
                   onChange={(e) => setUploadForm({ ...uploadForm, url: e.target.value })}
                   placeholder="https://example.com/image.jpg"
                 />
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Select
-                    label="Category"
-                    value={uploadForm.category}
-                    onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value })}
-                    options={CATEGORY_PRESETS.map((c) => ({ value: c, label: c }))}
-                  />
-                  <Input
-                    label="Alt text"
-                    value={uploadForm.altText}
-                    onChange={(e) => setUploadForm({ ...uploadForm, altText: e.target.value })}
-                    placeholder="Accessible description"
-                  />
-                </div>
+                <PageCategoryPicker
+                  value={uploadForm.category}
+                  onChange={(category) => setUploadForm({ ...uploadForm, category })}
+                  disabled={isSaving}
+                />
+                <Input
+                  label="Alt text"
+                  value={uploadForm.altText}
+                  onChange={(e) => setUploadForm({ ...uploadForm, altText: e.target.value })}
+                  placeholder="Accessible description"
+                />
               </>
             )}
           </div>
@@ -681,7 +842,7 @@ export default function MediaPage() {
           maxWidth="md"
           onClose={() => setEditTarget(null)}
           title="Edit image"
-          description="Change the name, replace the image URL, or update its category and alt text."
+          description="Change the name, replace the image URL, or move it to a different page's category and update its alt text."
           primaryAction={{ label: 'Save Changes', onClick: handleSaveEdit, isLoading: isSaving }}
         >
           <div className="space-y-4">
@@ -695,19 +856,16 @@ export default function MediaPage() {
               value={editForm.url}
               onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
             />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Select
-                label="Category"
-                value={editForm.category}
-                onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                options={CATEGORY_PRESETS.map((c) => ({ value: c, label: c }))}
-              />
-              <Input
-                label="Alt text"
-                value={editForm.altText}
-                onChange={(e) => setEditForm({ ...editForm, altText: e.target.value })}
-              />
-            </div>
+            <PageCategoryPicker
+              value={editForm.category}
+              onChange={(category) => setEditForm({ ...editForm, category })}
+              disabled={isSaving}
+            />
+            <Input
+              label="Alt text"
+              value={editForm.altText}
+              onChange={(e) => setEditForm({ ...editForm, altText: e.target.value })}
+            />
           </div>
         </Dialog>
       )}

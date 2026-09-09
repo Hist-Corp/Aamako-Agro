@@ -23,7 +23,18 @@
  *   <script src="js/content.js"></script>
  *   <script>window.AamakoContent && AamakoContent.hydrate();</script>
  *
- * Exposes window.AamakoContent: { load, get, all, hydrate }.
+ * Exposes window.AamakoContent: { load, get, all, hydrate, applyPageVisibility,
+ *   loadMedia, imagesForPage, applyMediaToSlots }.
+ *
+ * IMAGE SLOTS & THE MEDIA LIBRARY: image sections ([data-cms-img]) hold an
+ * explicit dashboard pick in their ContentItem's body — that pick is the ONLY
+ * thing that changes a section's image, so editing one section never touches
+ * another. Authored template images stay in place until a CM explicitly picks
+ * a replacement for that exact section. As a safety net, genuinely EMPTY slots
+ * (an <img> with no src at all) are filled from the published media library
+ * (GET /api/media) using the current page's category — Home images on
+ * index.html, Shop images on shop.html, etc. Opt a slot out with
+ * data-cms-media="off".
  */
 (function () {
   'use strict';
@@ -76,6 +87,131 @@
 
   /** Return the array of loaded items (after load()). */
   function all() { return content || []; }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Media library integration (published images from GET /api/media).
+  //
+  // The dashboard's media library is organized by storefront page: an image
+  // uploaded for the home page is filed under "Home", shop imagery under
+  // "Shop", category-page imagery under "Product Category", and so on
+  // (Dashboard/apps/admin/src/config/pages.ts → MEDIA_CATEGORIES).
+  //
+  // After text content is applied, genuinely EMPTY image slots ([data-cms-img]
+  // whose <img> has no src at all) are filled from the published library
+  // images of THIS page's category. Slots that already render an image —
+  // either an explicit CMS pick or the authored static default — are NEVER
+  // touched here: a section's image changes only when a CM explicitly picks/
+  // uploads one for that exact section in the dashboard, so editing one
+  // section can never repaint another. Categories with no images fall back to
+  // "General"; pages can opt a slot out with data-cms-media="off".
+  // ─────────────────────────────────────────────────────────────────────────
+
+  var MEDIA_CACHE_KEY = 'aamako_media_cache_v1';
+  var mediaItems = null;
+
+  /** Page slug → media-library category (mirrors the dashboard pages config). */
+  var SLUG_TO_MEDIA_CATEGORY = {
+    home: 'Home',
+    shop: 'Shop',
+    product: 'Product Detail',
+    'product-category': 'Product Category',
+    'the-process': 'The Process',
+    'our-story': 'Our Story',
+    wholesale: 'Wholesale',
+    journal: 'Journal',
+  };
+
+  /** Which storefront page are we on? Derived from the pathname via the same
+   *  slug→path map used for page visibility (keep both in sync). */
+  function currentPageSlug() {
+    if (typeof window === 'undefined' || !window.location) return null;
+    var file = window.location.pathname.split('/').pop() || 'index.html';
+    if (file === 'index.html') return 'home';
+    for (var slug in SLUG_TO_PATH) {
+      if (SLUG_TO_PATH[slug] === '/' + file) return slug;
+    }
+    return null;
+  }
+
+  /** Load (and cache) the public published-image feed. Never rejects — on
+   *  failure it falls back to the localStorage cache, then to an empty list
+   *  so a media outage can never break page rendering. */
+  function loadMedia() {
+    if (mediaItems) return Promise.resolve(mediaItems);
+    return fetch(API_BASE + '/media')
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (data) {
+        mediaItems = Array.isArray(data) ? data : [];
+        try { localStorage.setItem(MEDIA_CACHE_KEY, JSON.stringify(mediaItems)); } catch (_) { /* ignore */ }
+        return mediaItems;
+      })
+      .catch(function () {
+        try {
+          var cached = JSON.parse(localStorage.getItem(MEDIA_CACHE_KEY) || 'null');
+          if (cached && Array.isArray(cached)) {
+            mediaItems = cached;
+            return mediaItems;
+          }
+        } catch (_) { /* ignore corrupt cache */ }
+        mediaItems = mediaItems || [];
+        return mediaItems;
+      });
+  }
+
+  /** Published images for one category, newest first (empty array if none). */
+  function imagesForPage(category) {
+    var out = [];
+    var list = mediaItems || [];
+    for (var i = 0; i < list.length; i++) {
+      var m = list[i];
+      if (m && m.url && (m.category || 'General') === category) out.push(m);
+    }
+    return out;
+  }
+
+  /** Fill only genuinely EMPTY [data-cms-img] slots (an <img> with no src)
+   *  from the page's media category. Slots already showing an image — an
+   *  explicit dashboard pick OR the authored static default — are never
+   *  touched, so changing one section's image can never change another's.
+   *  "General" images fill in when a page's own category is empty. Runs AFTER
+   *  the CMS content pass — an explicit pick (data-cms-applied) always wins. */
+  function applyMediaToSlots(root) {
+    if (!mediaItems || !mediaItems.length) return;
+    var scope = root || document;
+    if (!scope.querySelectorAll) return;
+    var nodes = scope.querySelectorAll('[data-cms-img]');
+    if (!nodes.length) return;
+
+    var slug = currentPageSlug();
+    var category = (slug && SLUG_TO_MEDIA_CATEGORY[slug]) || 'General';
+    var pageImages = imagesForPage(category);
+    var generalImages = category === 'General' ? pageImages : imagesForPage('General');
+
+    var pick = 0;
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      // Opt-out escape hatch + explicit CMS picks already applied.
+      if (node.getAttribute('data-cms-media') === 'off') continue;
+      if (node.getAttribute('data-cms-applied')) continue;
+      var img = node.tagName === 'IMG' ? node : node.querySelector('img');
+      if (!img) continue;
+      // NEVER touch a slot that already renders an image (its authored static
+      // default). Changing one section's image must never change another —
+      // each section only changes when the user explicitly picks/uploads an
+      // image for THAT section in the dashboard. This pass exists solely for
+      // genuinely empty slots (<img> with no src at all).
+      if (img.getAttribute('src')) continue;
+
+      var list = pageImages.length ? pageImages : generalImages;
+      if (!list.length) return; // nothing published to draw from
+      var media = list[pick % list.length];
+      pick++;
+
+      img.src = media.url;
+      if (media.altText && !img.getAttribute('alt')) img.setAttribute('alt', media.altText);
+      node.setAttribute('data-cms-media-filled', '1');
+    }
+  }
 
   /** Resolve the value for a field from an item. */
   function fieldValue(item, field) {
@@ -157,6 +293,14 @@
       // hydration — never before, or it would read an empty list and no-op.
       applyPageVisibility();
       return content;
+    })
+    // Media pass — fill still-default image slots from the dashboard's media
+    // library (categorized by page). Never rejects; a media outage leaves the
+    // authored static images in place.
+    .then(loadMedia)
+    .then(function () {
+      applyMediaToSlots(root || document);
+      return content;
     });
   }
 
@@ -175,7 +319,12 @@
     var style = document.createElement('style');
     style.textContent =
       '[data-cms]{cursor:pointer !important;transition:outline-color .12s;}' +
-      '[data-cms]:hover{outline:2px dashed #22c55e !important;outline-offset:3px;border-radius:4px;}';
+      '[data-cms]:hover{outline:2px dashed #22c55e !important;outline-offset:3px;border-radius:4px;}' +
+      // last-resort guard for image sections: a ::after grain/gradient layer
+      // (or an absolutely-positioned badge) sitting above the <img> must never
+      // eat the click — decorative layers are pointer-transparent, the image
+      // itself stays clickable.
+      '[data-cms-img]::before,[data-cms-img]::after{pointer-events:none !important;}';
     document.head.appendChild(style);
 
     document.addEventListener('click', function (e) {
@@ -349,7 +498,17 @@
   // Auto-hydrate after the DOM is ready, unless explicitly deferred via
   // window.AAMAKO_CONTENT_DEFER = true before this script runs.
   if (typeof window !== 'undefined') {
-    window.AamakoContent = { load: load, get: get, all: all, hydrate: hydrate, applyPageVisibility: applyPageVisibility };
+    window.AamakoContent = {
+      load: load,
+      get: get,
+      all: all,
+      hydrate: hydrate,
+      applyPageVisibility: applyPageVisibility,
+      // Media library (published images, categorized by page)
+      loadMedia: loadMedia,
+      imagesForPage: imagesForPage,
+      applyMediaToSlots: applyMediaToSlots,
+    };
     initEditorBridge();
     if (!window.AAMAKO_CONTENT_DEFER) {
       if (document.readyState === 'loading') {

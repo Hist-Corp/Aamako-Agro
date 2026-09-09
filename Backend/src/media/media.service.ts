@@ -85,4 +85,26 @@ export class MediaService {
       orderBy: { category: 'asc' },
     }).then((rows) => rows.map((r) => r.category));
   }
+
+  /**
+   * PUBLIC (storefront) listing — published images only, minimal fields.
+   * The storefront content hydrator pulls this feed so images uploaded to the
+   * library (categorized by page: Home, Shop, Product Category, …) can be
+   * shown on the live site without exposing provenance, uploader or
+   * unpublished assets.
+   */
+  listPublic() {
+    return this.prisma.mediaAsset.findMany({
+      where: { isPublished: true, type: 'IMAGE' },
+      select: {
+        id: true,
+        name: true,
+        url: true,
+        altText: true,
+        category: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }
