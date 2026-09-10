@@ -14,6 +14,7 @@ import { PricingModule } from './pricing/pricing.module';
 import { UsersModule } from './users/users.module';
 import { WholesaleModule } from './wholesale/wholesale.module';
 import { ContentModule } from './content/content.module';
+import { SupportModule } from './support/support.module';
 import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MediaModule } from './media/media.module';
@@ -34,6 +35,7 @@ import { TasksModule } from './tasks/tasks.module';
     OrdersModule,
     WholesaleModule,
     ContentModule,
+    SupportModule,
     AdminModule,
     NotificationsModule,
     MediaModule,
