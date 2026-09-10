@@ -15,8 +15,9 @@ import {
   Lock,
   CheckCircle,
   Upload,
+  Sparkles,
 } from 'lucide-react';
-import { PRODUCT_TEMPLATE_SECTIONS, productFieldKey, ALL_PRODUCT_FIELD_KEYS } from '@/config/product-templates';
+import { PRODUCT_TEMPLATE_SECTIONS, productFieldKey, ALL_PRODUCT_FIELD_KEYS, getProductFieldDefaults } from '@/config/product-templates';
 
 interface CmsItem {
   id: string;
@@ -65,6 +66,12 @@ export default function ProductTemplateEditorPage({
       canAct(user.role, 'content:publish'));
 
   const prefix = `product-template.${slug}.`;
+
+  // Storefront-derived prefill: when a field has never been saved, the editor
+  // shows the copy the live product page renders for this process category
+  // (Freeze-Dried / Dehydrated / Powders) so the user sees WHAT to fill WHERE.
+  const processCategory = (items['process-category']?.title ?? '').trim() || null;
+  const defaults = getProductFieldDefaults(processCategory);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -248,12 +255,12 @@ return (
     </div>
 
     <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-      <div className="xl:col-span-2 space-y-6">
+      <div className="xl:col-span-2 space-y-6 xl:max-h-[calc(100vh-170px)] xl:overflow-y-auto xl:pr-3">
         {PRODUCT_TEMPLATE_SECTIONS.map((section) => (
           <Card key={section.label} className="p-5 mb-4">
             <h3 className="text-md font-semibold text-surface-800 mb-1">{section.label}</h3>
             <p className="text-2xs text-surface-500 mb-4">{section.description}</p>
-            {section.fields.map((field) => renderField(field, items, slug, handleSaveField))}
+            {section.fields.map((field) => renderField(field, items, slug, handleSaveField, defaults))}
           </Card>
         ))}
         <div className="text-center">
@@ -261,8 +268,8 @@ return (
         </div>
       </div>
 
-      {/* Live storefront preview */}
-      <div>
+      {/* Live storefront preview — sticky so it never moves while the editing column scrolls */}
+      <div className="self-start xl:sticky xl:top-[96px]">
         <Card className="p-3 mb-3">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-medium text-surface-700">Live storefront preview</h3>
@@ -294,9 +301,19 @@ function renderField(
   items: Record<string, CmsItem>,
   slug: string,
   onSave: (field: string, value: string, isTitle: boolean) => void,
+  defaults: Record<string, string> = {},
 ) {
   const existing = items[field.key];
   const fieldKey = productFieldKey(slug, field.key);
+  const prefill = defaults[field.key] ?? '';
+  // Badge shown when the input is displaying suggested storefront copy that
+  // has not been saved yet (publishing keeps it; leaving it leaves the field empty).
+  const prefillBadge = () =>
+    !existing && prefill ? (
+      <p className="mt-1 inline-flex items-center gap-1 text-2xs font-medium text-brand-600">
+        <Sparkles className="h-3 w-3" /> Prefilled from the storefront page — publish to keep it.
+      </p>
+    ) : null;
 
   if (field.type === 'image') {
     return (
@@ -318,10 +335,11 @@ function renderField(
           className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           rows={4}
           placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-          value={existing?.body ?? existing?.title ?? ''}
+          value={existing?.body ?? existing?.title ?? prefill}
           onChange={(e) => onSave(field.key, e.target.value, false)}
         />
         <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
+        {prefillBadge()}
         <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
       </div>
     );
@@ -347,7 +365,7 @@ function renderField(
             type={field.type}
             className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             placeholder={field.placeholder}
-            value={existing?.title ?? ''}
+            value={existing?.title ?? prefill}
             onChange={(e) => onSave(field.key, e.target.value, true)}
           />
         )}
@@ -362,6 +380,7 @@ function renderField(
           </a>
         )}
         <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
+        {field.type !== 'select' && prefillBadge()}
         <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
       </div>
     );
