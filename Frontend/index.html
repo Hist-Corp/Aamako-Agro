@@ -75,21 +75,10 @@ document.addEventListener('DOMContentLoaded', function(){
       scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' }
     });
   });
-  /* Category cards */
-  var catGrid = document.querySelector('.cat-grid');
-  if (catGrid) {
-    gsap.from(catGrid.querySelectorAll('.cat-card'), {
-      opacity: 0, y: 30, duration: 0.6, ease: 'power3.out', stagger: 0.1,
-      scrollTrigger: { trigger: catGrid, start: 'top 88%', toggleActions: 'play none none none' }
-    });
-  }
-  /* Product cards */
-  document.querySelectorAll('.prod-grid').forEach(function(grid){
-    gsap.from(grid.querySelectorAll('.prod-card'), {
-      opacity: 0, y: 24, duration: 0.6, ease: 'power3.out', stagger: 0.08,
-      scrollTrigger: { trigger: grid, start: 'top 88%', toggleActions: 'play none none none' }
-    });
-  });
+  /* NOTE: category-card and product-card reveals are handled in the second
+     script below (once:true). They used to be animated here as well, which
+     double-registered tweens on the same elements and made cards visibly
+     jump/slide upward every time the page was refreshed. */
   /* Stat items */
   document.querySelectorAll('.stat-row').forEach(function(row){
     gsap.from(row.querySelectorAll('.stat'), {
@@ -576,7 +565,8 @@ document.addEventListener('DOMContentLoaded', function(){
     }
     var catGrid = document.querySelector('.cat-grid');
     if(catGrid){
-      gsap.from(catGrid.querySelectorAll('.cat-card'), { opacity:0, y:20, duration:0.45, ease:'power3.out', stagger:0.06, scrollTrigger:{ trigger:catGrid, start:'top 88%', once:true }});
+      /* Fade in place — no translate, so cards never slide upward on refresh */
+      gsap.from(catGrid.querySelectorAll('.cat-card'), { opacity:0, duration:0.5, ease:'power2.out', stagger:0.06, scrollTrigger:{ trigger:catGrid, start:'top 88%', once:true }});
     }
     var stamp = document.querySelector('.hero-stamp-wrap .stamp');
     if(stamp){ gsap.to(stamp, { rotation:-6, duration:3, ease:'sine.inOut', yoyo:true, repeat:-1 }); }

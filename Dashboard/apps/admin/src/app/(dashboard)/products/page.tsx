@@ -6,6 +6,7 @@ import { useProducts, useToggleProductStatus, useCreateProduct } from '@/lib/api
 import { useAuth } from '@/config/auth-context';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import { canAct } from '@/config/rbac';
+import { assetUrl } from '@/lib/asset-url';
 import { PageHeader } from '@/components/layout/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge, statusToBadgeVariant } from '@/components/ui/badge';
@@ -201,7 +202,7 @@ export default function ProductsPage() {
           <div className="flex items-center gap-3">
             {row.original.images[0] ? (
               <img
-                src={row.original.images[0].url}
+                src={assetUrl(row.original.images[0].url)}
                 alt={row.original.images[0].alt}
                 className="h-10 w-10 rounded-lg object-cover bg-surface-100"
               />
@@ -425,7 +426,7 @@ export default function ProductsPage() {
               )}
               {imageStatus?.ok && (
                 <img
-                  src={form.imageUrl}
+                  src={assetUrl(form.imageUrl)}
                   alt="Product preview"
                   className="mt-2 h-28 w-full max-w-[224px] object-cover rounded-lg border border-surface-200 bg-surface-100"
                 />

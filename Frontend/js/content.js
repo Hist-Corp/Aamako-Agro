@@ -237,14 +237,26 @@
     }
     // Image sections — the stored value is an image URL (edited via the
     // dashboard's upload / media-library picker on image-kind sections).
+    // If the CMS-picked URL fails to load (e.g. an uploaded file that is no
+    // longer on the server), fall back to the authored default so cards and
+    // sections never render broken/empty images.
+    function swapImage(img) {
+      if (!img) return;
+      var fallback = img.getAttribute('src');
+      if (!val || !fallback || fallback === val) { img.src = val || fallback; return; }
+      img.onerror = function () {
+        img.onerror = null;
+        img.src = fallback;
+      };
+      img.src = val;
+    }
     if (el.tagName === 'IMG') {
-      el.src = val;
+      swapImage(el);
       el.setAttribute('data-cms-applied', '1');
       return;
     }
     if (el.hasAttribute('data-cms-img')) {
-      var img = el.querySelector('img');
-      if (img) img.src = val;
+      swapImage(el.querySelector('img'));
       el.setAttribute('data-cms-applied', '1');
       return;
     }

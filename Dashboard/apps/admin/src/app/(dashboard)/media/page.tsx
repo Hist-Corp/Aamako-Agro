@@ -6,6 +6,7 @@ import { relativeTime, cn } from '@/lib/utils';
 import { canAct } from '@/config/rbac';
 import { MEDIA_CATEGORIES } from '@/config/pages';
 import { apiClient, ApiError } from '@/lib/api-client';
+import { assetUrl } from '@/lib/asset-url';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -500,7 +501,7 @@ export default function MediaPage() {
       <div className="aspect-square bg-surface-100 flex items-center justify-center overflow-hidden">
         {item.type === 'IMAGE' ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.url} alt={item.altText ?? item.name} className="h-full w-full object-cover" />
+          <img src={assetUrl(item.url)} alt={item.altText ?? item.name} className="h-full w-full object-cover" />
         ) : (
           (() => {
             const Icon = TYPE_ICONS[item.type] ?? File;

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/config/auth-context';
 import { canAct } from '@/config/rbac';
 import { apiClient, ApiError } from '@/lib/api-client';
+import { assetUrl } from '@/lib/asset-url';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -350,7 +351,7 @@ export default function ProductTemplatesPage() {
                             {product.imageUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={product.imageUrl}
+                                src={assetUrl(product.imageUrl)}
                                 alt={product.name}
                                 className="h-12 w-12 flex-shrink-0 rounded-lg border border-surface-200 bg-surface-100 object-cover"
                                 loading="lazy"

@@ -12,7 +12,7 @@ export interface ProductTemplateField {
   key: string;
   label: string;
   description: string;
-  type: 'text' | 'textarea' | 'richtext' | 'number' | 'url' | 'select' | 'image';
+  type: 'text' | 'textarea' | 'richtext' | 'number' | 'url' | 'select' | 'image' | 'gallery' | 'list-check' | 'nutrition-rows' | 'faq-pairs' | 'howto-blocks' | 'related-cards';
   required?: boolean;
   options?: { value: string; label: string }[];
   placeholder?: string;
@@ -29,8 +29,9 @@ export interface ProductTemplateSection {
 }
 
 // Sections are ordered to mirror how a customer reads the real product page
-// (Frontend/product.html): name & breadcrumb → price & pack → image →
-// description → ingredients → nutrition → sourcing → storage → usage.
+// (Frontend/product.html): name & breadcrumb → price & pack → description →
+// key highlights → SKU → image → ingredients → nutrition → sourcing →
+// storage → usage.
 export const PRODUCT_TEMPLATE_SECTIONS: ProductTemplateSection[] = [
   {
     label: 'Basic info',
@@ -40,70 +41,90 @@ export const PRODUCT_TEMPLATE_SECTIONS: ProductTemplateSection[] = [
     fields: [
       { key: 'name', label: 'Product name', description: 'The display name shown on the product page and card.', type: 'text', required: true, placeholder: 'e.g. Freeze-Dried Mango' },
       { key: 'slug', label: 'URL slug', description: 'Kebab-case identifier used in the product page URL.', type: 'text', required: true, placeholder: 'e.g. fd-mango' },
-      { key: 'badge', label: 'Badge', description: 'Small tag shown on the product card (e.g. Best seller, New).', type: 'text', placeholder: 'e.g. Best seller' },
-      { key: 'category', label: 'Category', description: 'Product category for the shop filter.', type: 'select', required: true, options: [{ value: 'fruits', label: 'Fruits' }, { value: 'vegetables', label: 'Vegetables' }, { value: 'spices', label: 'Spices & Powders' }, { value: 'meals', label: 'Ready Meals' }, { value: 'gifts', label: 'Gift Sets' }] },
       { key: 'process-category', label: 'Process Category', description: 'Links this product to its storefront category page (Freeze-Dried Fruits, Dehydrated Fruits & Vegetables or Milled Powders) and creates a product card on that page.', type: 'select', required: true, options: [{ value: 'freeze-dried-fruits', label: 'Freeze-Dried Fruits' }, { value: 'dehydrated', label: 'Dehydrated Fruits & Vegetables' }, { value: 'powders', label: 'Milled Powders' }] },
-      { key: 'batch-no', label: 'Batch no', description: 'Production batch number for traceability (shown on the product page).', type: 'text', placeholder: 'e.g. BATCH-2026-014' },
     ],
   },
   {
     label: 'Pricing & availability',
-    description: 'Price, pack size, stock status and shelf life.',
+    description: 'Price, pack size, stock status and SKU.',
     fields: [
       { key: 'price', label: 'Base price (Rs)', description: 'Selling price in Nepalese rupees.', type: 'number', required: true, placeholder: '450' },
       { key: 'pack', label: 'Pack size', description: 'Size/weight of the pack (e.g. 50g pouch).', type: 'text', required: true, placeholder: 'e.g. 50g pouch' },
       { key: 'availability', label: 'Availability', description: 'Stock status shown to customers.', type: 'select', required: true, options: [{ value: 'In stock', label: 'In stock' }, { value: 'Low stock', label: 'Low stock' }, { value: 'Out of stock', label: 'Out of stock' }, { value: 'Pre-order', label: 'Pre-order' }] },
-      { key: 'shelf-life', label: 'Shelf life', description: 'Shelf life description (unopened).', type: 'text', placeholder: 'e.g. 18 months, unopened' },
+      { key: 'sku', label: 'SKU', description: 'Stock-keeping unit — shown on the product page next to Pack size and Availability (e.g. SKU-FDMANGO).', type: 'text', placeholder: 'e.g. SKU-FDMANGO' },
     ],
   },
   {
     label: 'Descriptions',
-    description: 'Headline description and rich-text long description.',
+    description: 'The headline copy — a one-line intro shown below the product name.',
     fields: [
-      { key: 'description', label: 'Short description', description: 'One-line summary shown below the product name.', type: 'textarea', required: true, placeholder: 'e.g. Ripe mango, sliced and freeze-dried within hours of harvest.' },
-      { key: 'long-description', label: 'Long description', description: 'Full rich-text description — formatting, lists, links supported.', type: 'richtext', placeholder: 'Detailed product description...' },
+      { key: 'description', label: 'Short description', description: 'One-line summary shown below the product name (e.g. “Sample product for freeze-dried mango — seeded for dashboard demo.”).', type: 'textarea', required: true, placeholder: 'e.g. Sample product for freeze-dried mango — seeded for dashboard demo.' },
     ],
   },
   {
-    label: 'Product image',
-    description: 'High-resolution product image (https:// required).',
+    label: 'Key highlights',
+    description: 'The “Key Highlights” card under the product price — each line becomes a check-marked bullet on the product page.',
+    icon: 'Sparkles',
+    storefront: 'Key Highlights card (below the price, above Pack size)',
     fields: [
-      { key: 'image-url', label: 'Product image', description: 'Paste a secure https:// image link OR upload one from your device — at least one is required.', type: 'image', required: true, placeholder: 'https://images.unsplash.com/...' },
+      { key: 'highlights', label: 'Key highlights', description: 'One highlight per row. Tick the checkbox for a green check on the page, or untick it for a cross — and type the highlight text next to it. Add or remove rows as needed.', type: 'list-check', placeholder: 'Freeze-dried within hours of harvest\n100% fruit or vegetable — nothing added\nNo added sugar, sulphites or preservatives\nCrunchy straight from the pack, rehydrates in minutes\nBatch-coded and graded before it ships\nLightweight and pantry-stable — no refrigeration' },
     ],
   },
   {
-    label: 'Ingredients & allergens',
-    description: 'Full ingredients list and allergen statement.',
+    label: 'Description Section',
+    description: 'The six tabs beneath the buy box — Description, How to use, Nutrition, Certifications, Why choose and Sourcing. Each field below maps to the tab with the same name on the storefront product page, and the certificate images fill the picture slots inside the certification cards.',
+    icon: 'Sparkles',
+    storefront: 'Tabbed section below the buy box (Description · How to use · Nutrition · Certifications · Why choose · Sourcing)',
     fields: [
-      { key: 'ingredients', label: 'Ingredients & allergens', description: 'Complete ingredients list and allergen information.', type: 'richtext', placeholder: 'e.g. 100% freeze-dried mango. No added sugar, preservatives or colouring.' },
+      { key: 'long-description', label: 'Description (tab)', description: 'The full product story for the Description tab — rich text; separate paragraphs with a blank line.', type: 'richtext', placeholder: 'Freeze-drying removes the water, not the goodness. This product was picked ripe from partner farms across Nepal, frozen within hours of harvest and dried under vacuum so the cell structure — and the crunch, colour and flavour — stay exactly as picked.\n\nUnlike conventional drying, freeze-drying happens at low temperature, which protects delicate vitamins and aromatic compounds...' },
+      { key: 'howto', label: 'How to use (tab)', description: 'Three simple boxes — Usage, Recipes and Storage — matching the How to use tab on the product page. Type each section in its own box; empty boxes are hidden on the page.', type: 'howto-blocks', placeholder: 'Usage: Eat straight from the pack as a crunchy snack, or rehydrate by covering with hot or cold water and waiting 5–10 minutes.\n\nRecipes: Rehydrated pieces fold beautifully into cakes, porridge and smoothie bowls.\n\nStorage: Store in a cool, dry place away from direct sunlight.' },
+      { key: 'nutrition', label: 'Nutrition (tab)', description: 'One nutrient per row — type the nutrient name and its value (e.g. Energy → 347 kcal). The last paragraph box is for the lab-status note shown under the table.', type: 'nutrition-rows', placeholder: 'Energy: [PLACEHOLDER] kcal\nProtein: [PLACEHOLDER] g\nCarbohydrate: [PLACEHOLDER] g\n— of which sugars: [PLACEHOLDER] g\nFibre: [PLACEHOLDER] g\nFat: [PLACEHOLDER] g\n\nFull nutrition panel pending third-party lab data.' },
+      { key: 'certifications', label: 'Certifications (tab)', description: 'Certification names for the Certifications tab — write each certificate on its own line. Every line becomes a certificate card with a default icon or the matching certificate image below.', type: 'textarea', placeholder: 'DFTQC-compliant facility\nThird-party lab tested\nBatch-coded packs\nMade in Nepal' },
+      { key: 'cert-image-1', label: 'Certificate image 1', description: 'Optional photo/badge shown inside the first certificate card (e.g. a scan of the DFTQC certificate). Leave empty to keep the default icon.', type: 'image', placeholder: 'https://.../dftqc-certificate.jpg' },
+      { key: 'cert-image-2', label: 'Certificate image 2', description: 'Optional photo/badge for the second certificate card. Leave empty to keep the default icon.', type: 'image', placeholder: 'https://.../lab-report.jpg' },
+      { key: 'cert-image-3', label: 'Certificate image 3', description: 'Optional photo/badge for the third certificate card. Leave empty to keep the default icon.', type: 'image', placeholder: 'https://.../batch-code.jpg' },
+      { key: 'cert-image-4', label: 'Certificate image 4', description: 'Optional photo/badge for the fourth certificate card. Leave empty to keep the default icon.', type: 'image', placeholder: 'https://.../made-in-nepal.jpg' },
+      { key: 'why', label: 'Why choose (tab)', description: 'One selling point per row. Tick the checkbox for a green check on the page, or untick it for a cross — then type the point next to it. Add or remove rows as needed.', type: 'list-check', placeholder: 'Picked ripe — flavour is locked in at its peak, not ripened in a truck.\nNothing added: no sugar, no sulphites, no colouring, no preservatives.\nUp to [N] months of pantry life with no refrigeration.\nAround 90% lighter than fresh — perfect for treks, travel and lunchboxes.\nBatch-coded packs trace every step from farm gate to shelf.' },
+      { key: 'sourcing', label: 'Sourcing (tab)', description: 'The sourcing story for the Sourcing tab — multi-paragraph; separate each paragraph with a blank line.', type: 'textarea', placeholder: 'This product is grown by our partner farmers in the hills and terai of Nepal, harvested at peak ripeness and delivered to our facility within hours.\n\nWe buy directly from the farms — no middle traders — which keeps quality high and returns fair.' },
     ],
   },
   {
-    label: 'Nutrition',
-    description: 'Nutritional information (per 100g).',
+    label: 'Frequently asked',
+    description: 'The “Frequently asked” accordion beneath the tabs on the product page — each question with its answer.',
+    icon: 'Sparkles',
+    storefront: 'FAQ accordion below the tabs',
     fields: [
-      { key: 'nutrition', label: 'Nutrition (per 100g)', description: 'Nutritional breakdown — energy, carbs, sugar, fibre, protein, fat.', type: 'richtext', placeholder: 'e.g. Energy: 347kcal, Carbs: 82g, Sugar: 67g...' },
+      { key: 'faq', label: 'Frequently asked questions & answers', description: 'One card per question — type the question in the top box and its answer in the box below. Add or remove cards as needed; every card renders as an accordion row on the product page.', type: 'faq-pairs', placeholder: 'Q: Is it 100% fruit or vegetable?\nA: Yes. The ingredient list is one line long — the fruit or vegetable itself.\n\nQ: How do I rehydrate it?\nA: Cover with hot or cold water and wait 5–10 minutes.' },
     ],
   },
   {
-    label: 'Origin & sourcing',
-    description: 'Where the product comes from and how it is sourced.',
+    label: 'Batch traceability',
+    description: 'The “Batch traceability” tear-strip card beside the Add to cart button — each row is its own editable field.',
+    icon: 'Sparkles',
+    storefront: 'Batch traceability card (under Add to cart)',
     fields: [
-      { key: 'origin', label: 'Origin & sourcing', description: 'Sourcing story and origin details.', type: 'richtext', placeholder: 'e.g. Sourced from partner growers in the Terai region of Nepal.' },
+      { key: 'batch-no', label: 'Batch', description: 'The batch number shown on the first row of the traceability card.', type: 'text', placeholder: 'e.g. BATCH-2026-014' },
+      { key: 'trace-source', label: 'Source', description: 'Where the produce comes from (shown on the second row, e.g. “[Region], Nepal”).', type: 'text', placeholder: 'e.g. [Region], Nepal' },
+      { key: 'trace-processed', label: 'Processed', description: 'Processing/packing date shown on the third row.', type: 'text', placeholder: 'e.g. [Date]' },
+      { key: 'trace-quality', label: 'Quality check', description: 'Quality status shown on the fourth row (e.g. “Passed”).', type: 'text', placeholder: 'e.g. Passed' },
     ],
   },
   {
-    label: 'Storage & shelf life',
-    description: 'How to store the product and shelf life after opening.',
+    label: 'Product images',
+    description: 'Up to 8 product images — the main shot is shown large, with the rest as gallery thumbnails. Click "Add image" to add more.',
+    icon: 'Image',
+    storefront: 'Product gallery — mosaic',
     fields: [
-      { key: 'storage', label: 'Storage & shelf life', description: 'Storage instructions and post-opening shelf life.', type: 'richtext', placeholder: 'e.g. Store in a cool, dry place. Reseal after opening.' },
+      { key: 'gallery', label: 'Product gallery', description: 'The hero shot is shown large on the product page; the rest become gallery thumbnails. Add up to 8 images.', type: 'gallery', required: true, placeholder: 'https://images.unsplash.com/...' },
     ],
   },
   {
-    label: 'How to rehydrate',
-    description: 'Step-by-step rehydration instructions.',
+    label: 'You might also like',
+    description: 'Four product cards shown at the bottom of the product page — each with a title and a link to another product. Empty slots are hidden.',
+    icon: 'Heart',
+    storefront: 'Product page — "You might also like" section',
     fields: [
-      { key: 'rehydrate', label: 'How to rehydrate', description: 'Rehydration steps shown on the product page.', type: 'richtext', placeholder: 'e.g. 1. Cover with hot water. 2. Wait 5–10 minutes. 3. Drain and enjoy.' },
+      { key: 'related-cards', label: 'Related product cards', description: 'Up to 4 cards. Type a card title (e.g. "Freeze-Dried Strawberry") and paste the product link (e.g. /product.html?slug=fd-strawberry) for each. Slots left empty are hidden on the storefront.', type: 'related-cards', placeholder: 'Card 1 title: Freeze-Dried Strawberry\nCard 1 link: /product.html?slug=fd-strawberry\n\nCard 2 title: Dehydrated Apple Slices\nCard 2 link: /product.html?slug=dh-apple\n\nCard 3 title: Mango Powder\nCard 3 link: /product.html?slug=pw-mango\n\nCard 4 title: Freeze-Dried Pineapple\nCard 4 link: /product.html?slug=fd-pineapple' },
     ],
   },
 ];
@@ -135,6 +156,18 @@ const KIND_DEFAULTS: Record<ProcessKind, Record<string, string>> = {
   fd: {
     description:
       'Picked ripe from partner farms across Nepal and freeze-dried within hours of harvest — crisp, intense and 100% fruit.',
+    highlights:
+      'Freeze-dried within hours of harvest\n100% fruit or vegetable — nothing added\nNo added sugar, sulphites or preservatives\nCrunchy straight from the pack, rehydrates in minutes\nBatch-coded and graded before it ships\nLightweight and pantry-stable — no refrigeration',
+    howto:
+      'Usage: Eat straight from the pack as a crunchy snack, or rehydrate by covering with hot or cold water and waiting 5–10 minutes. Stir into yoghurt, muesli and batters near the end of preparation.\n\nRecipes: Rehydrated pieces fold beautifully into cakes, porridge and smoothie bowls. Crushed, they make a bright, natural topping for desserts and breakfast bowls.\n\nStorage: Store in a cool, dry place away from direct sunlight. Reseal the pouch after opening and consume within [N] weeks for the best texture.',
+    certifications:
+      'DFTQC-compliant facility\nThird-party lab tested\nBatch-coded packs\nMade in Nepal',
+    why:
+      'Picked ripe — flavour is locked in at its peak, not ripened in a truck.\nNothing added: no sugar, no sulphites, no colouring, no preservatives.\nUp to [N] months of pantry life with no refrigeration.\nAround 90% lighter than fresh — perfect for treks, travel and lunchboxes.\nBatch-coded packs trace every step from farm gate to shelf.',
+    sourcing:
+      'This product is grown by our partner farmers in the hills and terai of Nepal, harvested at peak ripeness and delivered to our facility within hours. Each batch is inspected, graded and freeze-dried on site before packing.\n\nWe buy directly from the farms — no middle traders — which keeps quality high and returns fair. The batch code on your pack identifies the farm cluster and the packing run. See our story page to meet the growers.',
+    faq:
+      'Q: Is it 100% fruit or vegetable?\nA: Yes. The ingredient list is one line long — the fruit or vegetable itself. No added sugar, sulphites, colouring or preservatives.\n\nQ: How do I rehydrate it?\nA: Cover with hot or cold water and wait 5–10 minutes. It also eats straight from the pack as a crunchy snack.\n\nQ: How should I store it?\nA: In a cool, dry place, resealed after opening. No refrigeration needed — the pack is moisture-barrier sealed.\n\nQ: How long does it keep?\nA: Up to [N] months unopened. Once opened, enjoy within [N] weeks for the best crunch.\n\nQ: Do you sell wholesale?\nA: Yes — retailers and distributors can request tiered pricing and sample kits on our wholesale page.',
     'long-description':
       'Freeze-drying removes the water, not the goodness. This product was picked ripe from partner farms across Nepal, frozen within hours of harvest and dried under vacuum so the cell structure — and the crunch, colour and flavour — stay exactly as picked.\n\nUnlike conventional drying, freeze-drying happens at low temperature, which protects delicate vitamins and aromatic compounds. Open the pack and you get the harvest itself: crisp, intense and ready in seconds.\n\nEat it straight from the pouch as a snack, toss it into trail mixes and muesli, or rehydrate with a splash of water for baking, smoothies and plating. Every pack is batch-coded so you can trace it back to the farm and the packing date.',
     ingredients:
@@ -151,6 +184,18 @@ const KIND_DEFAULTS: Record<ProcessKind, Record<string, string>> = {
   dh: {
     description:
       'Slow-dried at low temperature to concentrate natural sweetness — whole fruit or vegetable, nothing added.',
+    highlights:
+      'Slow-dried at low temperature\nWhole fruit or vegetable — nothing added\nNo oil dips, sulphur or refined sugar\nConcentrated, caramelised natural sweetness\nBatch-coded and graded before it ships\nPantry life measured in months',
+    howto:
+      'Usage: Eat straight from the pouch, or soak in warm water for 15–30 minutes to rehydrate for cooking. Add to trail mixes, baking and morning porridge.\n\nRecipes: Simmer rehydrated pieces into pilafs, curries and compotes, or fold chopped pieces into breads, cookies and granola bars.\n\nStorage: Store in a cool, dry place away from direct sunlight. Reseal after opening; refrigerate in humid weather to keep the texture chewy, not sticky.',
+    certifications:
+      'DFTQC-compliant facility\nThird-party lab tested\nBatch-coded packs\nMade in Nepal',
+    why:
+      'Slow-dried at low temperature — colour and vitamins survive the process.\nNo oil dips, no sulphur, no refined sugar — just the harvest.\nMonths of pantry life without refrigeration.\nConcentrated flavour means a little goes a long way in cooking.\nBatch-coded packs trace every step from farm gate to shelf.',
+    sourcing:
+      'This product is grown by partner farmers across Nepal and dried at our facility in small, dated runs. Fruit is inspected and hand-sorted before it goes into the dryers.\n\nWe buy directly from the farms — no middle traders — which keeps quality high and returns fair. The batch code on your pack identifies the farm cluster and the drying run. See our story page to meet the growers.',
+    faq:
+      'Q: Is it 100% fruit or vegetable?\nA: Yes — with nothing added. No oil dips, no sulphur, no refined sugar.\n\nQ: How do I rehydrate it?\nA: Soak in warm water for 15–30 minutes, or simmer directly into curries, pilafs and compotes.\n\nQ: How should I store it?\nA: Cool and dry, resealed after opening. In humid weather, refrigerate to keep the texture chewy rather than sticky.\n\nQ: How long does it keep?\nA: Months from the packing date when stored sealed — the batch code on the pack shows when it was dried.\n\nQ: Do you sell wholesale?\nA: Yes — retailers and distributors can request tiered pricing and sample kits on our wholesale page.',
     'long-description':
       'Dehydration is the patient way to keep food. Gentle, low heat draws the water out slowly, concentrating natural sugars and flavour into a chewy, intense result with a pantry life measured in months.\n\nWe dry at controlled temperatures to protect colour and vitamins, and add nothing along the way — no oil dips, no sulphur, no refined sugar. What you taste is the fruit or vegetable itself, just concentrated.',
     ingredients:
@@ -167,6 +212,18 @@ const KIND_DEFAULTS: Record<ProcessKind, Record<string, string>> = {
   pw: {
     description:
       'Single-origin plants from the mid-hills of Nepal, milled slow and cool in small batches — no fillers, no added salt.',
+    highlights:
+      'Stone-milled from whole leaves, roots and berries\nShade-dried or sun-dried before milling\nSingle origin — traceable to the farm cluster\nNo fillers, anti-caking agents or added salt\nSmall-batch milling keeps aroma intact\nBatch-coded and lab-checked [PLACEHOLDER]',
+    howto:
+      'Usage: Start with ½–1 teaspoon per serving. Stir into smoothies, dals, soups and warm water, or blend into marinades, rubs and salad dressings.\n\nRecipes: Whisk into batter for rotis and pancakes, bloom in hot ghee for tempering, or shake with honey and lemon for a quick tonic.\n\nStorage: Keep the jar tightly closed in a cool, dry place. Use a dry spoon every time — moisture is the enemy of powder. Best within [N] months of opening.',
+    certifications:
+      'DFTQC-compliant facility\nThird-party lab tested\nBatch-coded packs\nMade in Nepal',
+    why:
+      'Whole-plant milling — nothing isolated, nothing synthetic.\nNo fillers, flow agents or added salt — the label is one line long.\nSmall-batch milling keeps the aroma that large runs burn off.\nSingle origin and traceable to the farm cluster on every jar.',
+    sourcing:
+      'Leaves, roots and berries are bought directly from partner growers across the mid-hills of Nepal, dried at the facility and milled in small, dated batches.\n\nEach lot is inspected before milling and the jar is batch-coded to the grower cluster. See our story page to meet the growers behind the harvest.',
+    faq:
+      'Q: Is it pure, or a blend?\nA: Single plant, single origin. No fillers, flow agents or added salt — the ingredient list is one line long.\n\nQ: How much should I use?\nA: Start with ½–1 teaspoon per serving and adjust to taste.\n\nQ: How should I store it?\nA: Tightly closed in a cool, dry place, always with a dry spoon. Moisture clumps powder.\n\nQ: How long does it keep?\nA: Best within [N] months of opening. The jar is batch-coded with the milling date.\n\nQ: Do you sell wholesale?\nA: Yes — retailers and distributors can request tiered pricing and sample kits on our wholesale page.',
     'long-description':
       'Nothing is lost between the farm and your kitchen. Milling fast and hot burns off aroma; we do it slow and cool, in small runs, and pack immediately into resealable jars.\n\nNo fillers, no anti-caking agents, no added salt — just the plant, milled. One spoon goes a long way: stir into smoothies, dals and soups, or blend into marinades and rubs. The batch code on every jar traces it back to the farm cluster and the milling run.',
     ingredients:

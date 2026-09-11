@@ -7,7 +7,7 @@
 // (`/api`), and next.config.js rewrites those calls to the backend, so
 // local dev needs zero env files and no CORS.
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   params?: Record<string, string | number | boolean | undefined>;
