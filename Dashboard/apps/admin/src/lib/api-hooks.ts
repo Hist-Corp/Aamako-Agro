@@ -938,7 +938,13 @@ export function useSupportTickets(params?: SupportListParams) {
   return useQuery({
     queryKey: queryKeys.supportTickets(params),
     queryFn: () => withFallback(
-      () => apiClient.get<SupportTicket[]>('/admin/support/tickets', { params: params as Record<string, string> }),
+      async () => {
+        const res = await apiClient.get<any>('/admin/support/tickets', { params: params as Record<string, string> });
+        // Backend returns a paginated envelope { data, total, page, limit, totalPages, agents }
+        // — extract the array the dashboard expects.
+        if (Array.isArray(res)) return res as SupportTicket[];
+        return (res?.data ?? []) as SupportTicket[];
+      },
       MOCK_SUPPORT_TICKETS,
     ),
   });
