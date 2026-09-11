@@ -41,3 +41,13 @@ Backend/uploads/
 
 # QA harness screenshots (results/*.json and REPORT.md stay tracked)
 qa/artifacts/
+
+dev-output.log
+dev-error.log
+dash-sync.log
+store-sync.log
+cms-sync-report.json
+cms-gap-report.txt
+db-test.js
+login-test.json
+test-auth-fix.js

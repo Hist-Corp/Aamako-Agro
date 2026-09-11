@@ -5,6 +5,7 @@ import { Providers } from '@/config/providers';
 export const metadata: Metadata = {
   title: 'आमाको एग्रो — Admin Dashboard',
   description: 'Internal operations dashboard for आमाको एग्रो',
+  robots: { index: false, follow: false },
 };
 
 // Runs synchronously before first paint: paints the document AND body

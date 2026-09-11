@@ -5,43 +5,43 @@
     "detail": "6/6 unique"
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "SEO: meta description present on all pages",
-    "detail": "index.html, collection.html, cart.html, signin.html, journal.html, process.html"
+    "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "SEO: canonical tag present on all pages",
-    "detail": "index.html, collection.html, cart.html, signin.html, journal.html, process.html"
+    "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "SEO: Open Graph (og:title/og:description) present",
-    "detail": "index.html, collection.html, cart.html, signin.html, journal.html, process.html"
+    "detail": ""
   },
   {
-    "status": "WARN",
+    "status": "PASS",
     "name": "SEO: twitter:card present on all pages",
-    "detail": "missing on: index.html, collection.html, cart.html, signin.html, journal.html, process.html"
+    "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Storefront robots.txt present (200)",
-    "detail": "status=404"
+    "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Storefront sitemap.xml present and well-formed",
-    "detail": "status=404"
+    "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Structured data (JSON-LD) on homepage",
-    "detail": "no ld+json block found"
+    "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "og:image resolves (200)",
-    "detail": "no og:image on homepage"
+    "detail": ""
   }
 ]

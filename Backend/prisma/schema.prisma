@@ -626,3 +626,18 @@ model SupportMessage {
   @@map("support_messages")
 }
 
+// ---------- Newsletter subscribers (customer marketing) ----------
+
+model Subscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  source    String   @default("homepage") // which page/widget they subscribed from
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscribers")
+}
+

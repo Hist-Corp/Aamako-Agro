@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /signin.html
+Disallow: /account.html
+Disallow: /cart.html
+
+Sitemap: http://localhost:8080/sitemap.xml

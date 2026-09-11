@@ -1636,3 +1636,23 @@ body.is-signed-out .cart-btn-wrap{display:none;}
   .order-card-head{flex-direction:column;}
   .page-header{padding:var(--space-6) 0 var(--space-5);}
 }
+
+/* ---------- WCAG 2.5.8 tap target fixes (mobile) ---------- */
+@media (max-width: 900px){
+  /* Hamburger button: 40x40 ? 44x44 */
+  .hamburger{ width:44px; height:44px; }
+  /* Logo: ensure min 44px height */
+  .logo img{ height:44px; }
+  /* Nav links in mobile drawer: min 44px height */
+  .mobile-drawer a{ min-height:44px; display:flex; align-items:center; padding:12px 0; }
+  /* Product name links: min 44px height */
+  .prod-name, .fp-name, .fpcard .fp-name{ min-height:44px; display:flex; align-items:center; }
+  /* Link arrows: min 44px height */
+  .link-arrow{ min-height:44px; display:inline-flex; align-items:center; }
+  /* Back button: min 44px height */
+  .omback-btn{ min-height:44px; }
+  /* Category filter pills: min 44px height */
+  .omcoll-cats a, .omcoll-sidecats a{ min-height:44px; display:inline-flex; align-items:center; }
+  /* Add to cart button: min 44px height */
+  .add-btn, .fp-btn{ min-height:44px; }
+}

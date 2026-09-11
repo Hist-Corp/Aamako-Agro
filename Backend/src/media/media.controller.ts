@@ -9,6 +9,8 @@ import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ImageCompressionService } from './image-compression.service';
 import { MediaService, MediaPayload } from './media.service';
+import { CacheService } from '../common/cache.service';
+import { CacheNamespaces } from '../common/cache.namespaces';
 
 export class CreateMediaDto implements MediaPayload {
   @ApiProperty() @IsString() @MinLength(1) name!: string;
@@ -48,6 +50,7 @@ export class MediaController {
   constructor(
     private media: MediaService,
     private compressor: ImageCompressionService,
+    private cache: CacheService,
   ) {}
   /** Editors only. Content Manager may view the whole library. */
   @Roles(Role.CONTENT_MANAGER, Role.STAFF_MANAGER, Role.STAFF_ADMIN, Role.SUPER_ADMIN)
@@ -113,6 +116,9 @@ export class MediaController {
     const optimized = await this.compressor.compress(file.buffer, file.mimetype);
     const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${optimized.extension}`;
     fs.writeFileSync(path.join(uploadsDir, filename), optimized.buffer);
+
+    // A new published asset appeared on the public feed — drop the cached copy.
+    this.cache.bump(CacheNamespaces.MEDIA);
 
     const baseUrl =
       process.env.PUBLIC_API_URL ?? `http://localhost:${process.env.PORT ?? 3000}/api`;

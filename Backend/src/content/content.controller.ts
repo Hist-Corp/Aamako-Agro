@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, Get, Param, Patch, Post, Put,
+  Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
@@ -18,6 +18,8 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CacheService } from '../common/cache.service';
+import { CacheNamespaces, CacheTtls } from '../common/cache.namespaces';
 
 class UpsertContentDto {
   @ApiProperty() @IsString() @MinLength(1) title!: string;
@@ -49,6 +51,18 @@ class CreateContentDto extends UpsertContentDto {
 
 class ReviewRevisionDto {
   @ApiPropertyOptional() @IsOptional() @IsString() reviewNote?: string;
+}
+
+/** Newsletter subscription DTO — public, no auth required. */
+class SubscribeDto {
+  @ApiProperty({ format: 'email' }) @IsString() @Matches(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
+    message: 'email must be a valid email address',
+  })
+  email!: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(100) firstName?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(100) lastName?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(50) source?: string;
 }
 
 /** Who may propose/edit content. */
@@ -83,6 +97,7 @@ export class ContentController {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private cache: CacheService,
   ) {}
 
   /** Notify every reviewer role (Manager / Admin / Super Admin) that a
@@ -105,24 +120,65 @@ export class ContentController {
       });
   }
 
-  /** PUBLIC: live website content only — pending revisions are never exposed. */
+  /** Invalidate the cached public live-content feed after any live change. */
+  private invalidateLiveContent(): void {
+    this.cache.bump(CacheNamespaces.CONTENT);
+  }
+
+  /** PUBLIC: live website content only — pending revisions are never exposed.
+   *
+   *  Real-time sync contract with the storefront (Frontend/js/content.js):
+   *  - Emits an ETag derived from the newest updatedAt + row count so the
+   *    storefront's 10s poller can use If-None-Match and skip re-hydration
+   *    when nothing changed (304 / unchanged payload).
+   *  - product-template.<slug>.* items are included in the same feed so
+   *    product-page edits go live through the identical instant path as
+   *    page sections (no separate product-content channel needed). The
+   *    editor (Dashboard → Product Templates) and the storefront product
+   *    page (Frontend/product.html) share ONE key contract:
+   *    product-template.<slug>.<field> (see productFieldKey() in
+   *    Dashboard/apps/admin/src/config/product-templates.ts) — a field added
+   *    to the template config is picked up by the storefront with zero
+   *    storefront changes, and removing a template field deletes its
+   *    ContentItem (DELETE /content/:key) which the storefront treats as
+   *    "never customized" (falls back to the catalog value).
+   */
   @Public()
   @Get()
-  live() {
-    return this.prisma.contentItem.findMany({
-      where: { isPublished: true },
-      select: {
-        key: true,
-        title: true,
-        shortDescription: true,
-        longDescription: true,
-        category: true,
-        body: true,
-        isVisible: true,
-        updatedAt: true,
-      },
-      orderBy: { key: 'asc' },
-    });
+  async live(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    const items = await this.cache.getOrSet(CacheNamespaces.CONTENT, 'all', CacheTtls.CONTENT_SECONDS, () =>
+      this.prisma.contentItem.findMany({
+        where: { isPublished: true },
+        select: {
+          key: true,
+          title: true,
+          shortDescription: true,
+          longDescription: true,
+          category: true,
+          body: true,
+          isVisible: true,
+          updatedAt: true,
+        },
+        orderBy: { key: 'asc' },
+      }),
+    );
+    // ETag = newest updatedAt + row count. Cheap, stable, and sufficient for
+    // the storefront poller to detect "anything changed" without a hash pass.
+    const rows = items as Array<{ updatedAt?: Date | string }>;
+    let newest = 0;
+    for (const it of rows) {
+      const t = it?.updatedAt ? new Date(it.updatedAt).getTime() : 0;
+      if (Number.isFinite(t) && t > newest) newest = t;
+    }
+    const etag = `"cms-${newest.toString(36)}-${rows.length}"`;
+    res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'public, max-age=10');
+    const ifNoneMatch = req?.headers?.['if-none-match'];
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      res.status(304);
+      return undefined;
+    }
+    return items;
   }
 
   /** Editor listing — includes UNPUBLISHED items (dashboard management view). */
@@ -226,6 +282,8 @@ export class ContentController {
       this.notifyManagersOfProposal('created', item.key, item.title);
     }
 
+    if (canPublishDirectly) this.invalidateLiveContent();
+
     return {
       id: item.id,
       key: item.key,
@@ -304,6 +362,8 @@ export class ContentController {
       this.notifyManagersOfProposal('updated', item.key, dto.title.trim());
     }
 
+    if (canPublishDirectly) this.invalidateLiveContent();
+
     return {
       revisionId: revision.id,
       status: revision.status,
@@ -355,6 +415,7 @@ export class ContentController {
         },
       }),
     ]);
+    this.invalidateLiveContent();
     return { success: true, key: applied.key };
   }
 
@@ -390,6 +451,7 @@ export class ContentController {
     const item = await this.prisma.contentItem.findUnique({ where: { key } });
     if (!item) throw new NotFoundException('Content item not found');
     await this.prisma.contentItem.update({ where: { key }, data: { isPublished: true } });
+    this.invalidateLiveContent();
     return { success: true };
   }
 
@@ -400,6 +462,7 @@ export class ContentController {
     const item = await this.prisma.contentItem.findUnique({ where: { key } });
     if (!item) throw new NotFoundException('Content item not found');
     await this.prisma.contentItem.update({ where: { key }, data: { isPublished: false } });
+    this.invalidateLiveContent();
     return { success: true };
   }
 
@@ -438,6 +501,7 @@ export class ContentController {
           updatedById: actor!.id,
         },
       });
+      this.invalidateLiveContent();
       return { success: true, key, isVisible: item.isVisible, created: true };
     }
 
@@ -446,6 +510,7 @@ export class ContentController {
       where: { key },
       data: { isVisible: dto.isVisible, updatedById: actor!.id },
     });
+    this.invalidateLiveContent();
     return { success: true, key, isVisible: dto.isVisible };
   }
 
@@ -461,7 +526,57 @@ export class ContentController {
     if (!item) throw new NotFoundException('Content item not found');
     await this.prisma.contentRevision.deleteMany({ where: { contentItem: { key } } });
     await this.prisma.contentItem.delete({ where: { key } });
+    this.invalidateLiveContent();
     return { success: true, key };
+  }
+
+  /** Public newsletter subscription — no auth required.
+   *  Canonical subscribe path is POST /newsletter/subscribe (NewsletterModule).
+   *  This legacy alias (POST /content/subscribe) is kept for older storefront
+   *  bundles and delegates to the same table with identical idempotent
+   *  semantics. New clients should use /newsletter/subscribe. */
+  @Public()
+  @Post('subscribe')
+  async subscribe(@Body() dto: SubscribeDto) {
+    const existing = await (this.prisma as any).subscriber.findUnique({
+      where: { email: dto.email.toLowerCase() },
+    });
+    if (existing) {
+      return {
+        success: true,
+        subscribed: true,
+        message: 'You are already subscribed to our newsletter.',
+        subscriberId: existing.id,
+      };
+    }
+    const subscriber = await (this.prisma as any).subscriber.create({
+      data: {
+        email: dto.email.toLowerCase(),
+        firstName: dto.firstName?.trim() || null,
+        lastName: dto.lastName?.trim() || null,
+        source: dto.source || 'homepage',
+        consented: true,
+      },
+    });
+    return {
+      success: true,
+      subscribed: true,
+      message: 'You are now subscribed — thank you!',
+      subscriberId: subscriber.id,
+    };
+  }
+
+  /** Check whether an email is already subscribed (public). */
+  @Public()
+  @Get('subscribed/:email')
+  async checkSubscribed(@Param('email') email: string) {
+    const existing = await (this.prisma as any).subscriber.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+    return {
+      subscribed: !!existing,
+      subscriberId: existing?.id ?? null,
+    };
   }
 }
 

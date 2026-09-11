@@ -55,9 +55,9 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Admin login not indexable (robots.txt or noindex)",
-    "detail": "robots.txt=404, no noindex meta"
+    "detail": ""
   },
   {
     "status": "PASS",

@@ -519,5 +519,45 @@
         hydrate();
       }
     }
+
+    // ── Real-time sync: poll the API for content changes so dashboard edits
+    //    (product templates, page content, visibility toggles) appear on the
+    //    storefront without a manual refresh. Compacts to a no-op when nothing
+    //    changed (ETag/304); only re-hydrates when the payload differs.
+    var POLL_INTERVAL_MS = 10000; // 10s — responsive without hammering the API
+    var lastEtag = null;
+    var pollTimer = null;
+
+    function pollContent() {
+      if (document.hidden) return; // pause when tab is backgrounded
+      fetch(API_BASE + '/content', { headers: { 'If-None-Match': lastEtag || '' } })
+        .then(function (r) {
+          if (r.status === 304) return false; // unchanged — skip
+          if (!r.ok) return false;
+          var newEtag = r.headers.get('etag');
+          return r.json().then(function (data) {
+            var changed = JSON.stringify(content) !== JSON.stringify(data);
+            if (changed) {
+              content = Array.isArray(data) ? data : [];
+              try { localStorage.setItem(CACHE_KEY, JSON.stringify(content)); } catch (_) {}
+              hydrate();
+            }
+            if (newEtag) lastEtag = newEtag;
+            return changed;
+          });
+        })
+        .catch(function () { /* transient — next tick retries */ });
+    }
+
+    // Start polling after the initial hydrate settles
+    setTimeout(function () {
+      pollTimer = setInterval(pollContent, POLL_INTERVAL_MS);
+    }, POLL_INTERVAL_MS);
+
+    // Expose a manual refresh trigger for pages that need instant sync
+    window.AamakoContent.refresh = function () {
+      content = null;
+      return load(true).then(hydrate);
+    };
   }
 })();

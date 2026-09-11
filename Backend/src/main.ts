@@ -9,6 +9,7 @@ import * as path from 'path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { gzipMiddleware } from './common/gzip.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,6 +22,10 @@ async function bootstrap() {
       referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     }),
   );
+
+  // Gzip-compress compressible API responses (text/JSON >= 1 KB) when the
+  // client advertises Accept-Encoding: gzip. Set DISABLE_GZIP=1 to opt out.
+  app.use(gzipMiddleware);
 
   // Behind Render's (and typical reverse-) proxy, the request IP is only
   // correct if the first hop is trusted. This keeps per-IP rate limiting and

@@ -1,13 +1,13 @@
 [
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Load time OK: storefront index",
-    "detail": "8504ms (>5s)"
+    "detail": "2489ms (DCL=847ms FCP~972ms)"
   },
   {
-    "status": "WARN",
+    "status": "PASS",
     "name": "Page weight: storefront index",
-    "detail": "4333 KB across 47 requests (heavy >3MB)"
+    "detail": "1558 KB across 43 requests"
   },
   {
     "status": "PASS",
@@ -17,7 +17,7 @@
   {
     "status": "FAIL",
     "name": "No images >2x rendered size: storefront index",
-    "detail": "logo.png nat=2913 rendered=50 | Freeze-Dried_Mango_as_a_Natural_Flavor_cubes_and_b nat=1600 rendered=175 | power%20fruits%20packaging.jpeg nat=500 rendered=175 | 1788801999342-612581aa9a67.jpg nat=590 rendered=175"
+    "detail": "photo-1464965911861-746a04b4bca6?w=800&q=80 nat=800 rendered=268 | photo-1619566636858-adf3ef46400b?w=800&q=80 nat=800 rendered=268"
   },
   {
     "status": "PASS",
@@ -27,12 +27,12 @@
   {
     "status": "PASS",
     "name": "Load time OK: storefront collection",
-    "detail": "872ms (DCL=106ms FCP~96ms)"
+    "detail": "1116ms (DCL=272ms FCP~228ms)"
   },
   {
     "status": "PASS",
     "name": "Page weight: storefront collection",
-    "detail": "1060 KB across 22 requests"
+    "detail": "762 KB across 30 requests"
   },
   {
     "status": "PASS",
@@ -42,7 +42,7 @@
   {
     "status": "FAIL",
     "name": "No images >2x rendered size: storefront collection",
-    "detail": "logo.png nat=2913 rendered=50 | photo-1532336414038-cf19250c5757?w=800&q=80 nat=800 rendered=277 | photo-1532336414038-cf19250c5757?w=800&q=80 nat=800 rendered=277 | photo-1532336414038-cf19250c5757?w=800&q=80 nat=800 rendered=277"
+    "detail": "photo-1532336414038-cf19250c5757?w=800&q=80 nat=800 rendered=277 | photo-1615485290382-441e4d049cb5?w=800&q=80 nat=800 rendered=277 | photo-1490474418585-ba9bad8fd0ea?w=800&q=80 nat=800 rendered=277 | photo-1550828520-4cb496926fc9?w=800&q=80 nat=800 rendered=277"
   },
   {
     "status": "PASS",
@@ -52,12 +52,12 @@
   {
     "status": "PASS",
     "name": "Load time OK: dashboard login",
-    "detail": "720ms (DCL=25ms FCP~96ms)"
+    "detail": "998ms (DCL=116ms FCP~372ms)"
   },
   {
     "status": "PASS",
     "name": "Page weight: dashboard login",
-    "detail": "245 KB across 10 requests"
+    "detail": "26 KB across 10 requests"
   },
   {
     "status": "PASS",
@@ -65,13 +65,13 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "No images >2x rendered size: dashboard login",
-    "detail": "logo-mark.png nat=1198 rendered=520 | logo-mark.png nat=1198 rendered=340 | logo.png nat=2913 rendered=96"
+    "detail": "3 imgs checked"
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "All images have alt text: dashboard login",
-    "detail": "logo-mark.png | logo-mark.png"
+    "detail": ""
   }
 ]

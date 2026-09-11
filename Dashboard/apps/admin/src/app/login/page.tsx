@@ -73,14 +73,12 @@ export default function LoginPage() {
       {/* Brand watermark — the logo butterfly, echoed large and faint */}
       <img
         src="/logo-mark.png"
-        alt=""
-        aria-hidden="true"
+        alt="Aama ko Agro logo watermark"
         className="absolute -right-28 -bottom-28 w-[520px] max-w-none opacity-[0.08] pointer-events-none select-none"
       />
       <img
         src="/logo-mark.png"
-        alt=""
-        aria-hidden="true"
+        alt="Aama ko Agro logo watermark"
         className="absolute -left-24 -top-24 w-[340px] max-w-none opacity-[0.06] pointer-events-none select-none"
       />
 
@@ -124,7 +122,7 @@ export default function LoginPage() {
                         // Prefill the demo email for this account (still editable)
                         setEmail(role.email);
                       }}
-                      className={`flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all text-left ${
+                      className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left min-h-[44px] ${
                         selectedRole === role.id
                           ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-500/20'
                           : 'border-surface-200 hover:border-surface-300 hover:bg-surface-50'
@@ -165,7 +163,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-2 top-9 flex h-6 w-6 items-center justify-center rounded-md text-surface-400 transition-colors hover:text-surface-600"
+                className="absolute right-2 top-7 flex h-11 w-11 items-center justify-center rounded-md text-surface-400 transition-colors hover:text-surface-600"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -190,7 +188,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            <Button type="submit" isLoading={isLoading} className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5">
+            <Button type="submit" isLoading={isLoading} className="w-full bg-green-800 hover:bg-green-900 text-white font-semibold py-3 min-h-[44px]">
               Sign in as {selectedRoleObj?.label ?? 'Super Admin'}
             </Button>
 

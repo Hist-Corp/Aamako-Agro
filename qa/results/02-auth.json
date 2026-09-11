@@ -2,7 +2,7 @@
   {
     "status": "PASS",
     "name": "POST /auth/register creates account",
-    "detail": "email=qa-1789102302100@aamako.test"
+    "detail": "email=qa-1789117622450@aamako.test"
   },
   {
     "status": "PASS",
@@ -30,9 +30,9 @@
     "detail": "status=403"
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Customer account blocked from dashboard login (surface separation)",
-    "detail": "status=200"
+    "detail": "status=403"
   },
   {
     "status": "PASS",

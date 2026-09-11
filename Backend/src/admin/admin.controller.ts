@@ -12,6 +12,8 @@ import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../common/cache.service';
+import { CacheNamespaces } from '../common/cache.namespaces';
 import {
   CreatePricingRuleDto,
   UpdateInventoryDto,

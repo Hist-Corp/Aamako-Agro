@@ -5,6 +5,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Collection — Aama ko Agro</title>
+<meta name="description" content="Browse our collection of freeze-dried fruits, vegetables and Himalayan spices. Real food, kept honest.">
+<link rel="canonical" href="http://localhost:8080/collection.html">
+<meta property="og:title" content="Collection — Aama ko Agro">
+<meta property="og:description" content="Browse our collection of freeze-dried fruits, vegetables and Himalayan spices.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="http://localhost:8080/collection.html">
+<meta property="og:image" content="http://localhost:8080/logo.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="styles.css">
 <script>
 /* PRE-PAINT NAV GUARD — runs synchronously while the <head> is parsed, before
@@ -391,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function(){
     var slug=encodeURIComponent(t.slug);
     var price=t.templatePrice||0;
     return '<div class="fpcard">'
-      +'<a class="fp-img" href="product.html?slug='+slug+'">'
+      +'<a class="fp-img" href="product.html?slug='+slug+'" aria-label="'+esc(t.name)+'">'
       +'<span class="fp-badge" style="display:none"></span>'
       +'<img src="'+esc(t.imageUrl||'')+'" alt="'+esc(t.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
       +'</a>'
@@ -419,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function(){
       ?'<button type="button" class="fp-btn fp-oos" disabled>Out of stock</button>'
       :'<button type="button" class="fp-btn fp-add" data-id="'+esc(v.id)+'" data-name="'+esc(p.name)+'" data-meta="'+esc(v.name)+'" data-price="'+price+'">Add</button>';
     return '<div class="fpcard">'
-      +'<a class="fp-img" href="product.html?slug='+slug+'">'
+      +'<a class="fp-img" href="product.html?slug='+slug+'" aria-label="'+esc(p.name)+'">'
       +(oos?'<span class="fp-badge oos">Sold out</span>':'<span class="fp-badge" style="display:none"></span>')
       +'<img src="'+esc(p.imageUrl||'')+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
       +'</a>'

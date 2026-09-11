@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CacheService } from '../common/cache.service';
+import { CacheNamespaces, CacheTtls } from '../common/cache.namespaces';
 import {
   CreateCategoryDto,
   CreateProductDto,
@@ -15,7 +17,15 @@ export class CatalogService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private cache: CacheService,
   ) {}
+
+  /** Invalidate every cached catalog read (products, detail, categories). */
+  private invalidateCatalogCache(): void {
+    this.cache.bump(CacheNamespaces.PRODUCTS);
+    this.cache.bump(CacheNamespaces.PRODUCT);
+    this.cache.bump(CacheNamespaces.CATEGORIES);
+  }
 
   async list(q: ListProductsQueryDto) {
     const where = {
@@ -27,35 +37,45 @@ export class CatalogService {
         ? { name: { contains: q.search, mode: 'insensitive' as const } }
         : {}),
     };
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.product.findMany({
-        where,
+    const page = q.page ?? 1;
+    const limit = q.limit ?? 20;
+    // Cache key is the full query shape so pagination/search/category variants
+    // never collide. TTL is short and write-through invalidation (`bump`) keeps
+    // it fresh after any catalog change.
+    const cacheKey = JSON.stringify({ categorySlug: q.categorySlug, search: q.search, page, limit });
+    return this.cache.getOrSet(CacheNamespaces.PRODUCTS, cacheKey, CacheTtls.PRODUCTS_SECONDS, async () => {
+      const [items, total] = await this.prisma.$transaction([
+        this.prisma.product.findMany({
+          where,
+          include: {
+            category: true,
+            variants: { where: { isActive: true }, include: { inventory: true } },
+          },
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.product.count({ where }),
+      ]);
+      return { items, total, page, limit };
+    });
+  }
+
+  async getByIdOrSlug(idOrSlug: string) {
+    return this.cache.getOrSet(CacheNamespaces.PRODUCT, idOrSlug, CacheTtls.PRODUCT_SECONDS, async () => {
+      const product = await this.prisma.product.findFirst({
+        where: {
+          OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+          isPublished: true,
+        },
         include: {
           category: true,
           variants: { where: { isActive: true }, include: { inventory: true } },
         },
-        skip: ((q.page ?? 1) - 1) * (q.limit ?? 20),
-        take: q.limit ?? 20,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.product.count({ where }),
-    ]);
-    return { items, total, page: q.page ?? 1, limit: q.limit ?? 20 };
-  }
-
-  async getByIdOrSlug(idOrSlug: string) {
-    const product = await this.prisma.product.findFirst({
-      where: {
-        OR: [{ id: idOrSlug }, { slug: idOrSlug }],
-        isPublished: true,
-      },
-      include: {
-        category: true,
-        variants: { where: { isActive: true }, include: { inventory: true } },
-      },
+      });
+      if (!product) throw new NotFoundException('Product not found');
+      return product;
     });
-    if (!product) throw new NotFoundException('Product not found');
-    return product;
   }
 
   async create(dto: CreateProductDto) {
@@ -87,20 +107,25 @@ export class CatalogService {
       actionUrl: '/products',
     }).catch(() => undefined);
 
+    this.invalidateCatalogCache();
     return created;
   }
 
   async update(id: string, dto: UpdateProductDto) {
     await this.ensure(id);
-    return this.prisma.product.update({ where: { id }, data: dto });
+    const updated = await this.prisma.product.update({ where: { id }, data: dto });
+    this.invalidateCatalogCache();
+    return updated;
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     // Soft-delete via unpublish to preserve order history integrity.
-    return this.prisma.product.update({
+    const removed = await this.prisma.product.update({
       where: { id },
       data: { isPublished: false },
     });
+    this.invalidateCatalogCache();
+    return removed;
   }
 
   async addVariant(productId: string, dto: CreateVariantDto) {
@@ -118,14 +143,17 @@ export class CatalogService {
       message: `"${variant.name}" (${dto.sku}) was added to "${product.name}". Review and publish it to the website.`,
       actionUrl: '/products',
     }).catch(() => undefined);
+    this.invalidateCatalogCache();
     return variant;
   }
 
   listCategories() {
-    return this.prisma.category.findMany({
-      orderBy: { sortOrder: 'asc' },
-      include: { _count: { select: { products: true } } },
-    });
+    return this.cache.getOrSet(CacheNamespaces.CATEGORIES, 'all', CacheTtls.CATEGORIES_SECONDS, () =>
+      this.prisma.category.findMany({
+        orderBy: { sortOrder: 'asc' },
+        include: { _count: { select: { products: true } } },
+      }),
+    );
   }
 
   /** Rename a category — the display name only; the slug (and therefore all
@@ -133,7 +161,9 @@ export class CatalogService {
   async updateCategory(id: string, dto: UpdateCategoryDto) {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (!category) throw new NotFoundException('Category not found');
-    return this.prisma.category.update({ where: { id }, data: dto });
+    const updated = await this.prisma.category.update({ where: { id }, data: dto });
+    this.invalidateCatalogCache();
+    return updated;
   }
 
   /** Create a new product category page. The template (collection.html) is
@@ -150,9 +180,11 @@ export class CatalogService {
         .replace(/^-+|-+$/g, '');
     if (!slug) throw new ConflictException('Could not derive a URL slug from that name — provide a slug.');
     try {
-      return await this.prisma.category.create({
+      const created = await this.prisma.category.create({
         data: { name: dto.name.trim(), slug },
       });
+      this.invalidateCatalogCache();
+      return created;
     } catch {
       // P2002 — unique constraint on name or slug
       throw new ConflictException(

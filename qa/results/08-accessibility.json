@@ -5,10 +5,9 @@
     "detail": "clean"
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "A11y storefront /collection.html: no critical/serious WCAG 2.1 A/AA violations",
-    "detail": "serious: link-name (5 nodes)",
-    "evidence": "artifacts/08-axe-storefront-collection-html.png"
+    "detail": "clean"
   },
   {
     "status": "PASS",
@@ -21,10 +20,9 @@
     "detail": "clean"
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "A11y dashboard /login: no critical/serious WCAG 2.1 A/AA violations",
-    "detail": "serious: color-contrast (1 nodes)",
-    "evidence": "artifacts/08-axe-dashboard-login.png"
+    "detail": "clean"
   },
   {
     "status": "PASS",

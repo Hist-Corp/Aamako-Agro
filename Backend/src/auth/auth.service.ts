@@ -21,6 +21,16 @@ const STOREFRONT_ALLOWED_ROLES: Role[] = [
   Role.WHOLESALE_CUSTOMER,
 ];
 
+/** Roles allowed to sign in through the admin dashboard. */
+const DASHBOARD_ALLOWED_ROLES: Role[] = [
+  Role.STAFF_SALES,
+  Role.CONTENT_MANAGER,
+  Role.STAFF_SUPPORT,
+  Role.STAFF_MANAGER,
+  Role.STAFF_ADMIN,
+  Role.SUPER_ADMIN,
+];
+
 /** Google public-key endpoint (JWKS) for ID-token signature verification. */
 const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 const GOOGLE_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com']);
@@ -168,6 +178,15 @@ export class AuthService {
     if (dto.scope === 'storefront' && !STOREFRONT_ALLOWED_ROLES.includes(user.role)) {
       throw new ForbiddenException(
         'This email is registered as an Admin Dashboard (staff) account and cannot be used to sign in to the storefront. Please use the staff dashboard instead.',
+      );
+    }
+
+    // Dashboard restriction: customer accounts (retail/wholesale) can never sign
+    // in to the admin dashboard — even with valid credentials. Bidirectional
+    // surface separation prevents privilege escalation.
+    if (dto.scope === 'dashboard' && !DASHBOARD_ALLOWED_ROLES.includes(user.role)) {
+      throw new ForbiddenException(
+        'This email is registered as a customer account and cannot be used to sign in to the admin dashboard. Please use the storefront instead.',
       );
     }
 

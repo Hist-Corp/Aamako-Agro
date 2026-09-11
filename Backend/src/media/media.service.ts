@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../common/cache.service';
+import { CacheNamespaces, CacheTtls } from '../common/cache.namespaces';
 
 export type MediaType = 'IMAGE' | 'VIDEO' | 'DOCUMENT';
 
@@ -16,7 +18,15 @@ export interface MediaPayload {
 
 @Injectable()
 export class MediaService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+  ) {}
+
+  /** Invalidate the public media feed after any asset change. */
+  private invalidatePublicFeed(): void {
+    this.cache.bump(CacheNamespaces.MEDIA);
+  }
 
   list(filters?: { category?: string; type?: string; isPublished?: boolean }) {
     const where: Record<string, unknown> = {};
@@ -36,7 +46,7 @@ export class MediaService {
   }
 
   async create(data: Required<Pick<MediaPayload, 'name' | 'url'>> & MediaPayload, actorId?: string) {
-    return this.prisma.mediaAsset.create({
+    const asset = await this.prisma.mediaAsset.create({
       data: {
         name: data.name.trim(),
         type: 'IMAGE',
@@ -51,11 +61,13 @@ export class MediaService {
         uploadedById: actorId,
       },
     });
+    this.invalidatePublicFeed();
+    return asset;
   }
 
   async update(id: string, dto: MediaPayload) {
     const asset = await this.get(id);
-    return this.prisma.mediaAsset.update({
+    const updated = await this.prisma.mediaAsset.update({
       where: { id: asset.id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
@@ -66,16 +78,22 @@ export class MediaService {
         ...(dto.dimensions !== undefined ? { dimensions: dto.dimensions || null } : {}),
       },
     });
+    this.invalidatePublicFeed();
+    return updated;
   }
 
   async setPublished(id: string, isPublished: boolean) {
     await this.get(id);
-    return this.prisma.mediaAsset.update({ where: { id }, data: { isPublished } });
+    const updated = await this.prisma.mediaAsset.update({ where: { id }, data: { isPublished } });
+    this.invalidatePublicFeed();
+    return updated;
   }
 
   async remove(id: string) {
     await this.get(id);
-    return this.prisma.mediaAsset.delete({ where: { id } });
+    const deleted = await this.prisma.mediaAsset.delete({ where: { id } });
+    this.invalidatePublicFeed();
+    return deleted;
   }
 
   listCategories() {
@@ -94,17 +112,19 @@ export class MediaService {
    * unpublished assets.
    */
   listPublic() {
-    return this.prisma.mediaAsset.findMany({
-      where: { isPublished: true, type: 'IMAGE' },
-      select: {
-        id: true,
-        name: true,
-        url: true,
-        altText: true,
-        category: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.cache.getOrSet(CacheNamespaces.MEDIA, 'all', CacheTtls.MEDIA_SECONDS, () =>
+      this.prisma.mediaAsset.findMany({
+        where: { isPublished: true, type: 'IMAGE' },
+        select: {
+          id: true,
+          name: true,
+          url: true,
+          altText: true,
+          category: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
   }
 }
