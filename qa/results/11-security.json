@@ -27,7 +27,7 @@
   {
     "status": "PASS",
     "name": "No API keys/secrets patterns in served JS",
-    "detail": "14 JS files scanned"
+    "detail": "15 JS files scanned"
   },
   {
     "status": "PASS",

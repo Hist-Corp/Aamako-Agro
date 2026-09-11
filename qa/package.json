@@ -11,7 +11,20 @@
     "report": "node report.js"
   },
   "dependencies": {
-    "axe-core": "^4.9.1",
     "playwright": "^1.49.0"
-  }
+  },
+  "main": "config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "axe-core": "^4.13.0",
+    "chrome-launcher": "^1.2.1",
+    "lighthouse": "^13.4.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }
