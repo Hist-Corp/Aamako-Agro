@@ -22,6 +22,7 @@ interface DialogProps {
     label: string;
     onClick: () => void;
     isLoading?: boolean;
+    disabled?: boolean;
   };
   /** Maximum width */
   maxWidth?: 'sm' | 'md' | 'lg';
@@ -123,6 +124,7 @@ export function Dialog({
               <Button
                 onClick={primaryAction.onClick}
                 isLoading={primaryAction.isLoading}
+                disabled={primaryAction.disabled}
               >
                 {primaryAction.label}
               </Button>

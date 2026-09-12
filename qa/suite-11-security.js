@@ -69,6 +69,26 @@ async function xssAndIdor(R, api, ctx, sup) {
       : R.pass(`XSS probe not reflected unescaped on ${p}`);
   }
 
+  // ---------- path traversal on the static origin (Frontend/server.js) ----------
+  // The dev static server must never serve a file that resolves outside the
+  // web root. Encoded `..` escapes prove the containment guard (Vercel also
+  // 404s these in production, so this is safe to assert either way).
+  for (const p of ['/..%2f..%2fpackage.json', '/..%2f..%2f.git%2fconfig', '/%2e%2e/%2e%2e/etc/passwd']) {
+    const t = await ctx.request.get(CFG.WEB + p);
+    t.status === 404
+      ? R.pass(`Path traversal blocked ${p.slice(0, 28)}`)
+      : R.fail(`Path traversal blocked ${p.slice(0, 28)}`, `returned ${t.status}`);
+  }
+
+  // ---------- security headers on the static origin ----------
+  const wh = await ctx.request.get(CFG.WEB + '/');
+  wh.headers.get('x-content-type-options') === 'nosniff'
+    ? R.pass('WEB serves X-Content-Type-Options: nosniff')
+    : R.warn('WEB serves X-Content-Type-Options: nosniff', `got ${wh.headers.get('x-content-type-options')}`);
+  wh.headers.get('referrer-policy')
+    ? R.pass('WEB serves Referrer-Policy')
+    : R.warn('WEB serves Referrer-Policy', 'absent');
+
   // ---------- stored XSS handling via CMS + cleanup ----------
   const cats = await api('GET', '/categories');
   const categoryId = (cats.json || [])[0]?.id;

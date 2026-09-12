@@ -40,16 +40,34 @@ http.createServer((req, res) => {
   }
 
   const fp = path.join(ROOT, url);
-  fs.readFile(fp, (err, data) => {
+
+  // Path-traversal guard: never serve a file that resolves outside the web
+  // root. `path.join`/normalization alone does not stop `/..%2f..%2f.env`
+  // (encoded `..`), which would otherwise allow arbitrary local file reads
+  // from the dev server. Resolve and require the result to stay inside ROOT.
+  const realRoot = path.resolve(ROOT);
+  const resolved = path.resolve(fp);
+  if (resolved !== realRoot && !resolved.startsWith(realRoot + path.sep)) {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not found');
+    return;
+  }
+
+  fs.readFile(resolved, (err, data) => {
     if (err) {
       // Serve the styled error page for 404s
       fs.readFile(path.join(ROOT, 'error.html'), (e2, html) => {
-        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.writeHead(404, {
+          'Content-Type': 'text/html',
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'X-Frame-Options': 'SAMEORIGIN',
+        });
         res.end(e2 ? 'Not found' : html);
       });
       return;
     }
-    const ext = path.extname(fp);
+    const ext = path.extname(resolved);
     // Weak ETag from mtime+size so "Cache-Control: no-cache" revalidation
     // resolves as a fast 304 on repeat navigations (keeps cross-document
     // View Transitions snappy).
@@ -66,7 +84,10 @@ http.createServer((req, res) => {
       // View Transitions (@view-transition header morphs) when either page
       // is served with no-store, which caused the header flicker between
       // pages. "no-cache" still revalidates (fast 304) so dev edits show up.
-      'Cache-Control': 'no-cache'
+      'Cache-Control': 'no-cache',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'X-Frame-Options': 'SAMEORIGIN',
     });
     res.end(data);
   });

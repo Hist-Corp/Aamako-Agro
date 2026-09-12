@@ -45,6 +45,7 @@ export default function ProductsPage() {
   const [imageStatus, setImageStatus] = useState<{ ok: boolean; message: string } | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const createMutation = useCreateProduct();
 
   const slugify = (s: string) =>
@@ -95,43 +96,43 @@ export default function ProductsPage() {
     img.src = url;
   };
 
-  const handleCreate = async () => {
+  // Validate all required fields and return errors object
+  const validateForm = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
     if (!form.name.trim() || form.name.trim().length < 2) {
-      addToast({ type: 'error', title: 'Missing fields', description: 'Product name is required.' });
-      return;
+      errors.name = 'Product name is required (min. 2 characters).';
     }
     if (form.description.trim().length < 30) {
-      addToast({
-        type: 'error',
-        title: 'Description too short',
-        description: 'Provide a detailed description (at least 30 characters).',
-      });
-      return;
+      errors.description = 'Description must be at least 30 characters.';
     }
     if (!form.imageUrl.trim()) {
-      addToast({
-        type: 'error',
-        title: 'Product image required',
-        description: 'Upload or link a high-resolution product image (https://, ≥1000px wide).',
-      });
-      return;
-    }
-    if (imageStatus && !imageStatus.ok) {
-      addToast({ type: 'error', title: 'Invalid product image', description: imageStatus.message });
-      return;
+      errors.imageUrl = 'A high-resolution product image is required.';
+    } else if (imageStatus && !imageStatus.ok) {
+      errors.imageUrl = imageStatus.message;
     }
     if (!form.categoryId) {
-      addToast({ type: 'error', title: 'Category required', description: 'Select the product category.' });
+      errors.categoryId = 'Please select a product category.';
+    }
+    if (!form.sku.trim()) {
+      errors.sku = 'SKU is required for the first variant.';
+    }
+    if (!form.priceRupees || parseFloat(form.priceRupees) <= 0) {
+      errors.priceRupees = 'Price must be greater than 0.';
+    }
+    return errors;
+  };
+
+  // Check if form is valid (for submit button state)
+  const isFormValid = Object.keys(validateForm()).length === 0;
+
+  const handleCreate = async () => {
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      addToast({ type: 'error', title: 'Missing required fields', description: 'Please complete all required fields marked with */ required.' });
       return;
     }
-    if (!form.sku.trim() || !form.priceRupees || parseFloat(form.priceRupees) <= 0) {
-      addToast({
-        type: 'error',
-        title: 'Variant incomplete',
-        description: 'SKU and a price greater than 0 are required for the first variant.',
-      });
-      return;
-    }
+    setFormErrors({});
     setIsCreating(true);
     try {
       await createMutation.mutateAsync({
@@ -344,19 +345,24 @@ export default function ProductsPage() {
             label: 'Create Product',
             onClick: handleCreate,
             isLoading: isCreating,
+            disabled: !isFormValid,
           }}
         >
           <div className="space-y-4">
             {/* ── Basic details ── */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-surface-500 mb-2">Basic details</p>
-              <label className="text-xs font-medium text-surface-600">Product name *</label>
+              <label className="text-xs font-medium text-surface-600">Product name */ required</label>
               <input
-                className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${formErrors.name ? 'border-red-500' : 'border-surface-200'}`}
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, name: e.target.value });
+                  if (formErrors.name) setFormErrors({ ...formErrors, name: '' });
+                }}
                 placeholder="e.g. Freeze-Dried Mango"
               />
+              {formErrors.name && <p className="mt-1 text-2xs text-red-600">{formErrors.name}</p>}
               <p className="mt-1 text-2xs text-surface-400">
                 URL slug: <span className="font-mono">{slugify(form.name || '…') || '—'}</span>
               </p>
@@ -364,17 +370,21 @@ export default function ProductsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-surface-600">Category *</label>
+                <label className="text-xs font-medium text-surface-600">Category */ required</label>
                 <select
-                  className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 ${formErrors.categoryId ? 'border-red-500' : 'border-surface-200'}`}
                   value={form.categoryId}
-                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, categoryId: e.target.value });
+                    if (formErrors.categoryId) setFormErrors({ ...formErrors, categoryId: '' });
+                  }}
                 >
                   <option value="">Select a category…</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
+                {formErrors.categoryId && <p className="mt-1 text-2xs text-red-600">{formErrors.categoryId}</p>}
                 {categories.length === 0 && (
                   <p className="mt-1 text-2xs text-amber-600">
                     Categories could not be loaded — you can still create the product without one.
@@ -392,14 +402,18 @@ export default function ProductsPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-surface-600">Description * (min. 30 characters)</label>
+              <label className="text-xs font-medium text-surface-600">Description */ required (min. 30 characters)</label>
               <textarea
-                className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${formErrors.description ? 'border-red-500' : 'border-surface-200'}`}
                 rows={3}
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, description: e.target.value });
+                  if (formErrors.description) setFormErrors({ ...formErrors, description: '' });
+                }}
                 placeholder="Detailed customer-facing description: origin, taste profile, packaging, shelf life…"
               />
+              {formErrors.description && <p className="mt-1 text-2xs text-red-600">{formErrors.description}</p>}
               <p className={`mt-1 text-2xs ${form.description.trim().length >= 30 ? 'text-green-600' : 'text-surface-400'}`}>
                 {form.description.trim().length}/30 characters
               </p>
@@ -408,17 +422,19 @@ export default function ProductsPage() {
             {/* ── Media ── */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-surface-500 mb-2">Media</p>
-              <label className="text-xs font-medium text-surface-600">High-resolution product image (https://, ≥1000px wide) *</label>
+              <label className="text-xs font-medium text-surface-600">High-resolution product image (https://, ≥1000px wide) */ required</label>
               <input
                 type="url"
-                className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${formErrors.imageUrl ? 'border-red-500' : 'border-surface-200'}`}
                 value={form.imageUrl}
                 onChange={(e) => {
                   setForm({ ...form, imageUrl: e.target.value });
                   validateImage(e.target.value);
+                  if (formErrors.imageUrl) setFormErrors({ ...formErrors, imageUrl: '' });
                 }}
                 placeholder="https://cdn.aamako.com/products/mango-hero.jpg"
               />
+              {formErrors.imageUrl && <p className="mt-1 text-2xs text-red-600">{formErrors.imageUrl}</p>}
               {imageStatus && (
                 <p className={`mt-1 text-2xs ${imageStatus.ok ? 'text-green-600' : 'text-red-600'}`}>
                   {imageStatus.message}
@@ -438,13 +454,17 @@ export default function ProductsPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-surface-500 mb-2">Variant & pricing</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-surface-600">SKU *</label>
+                <label className="text-xs font-medium text-surface-600">SKU */ required</label>
                 <input
-                  className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${formErrors.sku ? 'border-red-500' : 'border-surface-200'}`}
                   value={form.sku}
-                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, sku: e.target.value });
+                    if (formErrors.sku) setFormErrors({ ...formErrors, sku: '' });
+                  }}
                   placeholder="AKA-MNG-050"
                 />
+                {formErrors.sku && <p className="mt-1 text-2xs text-red-600">{formErrors.sku}</p>}
               </div>
               <div>
                 <label className="text-xs font-medium text-surface-600">Unit</label>
@@ -463,16 +483,20 @@ export default function ProductsPage() {
               </div>
             </div>
               <div className="mt-3">
-                <label className="text-xs font-medium text-surface-600">Base price (Rs) *</label>
+                <label className="text-xs font-medium text-surface-600">Base price (Rs) */ required</label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  className="mt-1 w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${formErrors.priceRupees ? 'border-red-500' : 'border-surface-200'}`}
                   value={form.priceRupees}
-                  onChange={(e) => setForm({ ...form, priceRupees: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, priceRupees: e.target.value });
+                    if (formErrors.priceRupees) setFormErrors({ ...formErrors, priceRupees: '' });
+                  }}
                   placeholder="450"
                 />
+                {formErrors.priceRupees && <p className="mt-1 text-2xs text-red-600">{formErrors.priceRupees}</p>}
               </div>
             </div>
 

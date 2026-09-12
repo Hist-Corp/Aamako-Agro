@@ -16,6 +16,7 @@ import {
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { Throttle } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CacheService } from '../common/cache.service';
@@ -536,6 +537,7 @@ export class ContentController {
    *  bundles and delegates to the same table with identical idempotent
    *  semantics. New clients should use /newsletter/subscribe. */
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('subscribe')
   async subscribe(@Body() dto: SubscribeDto) {
     const existing = await (this.prisma as any).subscriber.findUnique({
