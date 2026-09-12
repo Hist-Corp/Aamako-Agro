@@ -110,6 +110,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(realUser);
     } catch (err: any) {
       // Surface backend errors (invalid credentials, etc.) to the UI.
+      if (err?.status === 401 && err?.data?.requiresMfa) throw err;
+      if (err?.status === 401) {
+        throw new Error('Incorrect email or password. Please try again.');
+      }
       throw err instanceof Error ? err : new Error('Login failed. Please check your credentials.');
     }
   }, []);

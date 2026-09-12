@@ -50,7 +50,12 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
+      // Auth endpoints (login/refresh) must surface their own 401 to the
+      // caller — the token-refresh + redirect-to-login flow below is only
+      // for expired sessions on ordinary API calls, otherwise a wrong
+      // password on the login page shows as "Session expired" and bounces.
+      const isAuthEndpoint = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/refresh');
+      if (response.status === 401 && !isAuthEndpoint) {
         // Token expired — attempt refresh
         const refreshed = await this.refreshToken();
         if (refreshed) {
@@ -171,7 +176,12 @@ export class ApiError extends Error {
   data: unknown;
 
   constructor(status: number, data: unknown) {
-    const message = (data as { message?: string })?.message ?? `API Error ${status}`;
+    // Backend error shape is { error: { code, message, details } } — also
+    // accept a flat { message } for older responses.
+    const message =
+      (data as { error?: { message?: string } })?.error?.message
+      ?? (data as { message?: string })?.message
+      ?? `API Error ${status}`;
     super(message);
     this.name = 'ApiError';
     this.status = status;

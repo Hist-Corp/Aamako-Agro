@@ -141,15 +141,54 @@ export default function ContentPage() {
     void loadPending();
   }, [loadPending]);
 
-  const review = async (id: string, approve: boolean) => {
+  // ── One decision per submission ──
+  // A Content Manager's template edit lands as one PENDING revision per field
+  // (~24 for a product template). Reviewing part by part is noisy — so the
+  // queue is GROUPED into one card per submission and Approve/Reject acts on
+  // the whole group at once (POST /content/revisions/batch-approve). After one
+  // reviewer decides, every revision of that submission is settled — nothing
+  // stays pending in the rest of the list.
+  const pendingGroups = (() => {
+    const groups = new Map<string, PendingRevision[]>();
+    for (const rev of pending) {
+      const key = rev.contentItem.key;
+      // Product-template fields share the "product-template.<slug>." prefix —
+      // group them as a single submission for that product template.
+      const tm = /^product-template\.([^.]+)\./.exec(key);
+      const groupKey = tm ? `product-template:${tm[1]}` : key;
+      const list = groups.get(groupKey) ?? [];
+      list.push(rev);
+      groups.set(groupKey, list);
+    }
+    return [...groups.entries()].map(([groupKey, revs]) => {
+      const tm = /^product-template:(.+)$/.exec(groupKey);
+      // Resolve a friendly template name from the loaded items map when
+      // possible (product-template.<slug>.name), else the slug.
+      const nameItem = tm ? items.find((i) => i.key === `product-template.${tm[1]}.name`) : undefined;
+      const nameVal = (nameItem?.title || nameItem?.body || '').trim();
+      return {
+        groupKey,
+        revs,
+        title: tm
+          ? `Product template — ${nameVal || tm[1].replace(/-/g, ' ')}`
+          : revs[0].proposedTitle || revs[0].contentItem.title || revs[0].contentItem.key,
+        fields: tm ? revs.map((r) => r.contentItem.key.replace(/^product-template\.[^.]+\./, '').replace(/-/g, ' ')) : [],
+        submittedAt: revs.reduce((min, r) => (r.createdAt < min ? r.createdAt : min), revs[0].createdAt),
+      };
+    });
+  })();
+
+  const reviewGroup = async (groupKey: string, approve: boolean) => {
+    const ids = pendingGroups.find((g) => g.groupKey === groupKey)?.revs.map((r) => r.id) ?? [];
+    if (!ids.length) return;
     try {
-      await apiClient.post(`/content/revisions/${id}/${approve ? 'approve' : 'reject'}`, {});
+      await apiClient.post(`/content/revisions/${approve ? 'batch-approve' : 'batch-reject'}`, { ids });
       addToast({
         type: 'success',
         title: approve ? 'Approved & published' : 'Rejected',
         description: approve
-          ? 'The change is now live on the storefront.'
-          : 'The live site is unchanged.',
+          ? `${ids.length} change${ids.length === 1 ? '' : 's'} approved — the submission is live on the storefront.`
+          : `${ids.length} change${ids.length === 1 ? '' : 's'} rejected — the live site is unchanged.`,
       });
       await Promise.all([load(), loadPending()]);
     } catch (err) {
@@ -430,29 +469,37 @@ export default function ContentPage() {
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-amber-500" />
             <h2 className="text-sm font-semibold text-surface-900">Pending approval</h2>
-            <Badge variant="warning" dot>{pending.length}</Badge>
-            <span className="text-xs text-surface-500">Changes by Content Managers go live only after you approve them.</span>
+            <Badge variant="warning" dot>{pendingGroups.length}</Badge>
+            <span className="text-xs text-surface-500">Each submission is reviewed as one — approving it publishes every change in it.</span>
           </div>
-          {pending.length === 0 ? (
+          {pendingGroups.length === 0 ? (
             <p className="mt-3 text-sm text-surface-500">No changes waiting for approval.</p>
           ) : (
             <ul className="mt-3 divide-y divide-surface-100">
-              {pending.map((rev) => (
-                <li key={rev.id} className="flex flex-wrap items-center gap-3 py-3">
+{pendingGroups.map((group) => (
+                <li key={group.groupKey} className="flex flex-wrap items-start gap-3 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-surface-900">
-                      {rev.proposedTitle} <span className="text-surface-400">({rev.contentItem.key})</span>
+                      {group.title}
+                      <span className="ml-2 rounded-full bg-surface-100 px-2 py-0.5 text-2xs font-semibold text-surface-500">
+                        {group.revs.length} change{group.revs.length === 1 ? '' : 's'}
+                      </span>
                     </p>
                     <p className="text-xs text-surface-500">
-                      Proposed {relativeTime(rev.createdAt)} â€” appears on the storefront only after approval.
+                      Submitted {relativeTime(group.submittedAt)} — goes live only when approved.
                     </p>
+                    {group.fields.length > 0 && (
+                      <p className="mt-1 line-clamp-2 text-2xs capitalize text-surface-400">
+                        {group.fields.join(' · ')}
+                      </p>
+                    )}
                   </div>
                   {canApprove && (
                     <div className="flex items-center gap-2">
-                      <Button size="sm" onClick={() => review(rev.id, true)}>
+                      <Button size="sm" onClick={() => reviewGroup(group.groupKey, true)}>
                         <CheckCircle2 className="h-3.5 w-3.5" /> Approve &amp; Publish
                       </Button>
-                      <Button size="sm" variant="secondary" onClick={() => review(rev.id, false)}>
+                      <Button size="sm" variant="secondary" onClick={() => reviewGroup(group.groupKey, false)}>
                         <XCircle className="h-3.5 w-3.5" /> Reject
                       </Button>
                     </div>
@@ -515,13 +562,21 @@ export default function ContentPage() {
 
       {/* Edit page dialog */}
       {editTarget && (
-        <Dialog
+                        <Dialog
           open
           maxWidth="lg"
           onClose={() => setEditTarget(null)}
           title="Edit page"
-          description="Changes are published to the website immediately when you save."
-          primaryAction={{ label: 'Save & Publish', onClick: handleSaveEdit, isLoading: isSaving }}
+          description={
+            canPublish
+              ? 'Changes are published to the website immediately when you save.'
+              : 'Your changes are sent to a Manager for approval before they appear on the website.'
+          }
+          primaryAction={{
+            label: canPublish ? 'Save & Publish' : 'Save & Submit for Approval',
+            onClick: handleSaveEdit,
+            isLoading: isSaving,
+          }}
         >
           <div className="space-y-4">
             <p className="font-mono text-xs text-surface-500">{editTarget.key}</p>

@@ -618,11 +618,16 @@ document.addEventListener('DOMContentLoaded', function(){
             var m=it.key.match(/^product-template\.([^.]+)\.([^.]+)$/);
             if(!m)return;
             var slug=m[1],field=m[2];
-            var rec=bySlug[slug]||(bySlug[slug]={slug:slug,name:'',price:'',imageUrl:'',processCategory:'',isTemplate:true});
+            var rec=bySlug[slug]||(bySlug[slug]={slug:slug,name:'',price:'',imageUrl:'',processCategory:'',isTemplate:true,galleryFirst:''});
             var val=it.title!=null?String(it.title).trim():'';
             if(field==='name')rec.name=val;
             else if(field==='price')rec.price=val;
             else if(field==='image-url')rec.imageUrl=val;
+            else if(field==='gallery'){
+              // Theme image = line 1 of the managed "Product images" field —
+              // the consistent card photo across the storefront.
+              rec.galleryFirst=String(it.body!=null?it.body:'').split('\\n').map(function(u){return u.trim();}).filter(Boolean)[0]||'';
+            }
             else if(field==='process-category')rec.processCategory=val;
           });
           Object.keys(bySlug).forEach(function(slug){
@@ -631,7 +636,11 @@ document.addEventListener('DOMContentLoaded', function(){
             // category page only matching templates are shown; on the
             // all-products page every completed template appears.
             if(currentSlug&&t.processCategory!==currentSlug)return;
-            if(!t.name||!t.imageUrl)return;
+            if(!t.name)return;
+            // Card image: theme image (gallery line 1) wins; legacy image-url
+            // is the fallback so older templates keep working.
+            t.imageUrl=t.galleryFirst||t.imageUrl;
+            if(!t.imageUrl)return;
             var dup=allItems.some(function(p){return p.slug===t.slug;});
             if(dup)return;
             t.templatePrice=parseFloat(t.price)||0;

@@ -157,21 +157,59 @@ export default function ProductTemplateEditorPage({
   // (trailing-edge debounce) so the preview only updates after the user pauses
   // for 600ms — typing stays smooth, and the preview settles when they do.
   const previewTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Mirror of the latest items so message handlers / debounced callbacks read
+  // current values without being re-created on every keystroke.
+  const itemsRef = React.useRef(items);
+  itemsRef.current = items;
+
+  /** Full draft-aware field map for the preview iframe: { field: {title, body} }. */
+  const buildPreviewFields = useCallback(() => {
+    const fields: Record<string, { title: string; body: string }> = {};
+    for (const [field, item] of Object.entries(itemsRef.current)) {
+      if (field.endsWith('__hidden')) continue;
+      fields[field] = { title: item.title ?? '', body: item.body ?? '' };
+    }
+    return fields;
+  }, []);
+
+  const postToPreview = useCallback((message: Record<string, unknown>) => {
+    try {
+      const ifr = document.querySelector<HTMLIFrameElement>('iframe[title="Storefront preview"]');
+      ifr?.contentWindow?.postMessage(
+        { source: 'aamako-cms-bridge', ...message },
+        '*',
+      );
+    } catch (_) {
+      /* a messaging failure must never break the editing workflow */
+    }
+  }, []);
+
+  // The preview iframe asks for the editor's current values on load (handshake
+  // — answers the 'request-fields' message product.html sends in template
+  // mode) so it renders the right product from first paint even when every
+  // field is still an unpublished draft.
+  React.useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data as { source?: string; type?: string; slug?: string } | null;
+      if (!d || d.source !== 'aamako-cms-bridge') return;
+      if (d.type === 'request-fields' && (!d.slug || d.slug === slug)) {
+        postToPreview({ type: 'template-fields', slug, fields: buildPreviewFields() });
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [slug, buildPreviewFields, postToPreview]);
+
   const refreshPreview = useCallback(() => {
     if (previewTimer.current) clearTimeout(previewTimer.current);
     previewTimer.current = setTimeout(() => {
-      try {
-        const ifr = document.querySelector<HTMLIFrameElement>('iframe[title="Storefront preview"]');
-        ifr?.contentWindow?.postMessage(
-          { source: 'aamako-cms-bridge', type: 'content-updated' },
-          '*',
-        );
-      } catch (_) {
-        /* a messaging failure must never break the editing workflow */
-      }
+      // Push the editor's live values (drafts included) AND nudge the CMS
+      // layer — together the preview reflects every edited section instantly.
+      postToPreview({ type: 'template-fields', slug, fields: buildPreviewFields() });
+      postToPreview({ type: 'content-updated' });
       previewTimer.current = null;
     }, 600);
-  }, []);
+  }, [slug, buildPreviewFields, postToPreview]);
 
   const handleSaveField = async (field: string, value: string, isTitle: boolean = true) => {
     // NOTE: this function fires on every keystroke. It must NOT touch any
@@ -243,19 +281,50 @@ export default function ProductTemplateEditorPage({
       const publishKeys = [...ALL_PRODUCT_FIELD_KEYS, ...Object.keys(items).filter((k) => k.endsWith('__hidden'))];
       for (const field of publishKeys) {
         const key = productFieldKey(slug, field);
-        if (items[field]) {
-          // Values were already written by handleSaveField (PUT /content/:key).
-          // The publish step flips isPublished → the public live-content feed
-          // (/api/content) includes the item → the storefront poller & preview
-          // pick it up. Backend route is POST /content/:key/publish (the
-          // previous PUT /content/publish had no matching route — it 404'd and
-          // nothing ever reached the storefront).
-          await apiClient.post(`/content/${encodeURIComponent(key)}/publish`);
-        }
+        const item = items[field];
+        if (!item) continue;
+        // AUTHORITATIVE WRITE: re-save the current editor value before
+        // publishing. Auto-save (handleSaveField) fires per keystroke and can
+        // silently fail (expired session, race with an upload's setRow, …) —
+        // if Publish only flipped the isPublished flag, the previously stored
+        // (stale) value would be republished and the storefront would show
+        // old images/copy even though the editor showed the new ones. Writing
+        // here guarantees the published item matches exactly what the editor
+        // displayed when the user pressed Publish.
+        await apiClient.put(`/content/${encodeURIComponent(key)}`, {
+          title: item.title ?? '',
+          body: item.body ?? '',
+        });
+        await apiClient.post(`/content/${encodeURIComponent(key)}/publish`);
       }
       // Bump the preview iframe now — it normally polls every 10s, but after
       // this explicit publish we want the storefront to reflect edits instantly.
       refreshPreview();
+
+      // Sync the customer-facing catalog record so the real product page
+      // (which renders from the DB via /api/products/:slug, not the CMS) shows
+      // the published name, image and description too. Best-effort: a missing
+      // catalog record must never block a template publish.
+      try {
+        const rawGallery = (items['gallery']?.body || items['gallery']?.title || '').trim();
+        const galleryFirst = rawGallery ? rawGallery.split('\n').map((u) => u.trim()).filter(Boolean)[0] ?? '' : '';
+        // The template's "Product images" (gallery) is the source of truth for
+        // the product photo across pages — its first image leads. The legacy
+        // image-url field is only a fallback.
+        const imageUrl = (galleryFirst || items['image-url']?.title || items['image-url']?.body || '').trim();
+        const pName = (items['name']?.title || items['name']?.body || '').trim();
+        const descHtml = (items['description']?.body || items['description']?.title || '').trim();
+        const product = await apiClient.get<{ id?: string }>(`/products/${encodeURIComponent(slug)}`);
+        if (product?.id) {
+          const patch: Record<string, string> = {};
+          if (pName) patch.name = pName;
+          if (imageUrl) patch.imageUrl = imageUrl;
+          if (descHtml) patch.description = descHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          if (Object.keys(patch).length) await apiClient.patch(`/admin/products/${product.id}`, patch);
+        }
+      } catch (_) {
+        /* catalog sync is optional — the CMS publish above already succeeded */
+      }
       addToast({
         type: 'success',
         title: 'Published',
@@ -590,6 +659,9 @@ function renderFieldInner(
   const existing = items[field.key];
   const fieldKey = productFieldKey(slug, field.key);
   const prefill = defaults[field.key] ?? '';
+  // Provenance for device uploads from this field: files land in the media
+  // library under the product's own list, not the generic "General" list.
+  const mediaFields = templateMediaFields(slug, items, field.label);
   // Badge shown when the input is displaying suggested storefront copy that
   // has not been saved yet (publishing keeps it; leaving it leaves the field empty).
   const prefillBadge = () =>
@@ -608,6 +680,23 @@ function renderFieldInner(
         value={value}
         hasExisting={!!existing}
         prefill={prefill}
+        mediaFields={mediaFields}
+        onSave={onSave}
+      />
+    );
+  }
+
+  if (field.type === 'cert-cards') {
+    const value = (existing?.body && existing.body !== '' ? existing.body : existing?.title) ?? prefill;
+    return (
+      <CertCardsEditor
+        field={field}
+        fieldKey={fieldKey}
+        value={value}
+        items={items}
+        hasExisting={!!existing}
+        prefill={prefill}
+        mediaFields={mediaFields}
         onSave={onSave}
       />
     );
@@ -670,6 +759,7 @@ function renderFieldInner(
         field={field}
         value={(existing?.title ?? '').trim()}
         fieldKey={fieldKey}
+        mediaFields={mediaFields}
         onSave={onSave}
       />
     );
@@ -685,6 +775,7 @@ function renderFieldInner(
         fieldKey={fieldKey}
         urls={urls}
         hasExisting={!!existing}
+        mediaFields={mediaFields}
         onSave={onSave}
       />
     );
@@ -765,12 +856,14 @@ function GalleryEditor({
   fieldKey,
   urls,
   hasExisting,
+  mediaFields,
   onSave,
 }: {
   field: any;
   fieldKey: string;
   urls: string[];
   hasExisting: boolean;
+  mediaFields?: Record<string, string>;
   onSave: (field: string, value: string, isTitle: boolean) => void;
 }) {
   const { addToast } = useToast();
@@ -815,9 +908,19 @@ function GalleryEditor({
     }
     setUploadingIdx(idx);
     try {
-      const res = await apiClient.upload<{ url: string }>('/admin/media/upload', file);
+      const res = await apiClient.upload<{ url: string }>('/admin/media/upload', file, {
+        ...mediaFields,
+        name: `${mediaFields?.name ?? field.label} — ${idx === 0 ? 'theme image' : `gallery ${idx + 1}`}`,
+        sourceSection: `${mediaFields?.sourceSection ?? field.label} · ${idx === 0 ? 'theme image (cards)' : `gallery image ${idx + 1}`}`,
+      });
       setRow(idx, res.url);
-      addToast({ type: 'success', title: 'Image uploaded', description: `Saved as gallery image ${idx + 1}.` });
+      addToast({
+        type: 'success',
+        title: 'Image uploaded',
+        description: idx === 0
+          ? 'Saved as the theme image — it will show on the product page and every product card after publish.'
+          : `Saved as gallery image ${idx + 1}.`,
+      });
     } catch (err) {
       addToast({ type: 'error', title: 'Upload failed', description: err instanceof ApiError ? err.message : 'Please try again.' });
     } finally {
@@ -839,20 +942,30 @@ function GalleryEditor({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={assetUrl(url)}
-                alt={`Gallery ${idx + 1}`}
+                alt={idx === 0 ? 'Theme image' : `Gallery image ${idx + 1}`}
                 className="h-20 w-20 flex-shrink-0 rounded-lg border border-surface-200 object-cover"
                 onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
               />
             ) : (
               <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-surface-300 text-2xs text-surface-400">
-                Image {idx + 1}
+                {idx === 0 ? 'Theme' : `Image ${idx + 1}`}
               </div>
             )}
             <div className="min-w-[240px] flex-1 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-2xs font-semibold uppercase tracking-wide text-brand-600">
+                  {idx === 0 ? 'Theme image' : `Gallery image ${idx + 1}`}
+                </span>
+                <span className="text-2xs text-surface-400">
+                  {idx === 0
+                    ? 'Consistent everywhere — product page hero + every product card (Shop, Collections, Related)'
+                    : 'Product page gallery thumbnail only'}
+                </span>
+              </div>
               <input
                 type="url"
                 className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                placeholder={`https://… (image ${idx + 1})`}
+                placeholder={idx === 0 ? 'https://… theme image URL' : `https://… (gallery image ${idx + 1})`}
                 value={url}
                 onChange={(e) => setRow(idx, e.target.value)}
               />
@@ -976,11 +1089,13 @@ function ImageField({
   field,
   value,
   fieldKey,
+  mediaFields,
   onSave,
 }: {
   field: any;
   value: string;
   fieldKey: string;
+  mediaFields?: Record<string, string>;
   onSave: (field: string, value: string, isTitle: boolean) => void;
 }) {
   const { addToast } = useToast();
@@ -1001,7 +1116,10 @@ function ImageField({
     }
     setUploading(true);
     try {
-      const res = await apiClient.upload<{ url: string }>('/admin/media/upload', file);
+      const res = await apiClient.upload<{ url: string }>('/admin/media/upload', file, {
+        ...mediaFields,
+        sourceSection: `${mediaFields?.sourceSection ?? field.label} · product image`,
+      });
       onSave(field.key, res.url, true);
       addToast({ type: 'success', title: 'Image uploaded', description: 'Saved as the product image.' });
     } catch (err) {
@@ -1156,7 +1274,220 @@ function parseCheckList(value: string): { checked: boolean; text: string }[] {
     });
 }
 function serializeCheckList(rows: { checked: boolean; text: string }[]): string {
-  return rows.map((r) => `${r.checked ? '✓' : '✗'} ${r.text.trim()}`.trimEnd()).join('\n');
+  // Preserve inner whitespace (incl. inter-word spaces) so the per-keystroke
+  // save round-trip doesn't snap the controlled input back and drop spaces.
+  // Trailing whitespace on each line is dropped to keep storage tidy.
+  return rows.map((r) => `${r.checked ? '✓' : '✗'} ${r.text.replace(/\s+$/, '')}`).join('\n');
+}
+
+/** Upload provenance for images added from the product-template editor:
+ *  every device upload lands in the media library under the product's own
+ *  list ("Freeze-Dried Fruits / <Product>") instead of the generic General
+ *  list, with name/alt/page/section metadata so the media page shows where
+ *  each photo is used. */
+function templateMediaFields(
+  slug: string,
+  items: Record<string, CmsItem>,
+  section: string,
+  sub?: string,
+): Record<string, string> {
+  const process = (items['process-category']?.title ?? '').trim();
+  const catLabel =
+    process === 'dehydrated' ? 'Dehydrated' : process === 'powders' ? 'Powders' : 'Freeze-Dried Fruits';
+  const rawName = (items['name']?.title ?? '').trim();
+  const fallback = slug
+    .replace(/^(fd|dh|pw)-/, '')
+    .split('-')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+  const productName = rawName && rawName.toLowerCase() !== 'name' ? rawName : fallback || slug;
+  return {
+    name: sub ? `${productName} — ${sub}` : productName,
+    altText: `${productName} — ${section}`,
+    category: `${catLabel} / ${productName}`,
+    sourcePage: 'Product Detail',
+    sourceSection: `${catLabel} · ${section}`,
+  };
+}
+
+/** Certifications — one certificate per row: a name input plus an attached
+ *  image picker per row. Names serialize to the "certifications" field
+ *  (one per line); each row's image saves to its own "cert-image-N" item so
+ *  the storefront card picks it up. Empty image = default icon on the page. */
+function CertCardsEditor({
+  field,
+  fieldKey,
+  value,
+  items,
+  hasExisting,
+  prefill,
+  mediaFields,
+  onSave,
+}: {
+  field: any;
+  fieldKey: string;
+  value: string;
+  items: Record<string, CmsItem>;
+  hasExisting: boolean;
+  prefill: string;
+  mediaFields?: Record<string, string>;
+  onSave: (field: string, value: string, isTitle: boolean) => void;
+}) {
+  const names = String(value || '')
+    .split('\n')
+    .map((s) => s.replace(/<[^>]*>/g, '').trim());
+  while (names.length && names[names.length - 1] === '') names.pop();
+    const commit = (next: string[]) => {
+    // Preserve inner whitespace so spaces survive the round-trip (the previous
+    // .trim() snapped the controlled input and dropped inter-word spaces);
+    // only drop trailing whitespace per line so empty trailing rows still collapse.
+    const lines = next.map((s) => s.replace(/\s+$/, ''));
+    while (lines.length && lines[lines.length - 1] === '') lines.pop();
+    // body-first (see CheckListEditor note) — the seed stores cert names in body
+    onSave(field.key, lines.join('\n'), false);
+  };
+  return (
+    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
+      <div className="space-y-2">
+        {names.length === 0 && (
+          <p className="text-2xs text-surface-400 py-2">No certificates yet — add one below.</p>
+        )}
+        {names.map((name, i) => (
+          <div key={i} className="rounded-lg border border-surface-200 bg-white p-2.5">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-surface-100 font-mono text-2xs text-surface-500">
+                {i + 1}
+              </span>
+              <input
+                value={name}
+                placeholder="Certificate name (e.g. DFTQC-compliant facility)"
+                onChange={(e) => {
+                  const next = names.slice();
+                  next[i] = e.target.value;
+                  commit(next);
+                }}
+                className={fieldInputCls()}
+              />
+              {removeRowButton(() => {
+                const next = names.slice();
+                next.splice(i, 1);
+                commit(next);
+                // Detach the row's image so lower images don't shift onto the wrong card.
+                for (let n = i + 1; n <= next.length + 1; n++) onSave(`cert-image-${n}`, '', true);
+              })}
+            </div>
+            <CertImagePicker
+              index={i + 1}
+              value={(items[`cert-image-${i + 1}`]?.title ?? '').trim()}
+              mediaFields={mediaFields}
+              onSave={onSave}
+            />
+          </div>
+        ))}
+      </div>
+      {addRowButton('Add certificate', () => commit([...names, '']))}
+    </StructuredShell>
+  );
+}
+
+/** Compact image picker for one certificate card: thumbnail preview, URL
+ *  input, device upload and media library. Saves to the "cert-image-N" item. */
+function CertImagePicker({
+  index,
+  value,
+  mediaFields,
+  onSave,
+}: {
+  index: number;
+  value: string;
+  mediaFields?: Record<string, string>;
+  onSave: (field: string, value: string, isTitle: boolean) => void;
+}) {
+  const { addToast } = useToast();
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const key = `cert-image-${index}`;
+
+  const handleFile = async (file: File) => {
+    setError(null);
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file (JPG, PNG, WebP…).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image is too large — maximum size is 5 MB.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const res = await apiClient.upload<{ url: string }>('/admin/media/upload', file, {
+        ...mediaFields,
+        name: `${mediaFields?.name ?? 'Certificate'} — certificate ${index}`,
+        sourceSection: `${mediaFields?.sourceSection ?? 'Certifications'} · certificate ${index} image`,
+      });
+      onSave(key, res.url, true);
+      addToast({ type: 'success', title: 'Image uploaded', description: `Attached to certificate ${index}.` });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Upload failed — please try again.');
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="mt-2 flex items-start gap-2 pl-7">
+      {value ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={assetUrl(value)}
+          alt={`Certificate ${index}`}
+          className="h-12 w-12 flex-shrink-0 rounded-full border border-surface-200 object-cover"
+          onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
+        />
+      ) : (
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border border-dashed border-surface-300 text-2xs text-surface-400">
+          icon
+        </div>
+      )}
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <input
+          type="url"
+          className="w-full rounded-lg border border-surface-200 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+          placeholder="Image URL (optional — e.g. a scan of the certificate)"
+          value={value}
+          onChange={(e) => onSave(key, e.target.value, true)}
+        />
+        <ImageSourceGroup
+          uploading={uploading}
+          onUpload={() => inputRef.current?.click()}
+          onMedia={() => setPickerOpen(true)}
+          uploadLabel="From device"
+          mediaLabel="Media library"
+        />
+        {error && <p className="text-2xs font-medium text-red-600">{error}</p>}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleFile(f);
+        }}
+      />
+      <MediaPickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(u) => onSave(key, u, true)}
+        context={`Certificate ${index} image`}
+      />
+    </div>
+  );
 }
 
 function CheckListEditor({
@@ -1175,7 +1506,19 @@ function CheckListEditor({
   onSave: (field: string, value: string, isTitle: boolean) => void;
 }) {
   const rows = parseCheckList(value);
-  const commit = (next: { checked: boolean; text: string }[]) => onSave(field.key, serializeCheckList(next), true);
+  // Write to BODY (isTitle=false): the editor and the storefront both read
+  // body-first for structured fields (the seed stores highlights copy in
+  // body). Saving into title made edits invisible — the input kept showing
+  // the untouched body and looked "not editable".
+    // Debounce so each keystroke doesn't trigger an API PUT + state update +
+  // re-render; that re-render re-parsed the serialized value and the .trim()
+  // in serializeCheckList snapped trailing/inter-word spaces out of the
+  // controlled input. Writing after a pause keeps the typed space intact.
+  const saveDebouncedRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const commit = (next: { checked: boolean; text: string }[]) => {
+    if (saveDebouncedRef.current) clearTimeout(saveDebouncedRef.current);
+    saveDebouncedRef.current = setTimeout(() => onSave(field.key, serializeCheckList(next), false), 300);
+  };
   return (
     <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
       <div className="space-y-1.5 rounded-lg border border-surface-200 divide-y divide-surface-200">
@@ -1241,8 +1584,11 @@ function parseNutritionRows(value: string): { rows: { label: string; value: stri
   return { rows, note };
 }
 function serializeNutritionRows(rows: { label: string; value: string }[], note: string): string {
-  const lines = rows.map((r) => `${r.label}: ${r.value}`);
-  return lines.length ? lines.join('\n') + (note.trim() ? '\n\n' + note.trim() : '') : note.trim();
+  // Preserve inner whitespace so the keystroke round-trip doesn't snap the
+  // controlled input and drop spaces; only trim the trailing note block.
+  const lines = rows.map((r) => `${r.label.replace(/\s+$/, '')}: ${r.value.replace(/\s+$/, '')}`);
+  const trimmedNote = note.replace(/\s+$/, '');
+  return lines.length ? lines.join('\n') + (trimmedNote ? '\n\n' + trimmedNote : '') : trimmedNote;
 }
 
 function NutritionRowsEditor({
@@ -1261,7 +1607,11 @@ function NutritionRowsEditor({
   onSave: (field: string, value: string, isTitle: boolean) => void;
 }) {
   const parsed = parseNutritionRows(value);
-  const save = (rows: { label: string; value: string }[], note: string) => onSave(field.key, serializeNutritionRows(rows, note), true);
+    const saveDebouncedRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const save = (rows: { label: string; value: string }[], note: string) => {
+    if (saveDebouncedRef.current) clearTimeout(saveDebouncedRef.current);
+    saveDebouncedRef.current = setTimeout(() => onSave(field.key, serializeNutritionRows(rows, note), false), 300);
+  };
   return (
     <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
       <div className="space-y-1.5 rounded-lg border border-surface-200 divide-y divide-surface-200">
@@ -1334,7 +1684,10 @@ function parseFaqPairs(value: string): { q: string; a: string }[] {
     });
 }
 function serializeFaqPairs(rows: { q: string; a: string }[]): string {
-  return rows.filter((r) => r.q.trim() || r.a.trim()).map((r) => `Q: ${r.q.trim()}\nA: ${r.a.trim()}`).join('\n\n');
+  // Preserve inner whitespace so spaces survive the round-trip (the previous
+  // .trim() snapped the controlled textarea and dropped inter-word spaces);
+  // only drop the trailing whitespace on each value.
+  return rows.filter((r) => r.q.replace(/\s+$/, '') || r.a.replace(/\s+$/, '')).map((r) => `Q: ${r.q.replace(/\s+$/, '')}\nA: ${r.a.replace(/\s+$/, '')}`).join('\n\n');
 }
 
 function FaqPairsEditor({
@@ -1353,7 +1706,11 @@ function FaqPairsEditor({
   onSave: (field: string, value: string, isTitle: boolean) => void;
 }) {
   const rows = parseFaqPairs(value);
-  const save = (next: { q: string; a: string }[]) => onSave(field.key, serializeFaqPairs(next), true);
+    const saveDebouncedRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const save = (next: { q: string; a: string }[]) => {
+    if (saveDebouncedRef.current) clearTimeout(saveDebouncedRef.current);
+    saveDebouncedRef.current = setTimeout(() => onSave(field.key, serializeFaqPairs(next), false), 300);
+  };
   return (
     <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
       <div className="space-y-3">
@@ -1418,10 +1775,13 @@ function parseHowtoBlocks(value: string): { usage: string; recipes: string; stor
   return out;
 }
 function serializeHowtoBlocks(v: { usage: string; recipes: string; storage: string }): string {
+  // Preserve inner whitespace so spaces survive the round-trip (the previous
+  // .trim() snapped the controlled textarea and dropped inter-word spaces);
+  // only drop trailing whitespace per block.
   const blocks: string[] = [];
-  if (v.usage.trim()) blocks.push(`Usage: ${v.usage.trim()}`);
-  if (v.recipes.trim()) blocks.push(`Recipes: ${v.recipes.trim()}`);
-  if (v.storage.trim()) blocks.push(`Storage: ${v.storage.trim()}`);
+  if (v.usage.replace(/\s+$/, '')) blocks.push(`Usage: ${v.usage.replace(/\s+$/, '')}`);
+  if (v.recipes.replace(/\s+$/, '')) blocks.push(`Recipes: ${v.recipes.replace(/\s+$/, '')}`);
+  if (v.storage.replace(/\s+$/, '')) blocks.push(`Storage: ${v.storage.replace(/\s+$/, '')}`);
   return blocks.join('\n\n');
 }
 
@@ -1473,7 +1833,11 @@ function HowtoBlocksEditor({
   onSave: (field: string, value: string, isTitle: boolean) => void;
 }) {
   const v = parseHowtoBlocks(value);
-  const save = (next: { usage: string; recipes: string; storage: string }) => onSave(field.key, serializeHowtoBlocks(next), true);
+    const saveDebouncedRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const save = (next: { usage: string; recipes: string; storage: string }) => {
+    if (saveDebouncedRef.current) clearTimeout(saveDebouncedRef.current);
+    saveDebouncedRef.current = setTimeout(() => onSave(field.key, serializeHowtoBlocks(next), false), 300);
+  };
   const block = (label: string, hint: string, value: string, onChange: (v: string) => void) => (
     <div className="rounded-lg border border-surface-200 p-2.5">
       <label className="block text-2xs font-semibold uppercase tracking-wide text-surface-500 mb-1">
@@ -1504,6 +1868,7 @@ function RelatedCardsEditor({
   value,
   hasExisting,
   prefill,
+  mediaFields,
   onSave,
 }: {
   field: any;
@@ -1511,6 +1876,7 @@ function RelatedCardsEditor({
   value: string;
   hasExisting: boolean;
   prefill: string;
+  mediaFields?: Record<string, string>;
   onSave: (field: string, value: string, isTitle: boolean) => void;
 }) {
   const { addToast } = useToast();
@@ -1519,7 +1885,7 @@ function RelatedCardsEditor({
   const cardInputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
   const cards = parseRelatedCards(value);
   const save = (next: { title: string; link: string; image: string }[]) =>
-    onSave(field.key, serializeRelatedCards(next), true);
+    onSave(field.key, serializeRelatedCards(next), false);
 
   // Device upload for a card image: fills the same serialized slot the URL
   // box writes ("Card N image: ..."), so no storefront format change.
@@ -1534,7 +1900,11 @@ function RelatedCardsEditor({
     }
     setUploadingIdx(idx);
     try {
-      const res = await apiClient.upload<{ url: string }>('/admin/media/upload', file);
+      const res = await apiClient.upload<{ url: string }>('/admin/media/upload', file, {
+        ...mediaFields,
+        name: `${mediaFields?.name ?? field.label} — related card ${idx + 1}`,
+        sourceSection: `${mediaFields?.sourceSection ?? field.label} · related card ${idx + 1} image`,
+      });
       const next = cards.map((c, i) => (i === idx ? { ...c, image: res.url } : c));
       save(next);
       addToast({ type: 'success', title: 'Image uploaded', description: `Saved as card ${idx + 1} image.` });

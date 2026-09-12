@@ -107,6 +107,45 @@ function extractCmsElements(html: string): CmsHit[] {
   return hits;
 }
 
+/**
+ * Image-only pass for `data-cms-img` slots. Two markup shapes exist:
+ *   <img  data-cms="…" data-cms-img src="…">              (self-contained)
+ *   <div  data-cms="…" data-cms-img>…<img src="…">…</div>  (wrapper)
+ * Returns the key + the image URL so the section can be pre-filled (the
+ * Dashboard stores image-section URLs in ContentItem.body).
+ */
+interface CmsImageHit {
+  key: string;
+  url: string;
+  alt: string;
+}
+
+function extractCmsImages(html: string): CmsImageHit[] {
+  const hits: CmsImageHit[] = [];
+  const tagRe = /<([a-zA-Z][a-zA-Z0-9]*)((?:\s[^>]*?)?)>/g;
+  let m: RegExpExecArray | null;
+  while ((m = tagRe.exec(html))) {
+    const attrs = m[2] || '';
+    if (!/\bdata-cms-img\b/.test(attrs)) continue;
+    const key = attrs.match(/\bdata-cms="([^"]+)"/)?.[1];
+    if (!key) continue;
+    const altText = attrs.match(/\balt="([^"]*)"/)?.[1] ?? '';
+    let url = attrs.match(/\bsrc="([^"]*)"/)?.[1] ?? '';
+    let alt = altText;
+    if (!url) {
+      // Wrapper element — grab the first nested <img src="…" alt="…"> within 3 kB.
+      const nested = html
+        .slice(m.index + m[0].length, m.index + m[0].length + 3000)
+        .match(/<img[^>]*?\bsrc="([^"]+)"[^>]*?(?:\balt="([^"]*)")?/);
+      if (nested) {
+        url = nested[1];
+        if (!alt) alt = nested[2] ?? '';
+      }
+    }
+    if (url) hits.push({ key, url, alt });
+  }
+  return hits;
+}
 /** Strip tags + decode basic entities for fallback titles. */
 function stripHtml(html: string): string {
   return html
@@ -126,7 +165,6 @@ function fallbackTitle(key: string): string {
   const last = key.split('.').pop() || key;
   return last.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
-
 function normText(v: string): string {
   return v.includes('<') ? v : stripHtml(v);
 }
@@ -134,6 +172,7 @@ function normText(v: string): string {
 async function main() {
   const files = readdirSync(FRONTEND_DIR).filter((f) => f.endsWith('.html'));
   const byKey = new Map<string, Partial<Record<CmsHit['field'], string>>>();
+  const imagesByKey = new Map<string, CmsImageHit>();
 
   for (const file of files) {
     const html = readFileSync(join(FRONTEND_DIR, file), 'utf8');
@@ -144,6 +183,20 @@ async function main() {
       if (!rec[hit.field]) rec[hit.field] = hit.html;
       byKey.set(hit.key, rec);
     }
+    for (const img of extractCmsImages(html)) {
+      if (!imagesByKey.has(img.key)) imagesByKey.set(img.key, img);
+    }
+  }
+
+  // Merge image slots: the URL lives in `body` (as the Dashboard's image
+  // sections expect) and the title becomes the photo's alt text (or a
+  // readable key-derived label) — replacing any raw-HTML titles the text
+  // scanner may have left behind for wrapper image elements.
+  for (const [key, img] of imagesByKey) {
+    const rec = byKey.get(key) || {};
+    rec.title = img.alt || fallbackTitle(key);
+    rec.body = img.url;
+    byKey.set(key, rec);
   }
 
   const keys = [...byKey.keys()].sort();

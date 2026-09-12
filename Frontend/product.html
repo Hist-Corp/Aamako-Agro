@@ -883,6 +883,12 @@ document.addEventListener('DOMContentLoaded', function(){
       thumbs[0].setAttribute('data-large',heroUrl||thumbs[0].getAttribute('data-large'));
     }
     if(main&&heroUrl){main.src=heroUrl;main.alt=p.name||'Product photo';}
+    // Gallery override: if the editor published "Product images" lines for
+    // this product, apply them here too (main viewer + the four thumbs).
+    // Runs after the API hero paint so published CMS values lead.
+    if(window.AamakoContent&&slug&&window.AamakoContent.get('product-template.'+slug+'.gallery')){
+      applyTemplateProductFields(slug);
+    }
     var desc=(p.description||'').trim();
     var shortEl=document.getElementById('pdShort');
     if(desc){
@@ -933,12 +939,55 @@ document.addEventListener('DOMContentLoaded', function(){
   // template fields so the live preview stays in step with the editor.
   var isTemplateProduct = false;
 
+  // LIVE-PREVIEW OVERRIDES — the dashboard editor pushes its current (possibly
+  // still-draft) values straight into this iframe via postMessage. The public
+  // content API only returns PUBLISHED items, so draft edits would otherwise
+  // never appear in the preview. Overrides take precedence over published CMS
+  // fields; each entry is { title: string, body: string }.
+  var liveOverrides = null;
+
   function applyTemplateProduct(slugToLoad){
     if(!slugToLoad||!window.AamakoContent||!window.AamakoContent.load)return;
     isTemplateProduct = true; // mark so refresh() re-applies below
+    // Ask the dashboard editor for its current field values — it answers with
+    // a 'template-fields' message that fills liveOverrides. This makes the
+    // preview render the right product from its first paint even when every
+    // field is still an unpublished draft.
+    try{
+      if(window.parent&&window.parent!==window){
+        window.parent.postMessage({source:'aamako-cms-bridge',type:'request-fields',slug:slugToLoad},'*');
+      }
+    }catch(_){/* cross-origin or unavailable — CMS fallback still works */}
     window.AamakoContent.load().then(function(){
       applyTemplateProductFields(slugToLoad);
     }).catch(function(){/* keep static fallback */});
+  }
+
+  /* Shared gallery applier — fills the main viewer and the four thumbnails
+     (Front view / Texture view / Pack detail / Serving idea) from the
+     published "Product images" lines. LINE 1 IS THE THEME IMAGE — the
+     consistent photo of this product used on the product page hero AND on
+     every product card (Shop, Collections, Related). It also drives the
+     hero thumb; each following line fills the next gallery thumb in order.
+     Thumbs without a line keep their static photo, so the layout never
+     breaks. Used by BOTH the live preview and the real customer page. */
+  function applyGalleryImages(lines, hero){
+    lines=lines||[];
+    var main=document.getElementById('pdMainImg');
+    var thumbs=Array.prototype.slice.call(document.querySelectorAll('#pdThumbs .omthumb'));
+    var heroUrl=hero||lines[0]||'';
+    if(main&&heroUrl){
+      main.src=heroUrl;
+      main.alt=document.getElementById('pdTitle').textContent||'Product photo';
+    }
+    thumbs.forEach(function(t,i){
+      var url=i===0?(heroUrl||lines[0]||''):lines[i]||'';
+      if(!url)return;
+      var fi=t.querySelector('img');
+      t.setAttribute('data-large',url);
+      if(fi)fi.src=url;
+      // alt label (Front view / Texture view / …) is intentionally kept
+    });
   }
 
   // Pure field application — no load(), no flag. Shared by the initial render
@@ -948,8 +997,19 @@ document.addEventListener('DOMContentLoaded', function(){
     if(!slugToLoad)return;
     var prefix='product-template.'+slugToLoad+'.';
     function field(f){
+      // Dashboard live-edit overrides first (they carry unsaved/draft values).
+      if(liveOverrides&&liveOverrides[f]){
+        var o=liveOverrides[f];
+        var ov=(o.body!=null&&String(o.body).trim()!=='')?String(o.body):String(o.title==null?'':o.title);
+        if(ov.trim()!=='')return ov;
+      }
       var it=window.AamakoContent.get(prefix+f);
       if(!it)return '';
+      // Prefer the body (where rich-text/textarea fields are stored) and fall
+      // back to the title (single-line fields) — mirrors the editor's dual
+      // title/body write so the preview shows prose, not the field key.
+      var body=(it.body!=null?String(it.body):'').trim();
+      if(body!=='')return body;
       return (it.title!=null?String(it.title):'').trim();
     }
     var name=field('name')||slugToLoad;
@@ -972,16 +1032,15 @@ document.addEventListener('DOMContentLoaded', function(){
     if(image){
       var main=document.getElementById('pdMainImg');
       if(main){main.src=image;main.alt=name||'Product photo';}
-      // Only update the first (hero) thumbnail; the other gallery thumbs
-      // retain their distinct static images.  Click handlers are bound by
-      // initGallery() above, so each thumb still swaps into the main view.
-      var firstThumb=document.querySelector('#pdThumbs .omthumb');
-      if(firstThumb){
-        var fi=firstThumb.querySelector('img');
-        if(fi){fi.src=image;fi.alt=name||'Front view';}
-        firstThumb.setAttribute('data-large',image);
-      }
     }
+    // Gallery: the "Product images" lines fill the main viewer AND the four
+    // thumbnails (Front view / Texture view / Pack detail / Serving idea).
+    // The published image-url leads as the hero; gallery line 1 is thumb 2's
+    // view, line 2 → thumb 3, line 3 → thumb 4. Fewer lines keep the static
+    // photo for the remaining thumbs.
+    var galleryRaw=field('gallery');
+    var glines=galleryRaw?galleryRaw.split('\n').map(function(s){return s.trim();}).filter(Boolean):[];
+    if(image||glines.length)applyGalleryImages(glines,image);
     if(price)document.getElementById('pdPrice').textContent=fmt(parseFloat(price)||0);
     if(pack)document.getElementById('pdPack').textContent=pack;
     if(availability)document.getElementById('pdAvailability').textContent=availability;
@@ -990,6 +1049,37 @@ document.addEventListener('DOMContentLoaded', function(){
     if(description)document.getElementById('pdShort').innerHTML=description;
     var kind=catSlug&&KIND_OF[catSlug]?KIND_OF[catSlug]:'fd';
     buildTabs(kind,name);
+    renderManagedCerts(field);
+  }
+
+  /* Managed Certifications tab: each line of the "certifications" template
+   * field becomes a certificate card, and the optional "cert-image-N" field
+   * supplies the badge image inside the Nth card (icon fallback otherwise).
+   * With no managed value the static design from buildTabs() stays. The
+   * field resolver is passed in so BOTH the live preview (draft-aware) and
+   * the real customer page (published-only) can drive it. */
+  function renderManagedCerts(field){
+    if(!field)return;
+    var raw=field('certifications');
+    if(!raw)return;
+    var lines=raw.split('\n').map(function(s){return s.replace(/<[^>]*>/g,'').trim();}).filter(Boolean);
+    if(!lines.length)return;
+    var ICONS=[
+      '<svg viewBox="0 0 24 24"><path d="M12 3l7 2.5v5.5c0 4.2-2.9 6.8-7 8.5-4.1-1.7-7-4.3-7-8.5V5.5L12 3z"/></svg>',
+      '<svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L5 19a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3L14 9V3"/></svg>',
+      '<svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>',
+      '<svg viewBox="0 0 24 24"><path d="M3 20 10 6l4 8 3-4 4 10H3z"/></svg>'
+    ];
+    var html='<h3>Certifications &amp; quality</h3><div class="omcert-grid">';
+    lines.forEach(function(line,i){
+      var img=field('cert-image-'+(i+1));
+      var media=img
+        ?'<span class="omcert-icon"><img src="'+esc(img)+'" alt="'+esc(line)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></span>'
+        :'<span class="omcert-icon">'+(ICONS[i]||ICONS[ICONS.length-1])+'</span>';
+      html+='<div class="omcert">'+media+'<span class="omcert-name">'+esc(line)+'</span></div>';
+    });
+    html+='</div>';
+    document.getElementById('tab-certs').innerHTML=html;
   }
 
   // ?template=1 is set by the dashboard's live-preview iframe: skip the DB
@@ -1007,6 +1097,19 @@ document.addEventListener('DOMContentLoaded', function(){
     var load=slug?window.AamakoAPI.getProduct(slug):window.AamakoAPI.listProducts(1).then(function(r){return r.items&&r.items[0];});
     load.then(applyProduct).catch(function(){applyTemplateProduct(slug);});
     load.then(function(p){
+      // Template-published fields (gallery lines, cert cards, name/price
+      // overrides) also apply on the REAL customer page: content.js exposes
+      // only published items here, so this mirrors exactly what the editor
+      // saved & published. DB product data still leads; published CMS values
+      // fill what the DB doesn't have.
+      // IMPORTANT: await AamakoContent.load() first — the published feed is
+      // fetched over the network and the auto-hydrate inside content.js races
+      // this code. Without the await, get() reads an empty cache and the
+      // published gallery/name/price edits never appear on the live page.
+      var applyPublished = function(){
+        if(window.AamakoContent){ window.AamakoContent.load().then(function(){ applyTemplateProductFields(slug); }).catch(function(){}); }
+      };
+      applyPublished();
       var catSlug=p&&p.category&&p.category.slug;
       var req=catSlug?window.AamakoAPI.listProducts(1,catSlug):window.AamakoAPI.listProducts(1);
       return req.then(function(r){
@@ -1028,6 +1131,13 @@ document.addEventListener('DOMContentLoaded', function(){
     if(!e||!e.data||e.data.source!=='aamako-cms-bridge')return;
     if(e.data.type==='content-updated' && isTemplateProduct && window.AamakoContent){
       window.AamakoContent.load().then(function(){ applyTemplateProductFields(slug); });
+    }
+    // The editor pushes its full current (draft-aware) field map — apply it
+    // immediately so the preview shows the edited section as it is typed.
+    if(e.data.type==='template-fields' && e.data.slug===slug){
+      liveOverrides=e.data.fields||{};
+      if(window.AamakoContent){ applyTemplateProductFields(slug); }
+      else { isTemplateProduct=true; }
     }
   });
   }

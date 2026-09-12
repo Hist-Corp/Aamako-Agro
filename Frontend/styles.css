@@ -1148,10 +1148,11 @@ footer{border-top:1px solid var(--line); margin-top:var(--space-8); padding:var(
 .prod-card:hover{transform:translateY(-4px); box-shadow:var(--shadow-md);}
 
 .add-btn.is-added{background:var(--sage-deep); color:var(--paper); border-color:var(--sage-deep); animation:btn-pulse 400ms var(--ease-out);}
-/* PDP wishlist "love" reaction — filled heart state */
+/* PDP wishlist "love" reaction — filled heart state (bright wishlist red when active) */
+.ompdp-cta #wishBtn.is-loved,
+.ompdp-cta #wishBtn.is-loved:hover,
 .pdp-cta .btn-ghost.is-loved,
-.pdp-cta .btn-ghost.is-loved:hover{color:#b3261e; border-color:#b3261e;}
-.pdp-cta .btn-ghost.is-loved{animation:btn-pulse 400ms var(--ease-out);}
+.pdp-cta .btn-ghost.is-loved:hover{color:#E02424; border-color:#E02424; background:#FDECEC; animation:btn-pulse 400ms var(--ease-out);}
 @keyframes btn-pulse{ 0%{transform:scale(1);} 40%{transform:scale(1.2);} 100%{transform:scale(1);} }
 
 .cart-badge{

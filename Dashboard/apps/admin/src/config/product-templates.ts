@@ -12,7 +12,7 @@ export interface ProductTemplateField {
   key: string;
   label: string;
   description: string;
-  type: 'text' | 'textarea' | 'richtext' | 'number' | 'url' | 'select' | 'image' | 'gallery' | 'list-check' | 'nutrition-rows' | 'faq-pairs' | 'howto-blocks' | 'related-cards';
+  type: 'text' | 'textarea' | 'richtext' | 'number' | 'url' | 'select' | 'image' | 'gallery' | 'list-check' | 'nutrition-rows' | 'faq-pairs' | 'howto-blocks' | 'related-cards' | 'cert-cards';
   required?: boolean;
   options?: { value: string; label: string }[];
   placeholder?: string;
@@ -79,11 +79,7 @@ export const PRODUCT_TEMPLATE_SECTIONS: ProductTemplateSection[] = [
       { key: 'long-description', label: 'Description (tab)', description: 'The full product story for the Description tab — rich text; separate paragraphs with a blank line.', type: 'richtext', placeholder: 'Freeze-drying removes the water, not the goodness. This product was picked ripe from partner farms across Nepal, frozen within hours of harvest and dried under vacuum so the cell structure — and the crunch, colour and flavour — stay exactly as picked.\n\nUnlike conventional drying, freeze-drying happens at low temperature, which protects delicate vitamins and aromatic compounds...' },
       { key: 'howto', label: 'How to use (tab)', description: 'Three simple boxes — Usage, Recipes and Storage — matching the How to use tab on the product page. Type each section in its own box; empty boxes are hidden on the page.', type: 'howto-blocks', placeholder: 'Usage: Eat straight from the pack as a crunchy snack, or rehydrate by covering with hot or cold water and waiting 5–10 minutes.\n\nRecipes: Rehydrated pieces fold beautifully into cakes, porridge and smoothie bowls.\n\nStorage: Store in a cool, dry place away from direct sunlight.' },
       { key: 'nutrition', label: 'Nutrition (tab)', description: 'One nutrient per row — type the nutrient name and its value (e.g. Energy → 347 kcal). The last paragraph box is for the lab-status note shown under the table.', type: 'nutrition-rows', placeholder: 'Energy: [PLACEHOLDER] kcal\nProtein: [PLACEHOLDER] g\nCarbohydrate: [PLACEHOLDER] g\n— of which sugars: [PLACEHOLDER] g\nFibre: [PLACEHOLDER] g\nFat: [PLACEHOLDER] g\n\nFull nutrition panel pending third-party lab data.' },
-      { key: 'certifications', label: 'Certifications (tab)', description: 'Certification names for the Certifications tab — write each certificate on its own line. Every line becomes a certificate card with a default icon or the matching certificate image below.', type: 'textarea', placeholder: 'DFTQC-compliant facility\nThird-party lab tested\nBatch-coded packs\nMade in Nepal' },
-      { key: 'cert-image-1', label: 'Certificate image 1', description: 'Optional photo/badge shown inside the first certificate card (e.g. a scan of the DFTQC certificate). Leave empty to keep the default icon.', type: 'image', placeholder: 'https://.../dftqc-certificate.jpg' },
-      { key: 'cert-image-2', label: 'Certificate image 2', description: 'Optional photo/badge for the second certificate card. Leave empty to keep the default icon.', type: 'image', placeholder: 'https://.../lab-report.jpg' },
-      { key: 'cert-image-3', label: 'Certificate image 3', description: 'Optional photo/badge for the third certificate card. Leave empty to keep the default icon.', type: 'image', placeholder: 'https://.../batch-code.jpg' },
-      { key: 'cert-image-4', label: 'Certificate image 4', description: 'Optional photo/badge for the fourth certificate card. Leave empty to keep the default icon.', type: 'image', placeholder: 'https://.../made-in-nepal.jpg' },
+      { key: 'certifications', label: 'Certifications (tab)', description: 'One certificate per row — type the certificate name and attach its image (badge, certificate scan or photo). Leave the image empty to keep the default icon on the card.', type: 'cert-cards', placeholder: 'DFTQC-compliant facility\nThird-party lab tested\nBatch-coded packs\nMade in Nepal' },
       { key: 'why', label: 'Why choose (tab)', description: 'One selling point per row. Tick the checkbox for a green check on the page, or untick it for a cross — then type the point next to it. Add or remove rows as needed.', type: 'list-check', placeholder: 'Picked ripe — flavour is locked in at its peak, not ripened in a truck.\nNothing added: no sugar, no sulphites, no colouring, no preservatives.\nUp to [N] months of pantry life with no refrigeration.\nAround 90% lighter than fresh — perfect for treks, travel and lunchboxes.\nBatch-coded packs trace every step from farm gate to shelf.' },
       { key: 'sourcing', label: 'Sourcing (tab)', description: 'The sourcing story for the Sourcing tab — multi-paragraph; separate each paragraph with a blank line.', type: 'textarea', placeholder: 'This product is grown by our partner farmers in the hills and terai of Nepal, harvested at peak ripeness and delivered to our facility within hours.\n\nWe buy directly from the farms — no middle traders — which keeps quality high and returns fair.' },
     ],
@@ -111,11 +107,11 @@ export const PRODUCT_TEMPLATE_SECTIONS: ProductTemplateSection[] = [
   },
   {
     label: 'Product images',
-    description: 'Up to 8 product images — the main shot is shown large, with the rest as gallery thumbnails. Click "Add image" to add more.',
+    description: 'Up to 8 product images. Image 1 is the THEME image — the consistent photo of this product shown large on the product page and on every product card across the storefront (Shop, Collections, Related products). Images 2–8 are the product gallery thumbnails. Click "Add image" to add more.',
     icon: 'Image',
     storefront: 'Product gallery — mosaic',
     fields: [
-      { key: 'gallery', label: 'Product gallery', description: 'The hero shot is shown large on the product page; the rest become gallery thumbnails. Add up to 8 images.', type: 'gallery', required: true, placeholder: 'https://images.unsplash.com/...' },
+      { key: 'gallery', label: 'Product gallery', description: 'Image 1 = THEME image — stays consistent everywhere (product page hero + every product card: Shop, Collections, Related). Images 2–8 = product gallery thumbnails (Texture view, Pack detail, Serving idea, …). Add up to 8.', type: 'gallery', required: true, placeholder: 'https://images.unsplash.com/...' },
     ],
   },
   {

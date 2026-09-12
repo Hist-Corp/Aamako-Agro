@@ -13,6 +13,7 @@
     "db:push": "prisma db push",
     "seed": "ts-node prisma/seed.ts",
     "seed:storefront": "ts-node prisma/seed-storefront.ts",
+    "seed:product-templates": "ts-node prisma/seed-product-templates.ts",
     "test": "jest",
     "test:e2e": "jest --config test/jest-e2e.json"
   },

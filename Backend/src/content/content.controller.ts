@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
-  IsBoolean, IsOptional, IsString, Matches, MaxLength, MinLength,
+  IsArray, IsBoolean, IsOptional, IsString, Matches, MaxLength, MinLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role, RevisionStatus } from '@prisma/client';
@@ -51,6 +51,14 @@ class CreateContentDto extends UpsertContentDto {
 }
 
 class ReviewRevisionDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() reviewNote?: string;
+}
+
+/** Batch review — a Content Manager's template edit lands as MANY field-level
+ *  revisions; this lets a reviewer act on the whole submission in ONE decision
+ *  instead of approving every field card one by one. */
+class BatchReviewDto {
+  @ApiProperty({ type: [String] }) @IsArray() @IsString({ each: true }) ids!: string[];
   @ApiPropertyOptional() @IsOptional() @IsString() reviewNote?: string;
 }
 
@@ -210,7 +218,9 @@ export class ContentController {
   queue() {
     return this.prisma.contentRevision.findMany({
       where: { status: RevisionStatus.PENDING },
-      include: { contentItem: { select: { key: true, title: true } } },
+      include: {
+        contentItem: { select: { key: true, title: true } },
+      },
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -443,6 +453,114 @@ export class ContentController {
       },
     });
     return { success: true };
+  }
+
+  /** Approve a WHOLE submission in one decision — every listed PENDING revision
+   *  is applied to its content item and published together. A Content Manager's
+   *  template edit lands as one revision per field; reviewers see ONE grouped
+   *  card and a single "Approve" ends it — no per-field approvals, and nothing
+   *  of that submission stays pending afterwards. */
+  @Roles(...CONTENT_APPROVERS)
+  @Post('revisions/batch-approve')
+  async batchApprove(
+    @Body() dto: BatchReviewDto,
+    @CurrentUser() actor?: { id: string; role: Role },
+  ) {
+    return this.reviewBatch(dto, actor!, RevisionStatus.APPROVED);
+  }
+
+  /** Reject a whole submission in one decision — live site stays unchanged. */
+  @Roles(...CONTENT_APPROVERS)
+  @Post('revisions/batch-reject')
+  async batchReject(
+    @Body() dto: BatchReviewDto,
+    @CurrentUser() actor?: { id: string; role: Role },
+  ) {
+    return this.reviewBatch(dto, actor!, RevisionStatus.REJECTED);
+  }
+
+  private async reviewBatch(
+    dto: BatchReviewDto,
+    actor: { id: string; role: Role },
+    decision: RevisionStatus,
+  ) {
+    const ids = [...new Set(dto.ids ?? [])];
+    if (!ids.length) throw new BadRequestException('No revisions selected');
+
+    const revisions = await this.prisma.contentRevision.findMany({
+      where: { id: { in: ids } },
+      include: { contentItem: { select: { key: true } } },
+    });
+    const pending = revisions.filter((r) => r.status === RevisionStatus.PENDING);
+    if (!pending.length) throw new BadRequestException('No pending revisions found');
+
+    const now = new Date();
+    await this.prisma.$transaction([
+      // Apply each proposal to its item — APPROVED publishes (isPublished: true).
+      // REJECTED leaves live content untouched entirely.
+      ...(decision === RevisionStatus.APPROVED
+        ? pending.map((r) =>
+            this.prisma.contentItem.update({
+              where: { id: r.contentItemId },
+              data: {
+                title: r.proposedTitle,
+                shortDescription: r.proposedShortDescription,
+                longDescription: r.proposedLongDescription,
+                body: r.proposedBody,
+                isPublished: true,
+                updatedById: r.submittedById,
+              },
+            }),
+          )
+        : []),
+      // Mark every revision with the single review decision.
+      ...pending.map((r) =>
+        this.prisma.contentRevision.update({
+          where: { id: r.id },
+          data: {
+            status: decision,
+            reviewedById: actor.id,
+            reviewedAt: now,
+            reviewNote: dto.reviewNote,
+          },
+        }),
+      ),
+    ]);
+
+    if (decision === RevisionStatus.APPROVED) {
+      this.invalidateLiveContent();
+      // Best-effort catalog sync for product-template submissions: the customer
+      // product page renders from the DB, so mirror the approved name/photo.
+      const slugs = new Set<string>();
+      for (const r of pending) {
+        const m = /^product-template\.([^.]+)\./.exec(r.contentItem.key);
+        if (m) slugs.add(m[1]);
+      }
+      for (const slug of slugs) {
+        try {
+          const fields = pending.filter(
+            (r) => r.contentItem.key === `product-template.${slug}.name`
+              || r.contentItem.key === `product-template.${slug}.gallery`,
+          );
+          const patch: Record<string, string> = {};
+          const name = fields.find((r) => r.contentItem.key.endsWith('.name'));
+          if (name) patch.name = name.proposedTitle;
+          const gallery = fields.find((r) => r.contentItem.key.endsWith('.gallery'));
+          if (gallery) {
+            const first = String(gallery.proposedBody || '').split('\n').map((u) => u.trim()).filter(Boolean)[0];
+            if (first) patch.imageUrl = first;
+          }
+          if (Object.keys(patch).length) {
+            const product = await this.prisma.product.findUnique({ where: { slug } });
+            if (product) await this.prisma.product.update({ where: { id: product.id }, data: patch });
+          }
+        } catch (_) {
+          /* catalog mirror is optional — the CMS approval already succeeded */
+        }
+      }
+    }
+
+    return { success: true, reviewed: pending.length, status: decision };
   }
 
   /** Publish (show) a content item — Managers & Content Manager. */

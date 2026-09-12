@@ -8,6 +8,21 @@ const PORT = 8080;
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
 const MIME = {'.html':'text/html','.css':'text/css','.js':'application/javascript','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.json':'application/json','.ico':'image/x-icon'};
 const ROOT = __dirname;
+// Who may embed the storefront in an <iframe>. The admin dashboard lives on a
+// different origin (different port) than the storefront, so "SAMEORIGIN" was
+// blocking the dashboard's live preview — Chrome renders that as
+// "localhost refused to connect." CSP frame-ancestors is the modern
+// replacement and allows an explicit origin allowlist.
+const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:3001';
+const FRAME_ANCESTORS = [
+  "'self'",
+  DASHBOARD_URL,
+  DASHBOARD_URL.replace(/^http:/, 'https:'),
+  process.env.FRAME_ANCESTORS_EXTRA || '',
+].filter(Boolean).join(' ');
+const FRAME_HEADERS = {
+  'Content-Security-Policy': 'frame-ancestors ' + FRAME_ANCESTORS,
+};
 
 const HOP_BY_HOP = new Set(['connection', 'keep-alive', 'transfer-encoding', 'upgrade', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'content-length']);
 
@@ -61,7 +76,7 @@ http.createServer((req, res) => {
           'Content-Type': 'text/html',
           'X-Content-Type-Options': 'nosniff',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
-          'X-Frame-Options': 'SAMEORIGIN',
+          ...FRAME_HEADERS,
         });
         res.end(e2 ? 'Not found' : html);
       });
@@ -87,7 +102,7 @@ http.createServer((req, res) => {
       'Cache-Control': 'no-cache',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
-      'X-Frame-Options': 'SAMEORIGIN',
+      ...FRAME_HEADERS,
     });
     res.end(data);
   });

@@ -1,6 +1,20 @@
 import sharp from 'sharp';
+import {
+  type ImageKind,
+  type PipelineRule,
+  type FormatSpec,
+  IMAGE_KIND_RULES,
+  RESPONSIVE_BREAKPOINTS,
+  ASYNC_THRESHOLD_BYTES,
+  MAX_UPLOAD_BYTES,
+  SSIM_THRESHOLD,
+  SSIM_MAX_QUALITY_BUMP,
+  PASS_THROUGH_FORMATS,
+} from './image-pipeline.config';
 
-/** Result of a compression pass. */
+// ── Existing CompressionResult (kept for backward-compat with oneoff + tests) ──
+
+/** Result of a single compression pass (legacy single-format output). */
 export interface CompressionResult {
   /** Bytes to store on disk (compressed, or the original when skipping). */
   buffer: Buffer;
@@ -21,7 +35,175 @@ export interface CompressionResult {
 
 export interface CompressOptions {
   /** Called when a file can't be processed and the original is kept. */
-  warn?: (message: string) => void;
+    warn?: (message: string) => void;
+}
+
+// ── New pipeline types ──
+
+/** A single generated variant (one width × one format). */
+export interface ImageVariant {
+  type: string;
+  extension: string;
+  width: number;
+  height: number;
+  bytes: number;
+  ssimOk: boolean;
+}
+
+/** A width tier — contains all supported formats at that width. */
+export interface ImageVariantSet {
+  width: number;
+  formats: ImageVariant[];
+  ready: boolean;
+}
+
+/** Full pipeline result — the manifest stored alongside the image. */
+export interface PipelineResult {
+  originalBytes: number;
+  originalWidth: number;
+  originalHeight: number;
+  originalMimetype: string;
+  variants: ImageVariantSet[];
+  fallbackFormat: FormatSpec;
+  totalStoredBytes: number;
+  skipped: boolean;
+  skipNote?: string;
+  warnings: string[];
+}
+
+/** Infer the image kind when none is explicitly provided. */
+function inferKind(meta: sharp.Metadata): ImageKind {
+  const hasAlpha = meta.hasAlpha;
+  const isSmall = (meta.width ?? 0) * (meta.height ?? 0) < 200 * 200;
+  if (hasAlpha && isSmall) return 'logo-icon';
+  if (hasAlpha) return 'png-with-transparency';
+    return 'auto';
+}
+
+/** Map an upload MIME type to a browser-renderable extension for SKIPPED files.
+ *  Skipped files are stored byte-for-byte with THIS extension — never ".bin",
+ *  or the stored URL would not render in an <img>. */
+function extForMimetype(mimetype: string): string {
+  return mimetype === 'image/png' ? '.png'
+    : mimetype === 'image/webp' ? '.webp'
+    : mimetype === 'image/gif' ? '.gif'
+    : mimetype === 'image/svg+xml' ? '.svg'
+    : mimetype === 'image/jpeg' ? '.jpg'
+    : mimetype === 'image/avif' ? '.avif'
+    : '.jpg';
+}
+
+/** Lightweight SSIM calculator using sharp raw-pixel extraction. Returns [0,1]. */
+async function computeSSIM(original: Buffer, compressed: Buffer): Promise<number> {
+  const compressedMeta = await sharp(compressed, { failOn: 'none' }).metadata();
+  const resizedOriginal = await sharp(original, { failOn: 'none' })
+    .resize(compressedMeta.width, compressedMeta.height, {
+      fit: 'fill', withoutEnlargement: true,
+    })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const compressedRaw = await sharp(compressed, { failOn: 'none' }).raw().toBuffer({ resolveWithObject: true });
+  const { data: oData, info: oInfo } = resizedOriginal;
+  const { data: cData, info: cInfo } = compressedRaw;
+
+  if (oInfo.width !== cInfo.width || oInfo.height !== cInfo.height) return 1.0;
+
+  const pix = oInfo.width * oInfo.height;
+  const len = pix * 3;
+  const oLum: number[] = new Array(pix);
+  const cLum: number[] = new Array(pix);
+  for (let i = 0; i < len; i += 3) {
+    const j = i / 3;
+    oLum[j] = 0.299 * oData[i] + 0.587 * oData[i + 1] + 0.114 * oData[i + 2];
+    cLum[j] = 0.299 * cData[i] + 0.587 * cData[i + 1] + 0.114 * cData[i + 2];
+  }
+  let oMean = 0, cMean = 0;
+  for (let i = 0; i < pix; i++) { oMean += oLum[i]; cMean += cLum[i]; }
+  oMean /= pix; cMean /= pix;
+  let oVar = 0, cVar = 0, cov = 0;
+  for (let i = 0; i < pix; i++) {
+    const od = oLum[i] - oMean;
+    const cd = cLum[i] - cMean;
+    oVar += od * od;
+    cVar += cd * cd;
+    cov += od * cd;
+  }
+  oVar /= pix - 1; cVar /= pix - 1; cov /= pix - 1;
+  const C1 = (0.01 * 255) ** 2;
+  const C2 = (0.03 * 255) ** 2;
+  return ((2 * oMean * cMean + C1) * (2 * cov + C2)) /
+        ((oMean ** 2 + cMean ** 2 + C1) * (oVar + cVar + C2));
+}
+
+/** Attach the correct encoder to a sharp pipeline based on the format spec. */
+function getEncoder(pipeline: sharp.Sharp, format: FormatSpec, quality: number): sharp.Sharp {
+  const q = Math.max(1, Math.min(100, quality));
+  switch (format.type) {
+    case 'image/avif':  return pipeline.avif({ quality: q, effort: 6 });
+    case 'image/webp':  return format.lossless
+      ? pipeline.webp({ quality: q, lossless: true, effort: 4 })
+      : pipeline.webp({ quality: q, effort: 4, smartSubsample: true });
+    case 'image/jpeg':  return pipeline.jpeg({ quality: q, mozjpeg: true, progressive: true });
+    case 'image/png':   return pipeline.png({ quality: q, compressionLevel: 9 });
+    default:            return pipeline.webp({ quality: q, effort: 4 });
+  }
+}
+
+/** Build a single variant (one format at one target width) with SSIM validation. */
+async function buildVariant(
+  input: sharp.Sharp,
+  originalMeta: sharp.Metadata,
+  width: number,
+  format: FormatSpec,
+  warn: (msg: string) => void,
+): Promise<ImageVariant | null> {
+  const capW = Math.min(width, originalMeta.width ?? 0);
+  if (capW <= 0) return null;
+
+  let quality = format.quality;
+  let variant: ImageVariant | null = null;
+
+  for (let attempt = 0; attempt <= SSIM_MAX_QUALITY_BUMP; attempt++) {
+    const pipeline = input
+      .clone()
+      .rotate()
+      .resize(capW, capW, { fit: 'inside', withoutEnlargement: true, kernel: 'lanczos3' });
+
+    let buf: Buffer;
+    try {
+      buf = await getEncoder(pipeline, format, quality).toBuffer();
+    } catch {
+      if (attempt === 0) warn(`Format ${format.type} unavailable for ${width}w — skipping`);
+      break;
+    }
+
+    const meta = await sharp(buf, { failOn: 'none' }).metadata();
+
+    if (format.lossless) {
+      variant = { type: format.type, extension: format.extension,
+        width: meta.width ?? capW, height: meta.height ?? capW,
+        bytes: buf.byteLength, ssimOk: true };
+      break;
+    }
+
+    const ssim = await computeSSIM(
+      await input.clone().rotate().resize(capW, capW, {
+        fit: 'inside', withoutEnlargement: true,
+      }).toFormat('png').toBuffer(),
+      buf,
+    );
+
+    variant = {
+      type: format.type, extension: format.extension,
+      width: meta.width ?? capW, height: meta.height ?? capW,
+      bytes: buf.byteLength, ssimOk: ssim >= SSIM_THRESHOLD,
+    };
+
+    if (variant.ssimOk || quality + SSIM_MAX_QUALITY_BUMP >= 100) break;
+    quality = Math.min(100, quality + SSIM_MAX_QUALITY_BUMP);
+  }
+  return variant;
 }
 
 /**
