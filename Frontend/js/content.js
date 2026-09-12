@@ -304,6 +304,19 @@
       // Page-level hide runs AFTER content is loaded (all()) and after section
       // hydration — never before, or it would read an empty list and no-op.
       applyPageVisibility();
+      // Companion sync hook — a page may register window.aamakoHiddenFieldsSync
+      // (product.html does) to apply its OWN item-mapped visibility flags
+      // (product-template.<slug>.<field>__hidden from the product template
+      // editor's eye toggle). Called on EVERY pass — initial and poll — so the
+      // freshly loaded items are authoritative: the pre-paint guard builds from
+      // the localStorage cache, which can be one reload stale, and without this
+      // hook unhiding a section in the dashboard would keep it display:none in
+      // the current view (the style element is built once and never revisited).
+      try {
+        if (typeof window !== 'undefined' && typeof window.aamakoHiddenFieldsSync === 'function') {
+          window.aamakoHiddenFieldsSync(content);
+        }
+      } catch (_) { /* page hook is optional — ignore */ }
       return content;
     })
     // Media pass — fill still-default image slots from the dashboard's media
@@ -578,5 +591,17 @@
       content = null;
       return load(true).then(hydrate);
     };
+
+    // Dashboard live-preview bridge — when the product-template editor saves or
+    // publishes a field it postMessages { source: 'aamako-cms-bridge',
+    // type: 'content-updated' } to this iframe. Re-hydrate IMMEDIATELY instead
+    // of waiting for the next 10s poll, so edits appear in the live preview as
+    // they are made. Regular storefront visitors never receive this message.
+    window.addEventListener('message', function (e) {
+      if (!e || !e.data || e.data.source !== 'aamako-cms-bridge') return;
+      if (e.data.type === 'content-updated') {
+        window.AamakoContent.refresh();
+      }
+    });
   }
 })();

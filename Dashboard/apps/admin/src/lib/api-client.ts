@@ -81,11 +81,23 @@ class ApiClient {
     return response.json();
   }
 
-  /** Multipart file upload (image from device). `file` is sent as "file". */
-  async upload<T>(endpoint: string, file: File): Promise<T> {
+  /** Multipart file upload (image from device). `file` is sent as "file";
+ *  optional extra form fields (name, category, altText, sourcePage…)
+ *  are appended alongside so the backend can register rich metadata at
+ *  upload time (the upload endpoint now auto-creates the library entry). */
+  async upload<T>(
+    endpoint: string,
+    file: File,
+    fields?: Record<string, string | undefined>,
+  ): Promise<T> {
     const url = new URL(`${API_BASE}${endpoint}`, window.location.origin);
     const form = new FormData();
     form.append('file', file);
+    if (fields) {
+      for (const [key, value] of Object.entries(fields)) {
+        if (value !== undefined && value !== '') form.append(key, value);
+      }
+    }
     const headers: Record<string, string> = {};
     if (this.accessToken) headers['Authorization'] = `Bearer ${this.accessToken}`;
     const response = await fetch(url.toString(), { method: 'POST', headers, body: form });

@@ -39,8 +39,46 @@
       if(!document.getElementById('acctWrap')) document.documentElement.removeAttribute('data-aamako-auth');
     },2500);
   }
+  /* HIDDEN TEMPLATE FIELDS — sections hidden in the product template editor
+     (eye icon) must never flash on screen. Registered as
+     window.aamakoHiddenFieldsSync so content.js re-applies the flags on EVERY
+     pass — the pre-paint call below uses the cached items (no flash before
+     first paint), and the fresh pass that follows (initial fetch + 10s poll)
+     rebuilds the style from the freshly loaded items, making the fresh data
+     authoritative. Without the fresh re-apply, hiding only worked on the
+     second reload and unhiding kept the section display:none in the current
+     view (the style element was built once from the one-reload-stale cache and
+     never revisited). Uses its OWN style element so the nav-guard valve (3s)
+     can never strip it. */
+  window.aamakoHiddenFieldsSync=function(items){
+    try{
+      var pslug=new URLSearchParams(location.search).get('slug');
+      if(!pslug)return;
+      var HMAP={name:'#pdTitle,#pdCrumbName',description:'#pdShort,#pdReadMore',highlights:'#pdHighlightsWrap','image-url':'.ompdp-gallery-main,#pdThumbs',price:'#pdPrice',pack:'#specPack',availability:'#specAvail',sku:'#specSku',faq:'#pdFaq,#pdFaqTitle','related-cards':'#pdRelated','long-description':'#tab-desc,[data-tab="desc"]',howto:'#tab-howto,[data-tab="howto"]',nutrition:'#tab-nutrition,[data-tab="nutrition"]',certifications:'#tab-certs,[data-tab="certs"]',why:'#tab-why,[data-tab="why"]',sourcing:'#tab-sourcing,[data-tab="sourcing"]'};
+      var hp='product-template.'+pslug+'.';
+      var hsel=[];
+      for(var hi=0;hi<(items||[]).length;hi++){
+        var hitem=items[hi];
+        if(!hitem||typeof hitem.key!=='string'||hitem.key.indexOf(hp)!==0)continue;
+        var hsuffix=hitem.key.slice(hp.length);
+        if(hsuffix.length<=8||hsuffix.slice(-8)!=='__hidden')continue;
+        var hf=hsuffix.slice(0,-8);
+        var hval=(hitem.title!=null?String(hitem.title):'').trim();
+        if(hval!=='hidden')continue;
+        if(HMAP[hf])hsel.push(HMAP[hf]);
+      }
+      var prev=document.getElementById('aamako-pd-hidden');
+      if(prev&&prev.parentNode)prev.parentNode.removeChild(prev);
+      if(hsel.length){
+        var hs=document.createElement('style');hs.id='aamako-pd-hidden';
+        hs.textContent=hsel.join(',')+'{display:none!important}';
+        (document.head||document.documentElement).appendChild(hs);
+      }
+    }catch(e){/*ignore*/}
+  };
   var arr=JSON.parse(localStorage.getItem('aamako_content_cache_v1')||'null');
   if(!arr||!arr.length)return;
+  try{window.aamakoHiddenFieldsSync(arr);}catch(e){/*ignore*/}
   var css=[],here=location.pathname.replace(/\/+$/,'')||'/';
   if(here==='/')here='/index.html';
   for(var i=0;i<arr.length;i++){
@@ -349,14 +387,14 @@ document.addEventListener('DOMContentLoaded', function(){
         <p class="ompdp-desc" id="pdShort">Loading product details…</p>
         <button type="button" class="readmore" id="pdReadMore" hidden>Read more</button>
 
-        <div class="omhighlights">
+        <div class="omhighlights" id="pdHighlightsWrap">
           <h4 data-cms="product-page.highlights">Key Highlights</h4>
           <ul id="pdHighlights"></ul>
         </div>
 
-        <div class="spec-row"><span data-cms="product-page.pack">Pack size</span><span id="pdPack">—</span></div>
-        <div class="spec-row"><span data-cms="product-page.availability">Availability</span><span id="pdAvailability">Checking…</span></div>
-        <div class="spec-row"><span data-cms="product-page.sku">SKU</span><span id="pdSku">—</span></div>
+        <div class="spec-row" id="specPack"><span data-cms="product-page.pack">Pack size</span><span id="pdPack">—</span></div>
+        <div class="spec-row" id="specAvail"><span data-cms="product-page.availability">Availability</span><span id="pdAvailability">Checking…</span></div>
+        <div class="spec-row" id="specSku"><span data-cms="product-page.sku">SKU</span><span id="pdSku">—</span></div>
 
         <div class="omqty-row">
           <div class="qty-stepper"><button type="button" id="qtyDec" aria-label="Decrease quantity">−</button><span id="qtyValue">1</span><button type="button" id="qtyInc" aria-label="Increase quantity">+</button></div>
@@ -397,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="omtab-panel" data-panel="why" id="tab-why"></div>
     <div class="omtab-panel" data-panel="sourcing" id="tab-sourcing"></div>
 
-    <h2 class="omsec-title" style="margin-top:56px;" data-cms="product-page.faq.title">Frequently asked</h2>
+    <h2 class="omsec-title" style="margin-top:56px;" id="pdFaqTitle" data-cms="product-page.faq.title">Frequently asked</h2>
     <div class="omfaq" id="pdFaq"></div>
   </div>
 </section>
@@ -458,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- RELATED -->
-<section class="omsec" style="padding-top:8px;">
+<section class="omsec" id="pdRelated" style="padding-top:8px;">
   <div class="wrap">
     <div class="section-head"><div><h2 class="section-title" data-cms="product-page.related.title">You might also like</h2></div></div>
     <div class="omfp-grid" id="relatedGrid"></div>
@@ -890,55 +928,82 @@ document.addEventListener('DOMContentLoaded', function(){
      been created in the DB catalog yet. Renders the page from the published
      CMS product-template.<slug>.* fields and links the breadcrumb to the
      product's Process Category collection page. */
+  // Tracks whether this page is rendering a CMS template product (no DB
+  // catalog entry). When true, every dashboard refresh re-applies the
+  // template fields so the live preview stays in step with the editor.
+  var isTemplateProduct = false;
+
   function applyTemplateProduct(slugToLoad){
     if(!slugToLoad||!window.AamakoContent||!window.AamakoContent.load)return;
+    isTemplateProduct = true; // mark so refresh() re-applies below
     window.AamakoContent.load().then(function(){
-      var prefix='product-template.'+slugToLoad+'.';
-      function field(f){
-        var it=window.AamakoContent.get(prefix+f);
-        if(!it)return '';
-        return (it.title!=null?String(it.title):'').trim();
-      }
-      var name=field('name')||slugToLoad;
-      var price=field('price');
-      var image=field('image-url');
-      var pack=field('pack');
-      var availability=field('availability');
-      var description=field('description');
-      var processCat=field('process-category');
-      if(!name)return;
-      document.getElementById('pdTitle').textContent=name;
-      document.getElementById('pdCrumbName').textContent=name;
-      var catName=processCat&&PROCESS_CAT[processCat]?PROCESS_CAT[processCat]:'Shop';
-      var catSlug=processCat&&/^(freeze-dried-fruits|dehydrated|powders)$/.test(processCat)?processCat:null;
-      document.getElementById('pdCrumbs').innerHTML=
-        '<a href="index.html">Home</a><span class="sep">/</span><a href="shop.html">Shop</a><span class="sep">/</span>'
-        +(catSlug?'<a href="collection.html?cat='+encodeURIComponent(catSlug)+'">'+esc(catName)+'</a><span class="sep">/</span>':'')
-        +'<span class="current">'+esc(name)+'</span>';
-      document.title=name+' — Aama ko Agro';
-      if(image){
-        var main=document.getElementById('pdMainImg');
-        if(main){main.src=image;main.alt=name||'Product photo';}
-        // Only update the first (hero) thumbnail; the other gallery thumbs
-        // retain their distinct static images.  Click handlers are bound by
-        // initGallery() above, so each thumb still swaps into the main view.
-        var firstThumb=document.querySelector('#pdThumbs .omthumb');
-        if(firstThumb){
-          var fi=firstThumb.querySelector('img');
-          if(fi){fi.src=image;fi.alt=name||'Front view';}
-          firstThumb.setAttribute('data-large',image);
-        }
-      }
-      if(price)document.getElementById('pdPrice').textContent=fmt(parseFloat(price)||0);
-      if(pack)document.getElementById('pdPack').textContent=pack;
-      if(availability)document.getElementById('pdAvailability').textContent=availability;
-      if(description)document.getElementById('pdShort').innerHTML=esc(description);
-      var kind=catSlug&&KIND_OF[catSlug]?KIND_OF[catSlug]:'fd';
-      buildTabs(kind,name);
+      applyTemplateProductFields(slugToLoad);
     }).catch(function(){/* keep static fallback */});
   }
 
-  if(window.AamakoAPI){
+  // Pure field application — no load(), no flag. Shared by the initial render
+  // AND every live-preview refresh so name/price/image/pack/availability/
+  // description update in the iframe as the dashboard editor changes them.
+  function applyTemplateProductFields(slugToLoad){
+    if(!slugToLoad)return;
+    var prefix='product-template.'+slugToLoad+'.';
+    function field(f){
+      var it=window.AamakoContent.get(prefix+f);
+      if(!it)return '';
+      return (it.title!=null?String(it.title):'').trim();
+    }
+    var name=field('name')||slugToLoad;
+    var price=field('price');
+    var image=field('image-url');
+    var pack=field('pack');
+    var availability=field('availability');
+    var description=field('description');
+    var processCat=field('process-category');
+    if(!name)return;
+    document.getElementById('pdTitle').textContent=name;
+    document.getElementById('pdCrumbName').textContent=name;
+    var catName=processCat&&PROCESS_CAT[processCat]?PROCESS_CAT[processCat]:'Shop';
+    var catSlug=processCat&&/^(freeze-dried-fruits|dehydrated|powders)$/.test(processCat)?processCat:null;
+    document.getElementById('pdCrumbs').innerHTML=
+      '<a href="index.html">Home</a><span class="sep">/</span><a href="shop.html">Shop</a><span class="sep">/</span>'
+      +(catSlug?'<a href="collection.html?cat='+encodeURIComponent(catSlug)+'">'+esc(catName)+'</a><span class="sep">/</span>':'')
+      +'<span class="current">'+esc(name)+'</span>';
+    document.title=name+' — Aama ko Agro';
+    if(image){
+      var main=document.getElementById('pdMainImg');
+      if(main){main.src=image;main.alt=name||'Product photo';}
+      // Only update the first (hero) thumbnail; the other gallery thumbs
+      // retain their distinct static images.  Click handlers are bound by
+      // initGallery() above, so each thumb still swaps into the main view.
+      var firstThumb=document.querySelector('#pdThumbs .omthumb');
+      if(firstThumb){
+        var fi=firstThumb.querySelector('img');
+        if(fi){fi.src=image;fi.alt=name||'Front view';}
+        firstThumb.setAttribute('data-large',image);
+      }
+    }
+    if(price)document.getElementById('pdPrice').textContent=fmt(parseFloat(price)||0);
+    if(pack)document.getElementById('pdPack').textContent=pack;
+    if(availability)document.getElementById('pdAvailability').textContent=availability;
+    // Template copy is authored in the dashboard rich-text editor — render
+    // as HTML (the same trust model as the data-cms-html slots).
+    if(description)document.getElementById('pdShort').innerHTML=description;
+    var kind=catSlug&&KIND_OF[catSlug]?KIND_OF[catSlug]:'fd';
+    buildTabs(kind,name);
+  }
+
+  // ?template=1 is set by the dashboard's live-preview iframe: skip the DB
+  // catalog lookup and render purely from the CMS template fields so the
+  // preview reflects exactly what the editor is editing (DB product data is
+  // ignored). Regular storefront visitors never send this flag.
+  var forceTemplate=new URLSearchParams(window.location.search).get('template')==='1';
+
+  // content.js is loaded with `defer`, so it isn't ready when this inline
+  // script first runs. Poll for AamakoContent before initializing — without
+  // this, applyTemplateProduct() would fire while AamakoContent is still
+  // undefined and the page would stay on the "Loading product…" placeholder.
+  function initProductPage(){
+  if(window.AamakoAPI && !forceTemplate){
     var load=slug?window.AamakoAPI.getProduct(slug):window.AamakoAPI.listProducts(1).then(function(r){return r.items&&r.items[0];});
     load.then(applyProduct).catch(function(){applyTemplateProduct(slug);});
     load.then(function(p){
@@ -952,6 +1017,31 @@ document.addEventListener('DOMContentLoaded', function(){
         bindRelated();
       });
     }).catch(function(){/* keep static fallback */});
+  } else if (forceTemplate) {
+    // Template-preview mode (dashboard live preview): no DB lookup at all.
+    applyTemplateProduct(slug);
+  }
+
+  // Dashboard live-preview bridge — re-apply template fields on every refresh
+  // so the iframe reflects editor changes to name/price/image/etc.
+  window.addEventListener('message', function(e){
+    if(!e||!e.data||e.data.source!=='aamako-cms-bridge')return;
+    if(e.data.type==='content-updated' && isTemplateProduct && window.AamakoContent){
+      window.AamakoContent.load().then(function(){ applyTemplateProductFields(slug); });
+    }
+  });
+  }
+
+  // Poll for AamakoContent (deferred content.js) — once it's ready, init.
+  var _initialized = false;
+  function _doInit(){ if(_initialized) return; _initialized = true; initProductPage(); }
+  if(window.AamakoContent){ _doInit(); }
+  else {
+    var _poll=setInterval(function(){
+      if(window.AamakoContent){ clearInterval(_poll); _doInit(); }
+    },50);
+    // Safety valve: give up after 5s and init anyway (content.js failed to load)
+    setTimeout(function(){ clearInterval(_poll); _doInit(); },5000);
   }
 })();
 </script>

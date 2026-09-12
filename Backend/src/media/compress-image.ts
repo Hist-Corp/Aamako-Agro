@@ -60,6 +60,20 @@ const minBytes = 25 * 1024;
 /** Skip compression entirely above this (safety valve; endpoint caps at 25 MB). */
 const maxBytes = 25 * 1024 * 1024;
 
+/** Map an upload's MIME type to a browser-renderable extension. Skipped files
+ *  are stored byte-for-byte with THIS extension — never ".bin", or the stored
+ *  URL would not render in an <img> and the dashboard/media sections would
+ *  show a missing image. */
+function extForMimetype(mimetype: string): string {
+  return mimetype === 'image/png' ? '.png'
+    : mimetype === 'image/webp' ? '.webp'
+    : mimetype === 'image/gif' ? '.gif'
+    : mimetype === 'image/svg+xml' ? '.svg'
+    : mimetype === 'image/jpeg' ? '.jpg'
+    : mimetype === 'image/avif' ? '.avif'
+    : '.jpg';
+}
+
 export async function compressImage(
   buffer: Buffer,
   mimetype: string,
@@ -86,16 +100,16 @@ export async function compressImage(
       return skipped('animated image stored as-is', '.gif');
     }
     if (originalBytes < minBytes) {
-      return skipped('already well optimized', '.bin');
+      return skipped('already well optimized', extForMimetype(mimetype));
     }
     if (originalBytes > maxBytes) {
-      return skipped('file too large to process safely', '.bin');
+      return skipped('file too large to process safely', extForMimetype(mimetype));
     }
 
     const input = sharp(buffer, { failOn: 'none', animated: false });
     const meta = await input.metadata();
     if (!meta.width || !meta.height || !meta.format) {
-      return skipped('unreadable image metadata', '.bin');
+      return skipped('unreadable image metadata', extForMimetype(mimetype));
     }
     // Second frame => animation (animated WebP uploads, multi-page TIFFs…).
     if ((meta.pages ?? 1) > 1) {

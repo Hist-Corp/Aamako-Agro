@@ -118,6 +118,7 @@ export class MediaService {
         select: {
           id: true,
           name: true,
+          type: true,
           url: true,
           altText: true,
           category: true,

@@ -26,14 +26,18 @@ export function PageHeader({ title, description, actions, breadcrumbs }: PageHea
           ))}
         </div>
       )}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold text-surface-900">{title}</h1>
           {description && (
             <p className="mt-1 text-sm text-surface-500">{description}</p>
           )}
         </div>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+        {actions && (
+          <div className="flex flex-nowrap items-center gap-2 overflow-x-auto sm:flex-none">
+            {actions}
+          </div>
+        )}
       </div>
     </div>
   );

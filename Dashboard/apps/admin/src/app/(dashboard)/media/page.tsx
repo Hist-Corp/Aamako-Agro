@@ -278,10 +278,11 @@ export default function MediaPage() {
     }
   }, [uploadOpen]);
 
-  /** Upload one staged file: store it via /admin/media/upload, then register
-   *  it in the library with the shared category/alt text. `origin` records
-   *  which dashboard page/section the file was uploaded from, so the library
-   *  can show provenance for images added through page templates. */
+  /** Upload one staged file: the /admin/media/upload endpoint now stores the
+   *  file AND registers it in the library in one step (category/alt text/from
+   *  bus carried as multipart fields), so the second POST is gone. `origin`
+   *  records which dashboard page/section the file was uploaded from, so the
+   *  library can show provenance for images added through page templates. */
   const uploadOneFile = async (
     file: File,
     category: string,
@@ -294,15 +295,10 @@ export default function MediaPage() {
       size: number;
       originalSize?: number;
       optimized?: boolean;
-    }>('/admin/media/upload', file);
-    const kb = res.size / 1024;
-    const sizeLabel = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`;
-    await apiClient.post('/admin/media', {
+    }>('/admin/media/upload', file, {
       name: file.name,
-      url: res.url,
       category,
       altText: altText.trim() || undefined,
-      size: sizeLabel,
       ...(origin ? origin : {}),
     });
     // Report what the server-side optimizer saved for the batch toast.

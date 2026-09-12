@@ -14,7 +14,9 @@ import {
   ExternalLink,
   Lock,
   CheckCircle,
-  Upload,
+  HardDriveUpload,
+  FolderOpen,
+  Loader2,
   Sparkles,
   RotateCcw,
   Monitor,
@@ -22,7 +24,11 @@ import {
   Smartphone,
   Plus,
   Trash2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { MediaPickerDialog } from '@/components/media-picker-dialog';
 import { PRODUCT_TEMPLATE_SECTIONS, productFieldKey, ALL_PRODUCT_FIELD_KEYS, getProductFieldDefaults } from '@/config/product-templates';
 import { assetUrl } from '@/lib/asset-url';
 
@@ -140,31 +146,64 @@ export default function ProductTemplateEditorPage({
     }));
   };
 
+  // Live-preview bridge: after a save/publish the preview iframe would wait up
+  // to its 10s poll before showing the change. Telling it to refresh (via a
+  // postMessage that js/content.js listens for and answers with refresh())
+  // makes dashboard edits appear in the preview immediately, in place — no
+  // iframe reload, no scroll reset.
+  //
+  // DEBOUNCED: firing on every keystroke makes the iframe re-render on every
+  // letter, which reads as a flicker in the preview panel. We batch rapid calls
+  // (trailing-edge debounce) so the preview only updates after the user pauses
+  // for 600ms — typing stays smooth, and the preview settles when they do.
+  const previewTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshPreview = useCallback(() => {
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    previewTimer.current = setTimeout(() => {
+      try {
+        const ifr = document.querySelector<HTMLIFrameElement>('iframe[title="Storefront preview"]');
+        ifr?.contentWindow?.postMessage(
+          { source: 'aamako-cms-bridge', type: 'content-updated' },
+          '*',
+        );
+      } catch (_) {
+        /* a messaging failure must never break the editing workflow */
+      }
+      previewTimer.current = null;
+    }, 600);
+  }, []);
+
   const handleSaveField = async (field: string, value: string, isTitle: boolean = true) => {
-    setIsSaving(true);
+    // NOTE: this function fires on every keystroke. It must NOT touch any
+    // component state (no setIsSaving, no addToast) — doing so re-renders the
+    // entire tree on every letter, which reads as a flicker in the input the
+    // user is typing in and in the header buttons. Auto-save is completely
+    // silent: no state change, no toast, no re-render. The only state change
+    // in the whole save path is the local `updateItem` below, which is a
+    // targeted map update that React batches with the keystroke — invisible.
     const existing = items[field];
     const key = productFieldKey(slug, field);
     try {
-      await apiClient.put('/content', {
-        key,
-        ...(isTitle ? { title: value } : { body: value }),
-        ...(existing ? { id: existing.id } : {}),
+      const nextTitle = isTitle
+        ? value
+        : existing?.title?.trim() || field;
+      const nextBody = isTitle ? existing?.body ?? '' : value;
+      await apiClient.put(`/content/${encodeURIComponent(key)}`, {
+        title: nextTitle,
+        body: nextBody,
       });
       updateItem(field, isTitle ? { title: value } : { body: value });
-      addToast({
-        type: 'success',
-        title: 'Saved',
-        description: `${field} updated successfully.`,
-      });
+      refreshPreview();
     } catch (err) {
       addToast({
         type: 'error',
         title: 'Save failed',
         description: err instanceof ApiError ? err.message : 'Unexpected error',
       });
-    } finally {
-      setIsSaving(false);
     }
+    // No finally block that touches component state — auto-save never triggers
+    // a re-render. Only handlePublish (the explicit user action) toggles
+    // isSaving to give the Publish button its "Saving..." affordance.
   };
 
   const handlePublish = async () => {
@@ -198,17 +237,25 @@ export default function ProductTemplateEditorPage({
     }
     setIsSaving(true);
     try {
-      for (const field of ALL_PRODUCT_FIELD_KEYS) {
+      // Publish editable fields AND companion "<field>__hidden" visibility
+      // flags (same items map; without publishing them the storefront would
+      // never learn a section was hidden).
+      const publishKeys = [...ALL_PRODUCT_FIELD_KEYS, ...Object.keys(items).filter((k) => k.endsWith('__hidden'))];
+      for (const field of publishKeys) {
         const key = productFieldKey(slug, field);
         if (items[field]) {
-          await apiClient.put('/content/publish', {
-            key,
-            ...(user?.role === 'CONTENT_MANAGER' || user?.role === 'STAFF_MANAGER'
-              ? { status: 'PENDING_REVIEW' }
-              : { status: 'PUBLISHED' }),
-          });
+          // Values were already written by handleSaveField (PUT /content/:key).
+          // The publish step flips isPublished → the public live-content feed
+          // (/api/content) includes the item → the storefront poller & preview
+          // pick it up. Backend route is POST /content/:key/publish (the
+          // previous PUT /content/publish had no matching route — it 404'd and
+          // nothing ever reached the storefront).
+          await apiClient.post(`/content/${encodeURIComponent(key)}/publish`);
         }
       }
+      // Bump the preview iframe now — it normally polls every 10s, but after
+      // this explicit publish we want the storefront to reflect edits instantly.
+      refreshPreview();
       addToast({
         type: 'success',
         title: 'Published',
@@ -234,15 +281,15 @@ return (
       title={slug === 'new' ? 'Add product' : `Product: ${slug}`}
       description="Edit any section of this product template — including the 5-image gallery. Changes save directly and show in the live storefront preview."
       actions={
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
           {canPublish && (
-            <Button variant={isSaving ? 'secondary' : 'primary'} onClick={handlePublish} disabled={isSaving}>
+            <Button size="sm" variant={isSaving ? 'secondary' : 'primary'} onClick={handlePublish} disabled={isSaving} className="whitespace-nowrap">
               <CheckCircle className="h-4 w-4" />
               {isSaving ? 'Saving...' : 'Publish to storefront'}
             </Button>
           )}
-          <a href={`${STOREFRONT_URL}/product.html?slug=${slug}`} target="_blank" rel="noreferrer">
-            <Button variant="secondary">
+          <a href={`${STOREFRONT_URL}/product.html?slug=${slug}`} target="_blank" rel="noreferrer" className="whitespace-nowrap">
+            <Button size="sm" variant="secondary">
               <ExternalLink className="h-4 w-4" /> View live product page
             </Button>
           </a>
@@ -272,7 +319,11 @@ return (
           <Card key={section.label} className="p-5 mb-4">
             <h3 className="text-md font-semibold text-surface-800 mb-1">{section.label}</h3>
             <p className="text-2xs text-surface-500 mb-4">{section.description}</p>
-            {section.fields.map((field) => renderField(field, items, slug, handleSaveField, defaults))}
+            {section.fields.map((field) => (
+              <FieldBlock key={field.key} field={field} items={items} onSave={handleSaveField}>
+                {renderField(field, items, slug, handleSaveField, defaults)}
+              </FieldBlock>
+            ))}
           </Card>
         ))}
         <div className="text-center">
@@ -287,7 +338,10 @@ return (
         className="w-full xl:w-[34%] xl:flex-none xl:sticky xl:top-[96px] xl:self-start"
         style={previewW !== null ? { width: previewW } : undefined}
       >
-        <ResizablePreview src={`${STOREFRONT_URL}/product.html?slug=${slug}`} onWidthChange={setPreviewW} />
+        {/* ?template=1 forces the storefront to render from the CMS template
+            fields (product-template.<slug>.*) instead of the DB catalog product,
+            so the live preview reflects exactly what the editor is editing. */}
+        <ResizablePreview src={`${STOREFRONT_URL}/product.html?template=1&slug=${slug}`} onWidthChange={setPreviewW} />
       </div>
     </div>
   </div>
@@ -400,12 +454,11 @@ function ResizablePreview({
           style={dragging ? { boxShadow: '0 0 0 2px rgba(124,58,237,.4)' } : undefined}
         >
           <iframe
-            key={reloadKey}
+            key={`${reloadKey}-${src}`}
             src={src}
             title="Storefront preview"
             className="w-full border-0 bg-white"
             style={{ height: 600 }}
-            loading="lazy"
           />
         </div>
         {/* Mouse-draggable divider — grab the handle on the preview's left edge
@@ -453,7 +506,81 @@ function ResizablePreview({
   );
 }
 
+/** Upgrade plain multi-paragraph copy to paragraph HTML so the rich-text
+ *  toolbar can style it (first edit wraps; HTML saved values pass through). */
+function plainToHtml(p: string): string {
+  return p
+    .split(/\n{2,}/)
+    .map((b) => '<p>' + b.replace(/\n/g, '<br>') + '</p>')
+    .join('');
+}
+
 function renderField(
+  field: any,
+  items: Record<string, CmsItem>,
+  slug: string,
+  onSave: (field: string, value: string, isTitle: boolean) => void,
+  defaults: Record<string, string> = {},
+) {
+  return (
+    <FieldBlock field={field} items={items} onSave={onSave}>
+      {renderFieldInner(field, items, slug, onSave, defaults)}
+    </FieldBlock>
+  );
+}
+
+/** Hide/unhide wrapper drawn around every template field. The eye icon in
+ *  the top-right corner persists the decision to the storefront (as a
+ *  companion "<field>__hidden" content item) so the user decides per
+ *  section whether customers see it. Hidden fields fade + show a badge;
+ *  the icon alone communicates state, and the row stays fully editable. */
+function FieldBlock({
+  field,
+  items,
+  onSave,
+  children,
+}: {
+  field: any;
+  items: Record<string, CmsItem>;
+  onSave: (field: string, value: string, isTitle: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const hiddenKey = field.key + '__hidden';
+  const isHidden = (items[hiddenKey]?.title ?? '').trim() === 'hidden';
+  const toggleHidden = () => onSave(hiddenKey, isHidden ? '' : 'hidden', true);
+  return (
+    <div
+      className={
+        'relative rounded-lg transition-opacity ' +
+        (isHidden ? 'border border-dashed border-surface-300 bg-surface-50 opacity-60' : '')
+      }
+    >
+      <button
+        type="button"
+        onClick={toggleHidden}
+        title={isHidden ? 'Show this content on the storefront' : 'Hide this content on the storefront'}
+        aria-label={isHidden ? 'Show content on the storefront' : 'Hide content on the storefront'}
+        aria-pressed={isHidden}
+        className={
+          'absolute right-1 top-1 z-10 flex h-7 w-7 items-center justify-center rounded-md border transition-colors ' +
+          (isHidden
+            ? 'border-surface-300 bg-white text-surface-400 hover:text-surface-700'
+            : 'border-transparent bg-white/80 text-surface-300 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40')
+        }
+      >
+        {isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+      {isHidden && (
+        <span className="absolute right-10 top-1.5 z-10 inline-flex items-center gap-1 rounded-full bg-surface-200 px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-surface-500">
+          <EyeOff className="h-3 w-3" /> Hidden on storefront
+        </span>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function renderFieldInner(
   field: any,
   items: Record<string, CmsItem>,
   slug: string,
@@ -564,17 +691,19 @@ function renderField(
   }
 
   if (field.type === 'textarea' || field.type === 'richtext') {
+    const raw = (existing?.body && existing.body !== '' ? existing.body : existing?.title) ?? prefill;
+    // Plain saved copy (or plain prefill) is upgraded to paragraph HTML once
+    // so the formatting toolbar can style it; existing HTML passes through.
+    const html = raw && !/<[a-z][^>]*>/i.test(raw) ? plainToHtml(raw) : raw;
     return (
       <div key={field.key} className="mb-4">
         <label className="block text-xs font-medium text-surface-600 mb-1">{field.label}</label>
-        <textarea
-          className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          rows={4}
+        <RichTextEditor
+          value={html}
+          onChange={(h) => onSave(field.key, h, false)}
           placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-          value={existing?.body ?? existing?.title ?? prefill}
-          onChange={(e) => onSave(field.key, e.target.value, false)}
+          hint={field.description}
         />
-        <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
         {prefillBadge()}
         <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
       </div>
@@ -647,6 +776,7 @@ function GalleryEditor({
   const { addToast } = useToast();
   const [rows, setRows] = useState<string[]>(() => (urls.length ? [...urls] : ['']));
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+  const [pickerIdx, setPickerIdx] = useState<number | null>(null);
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
 
   const commit = (next: string[]) => {
@@ -726,11 +856,14 @@ function GalleryEditor({
                 value={url}
                 onChange={(e) => setRow(idx, e.target.value)}
               />
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" disabled={uploadingIdx === idx} onClick={() => inputRefs.current[idx]?.click()}>
-                  <Upload className="h-4 w-4" />
-                  {uploadingIdx === idx ? 'Uploading…' : 'Upload'}
-                </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <ImageSourceGroup
+                  uploading={uploadingIdx === idx}
+                  onUpload={() => inputRefs.current[idx]?.click()}
+                  onMedia={() => setPickerIdx(idx)}
+                  uploadLabel="From device"
+                  mediaLabel="From media"
+                />
                 {rows.length > 1 && (
                   <Button variant="ghost" size="sm" onClick={() => removeRow(idx)}>
                     <Trash2 className="h-4 w-4" />
@@ -761,8 +894,80 @@ function GalleryEditor({
           Add image ({rows.length}/{MAX_GALLERY_IMAGES})
         </button>
       )}
+      <MediaPickerDialog
+        open={pickerIdx !== null}
+        onClose={() => setPickerIdx(null)}
+        onSelect={(u) => {
+          if (pickerIdx !== null) setRow(pickerIdx, u);
+          setPickerIdx(null);
+        }}
+        context={`Gallery image ${(pickerIdx ?? 0) + 1}`}
+      />
       <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
       <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
+    </div>
+  );
+}
+
+/** Image picker pair — a single visual control with two image-sourcing paths:
+ *  upload from the user's device, or pick an existing image from the media
+ *  library. Rendered as a split/segmented control: a white "device" segment +
+ *  a brand-tinted "library" segment separated by a hairline divider, so the
+ *  two options read as one cohesive "add image" action instead of two plain
+ *  grey buttons. Collapses into a stacked pair on narrow columns/mobile and
+ *  stays a compact side-by-side pair on wider rows. The uploading state shows
+ *  an inline spinner on the device segment (same size — no layout jump). */
+function ImageSourceGroup({
+  uploading,
+  onUpload,
+  onMedia,
+  uploadLabel = 'Insert from device',
+  mediaLabel = 'Media library',
+  className,
+}: {
+  uploading: boolean;
+  onUpload: () => void;
+  onMedia: () => void;
+  uploadLabel?: string;
+  mediaLabel?: string;
+  className?: string;
+}) {
+  const segBase =
+    'group inline-flex min-h-9 flex-1 items-center justify-center gap-2 px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50 disabled:pointer-events-none disabled:opacity-60';
+  return (
+    <div
+      className={
+        'inline-flex max-w-full flex-col overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm sm:inline-flex sm:w-auto sm:flex-row sm:items-stretch ' +
+        (className ?? '')
+      }
+    >
+      <button
+        type="button"
+        onClick={onUpload}
+        disabled={uploading}
+        title={uploading ? 'Uploading image…' : 'Upload an image from your device'}
+        aria-label={uploading ? 'Uploading image' : 'Upload an image from your device'}
+        className={`${segBase} bg-white text-surface-700 hover:bg-brand-50 hover:text-brand-700 active:bg-brand-100 ${
+          uploading ? 'text-brand-700' : ''
+        }`}
+      >
+        {uploading ? (
+          <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+        ) : (
+          <HardDriveUpload className="h-4 w-4 text-brand-600 transition-transform group-hover:-translate-y-px" />
+        )}
+        {uploading ? 'Uploading…' : uploadLabel}
+      </button>
+      <button
+        type="button"
+        onClick={onMedia}
+        title={mediaLabel}
+        aria-label={mediaLabel}
+        className={`${segBase} border-t border-surface-200 bg-surface-50/70 text-surface-700 hover:bg-brand-50 hover:text-brand-700 active:bg-brand-100 sm:border-l sm:border-t-0`}
+      >
+        <FolderOpen className="h-4 w-4 text-brand-600" />
+        {mediaLabel}
+      </button>
     </div>
   );
 }
@@ -781,6 +986,7 @@ function ImageField({
   const { addToast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
@@ -833,12 +1039,15 @@ function ImageField({
             value={value}
             onChange={(e) => onSave(field.key, e.target.value, true)}
           />
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" disabled={uploading} onClick={() => inputRef.current?.click()}>
-              <Upload className="h-4 w-4" />
-              {uploading ? 'Uploading…' : 'Insert from device'}
-            </Button>
-            <span className="text-2xs text-surface-400">URL or device image — one is required</span>
+          <div className="flex flex-col gap-2">
+            <ImageSourceGroup
+              uploading={uploading}
+              onUpload={() => inputRef.current?.click()}
+              onMedia={() => setPickerOpen(true)}
+              uploadLabel="Insert from device"
+              mediaLabel="Media library"
+            />
+            <span className="text-2xs text-surface-400">URL, device image or media library — one is required</span>
           </div>
           <input
             ref={inputRef}
@@ -853,6 +1062,12 @@ function ImageField({
           {error && <p className="text-xs font-medium text-red-600">{error}</p>}
         </div>
       </div>
+      <MediaPickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(u) => onSave(field.key, u, true)}
+        context="Product image"
+      />
       <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
       <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
     </div>
@@ -1298,9 +1513,39 @@ function RelatedCardsEditor({
   prefill: string;
   onSave: (field: string, value: string, isTitle: boolean) => void;
 }) {
+  const { addToast } = useToast();
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+  const [pickerIdx, setPickerIdx] = useState<number | null>(null);
+  const cardInputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
   const cards = parseRelatedCards(value);
   const save = (next: { title: string; link: string; image: string }[]) =>
     onSave(field.key, serializeRelatedCards(next), true);
+
+  // Device upload for a card image: fills the same serialized slot the URL
+  // box writes ("Card N image: ..."), so no storefront format change.
+  const handleCardFile = async (idx: number, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      addToast({ type: 'error', title: 'Invalid file', description: 'Please choose an image file.' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      addToast({ type: 'error', title: 'Too large', description: 'Maximum image size is 5 MB.' });
+      return;
+    }
+    setUploadingIdx(idx);
+    try {
+      const res = await apiClient.upload<{ url: string }>('/admin/media/upload', file);
+      const next = cards.map((c, i) => (i === idx ? { ...c, image: res.url } : c));
+      save(next);
+      addToast({ type: 'success', title: 'Image uploaded', description: `Saved as card ${idx + 1} image.` });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Upload failed', description: err instanceof ApiError ? err.message : 'Please try again.' });
+    } finally {
+      setUploadingIdx(null);
+      const el = cardInputRefs.current[idx];
+      if (el) el.value = '';
+    }
+  };
 
   const updateCard = (idx: number, key: 'title' | 'link' | 'image', val: string) => {
     const next = cards.map((c, i) => (i === idx ? { ...c, [key]: val } : c));
@@ -1339,9 +1584,29 @@ function RelatedCardsEditor({
               onChange={(e) => updateCard(idx, 'image', e.target.value)}
               className={fieldInputCls()}
             />
+            <div className="mt-2">
+              <ImageSourceGroup
+                uploading={uploadingIdx === idx}
+                onUpload={() => cardInputRefs.current[idx]?.click()}
+                onMedia={() => setPickerIdx(idx)}
+                uploadLabel="From device"
+                mediaLabel="From media"
+                className="sm:w-full"
+              />
+              <input
+                ref={(el) => { cardInputRefs.current[idx] = el; }}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleCardFile(idx, f);
+                }}
+              />
+            </div>
             {card.image ? (
               <div className="mt-2 h-20 w-full overflow-hidden rounded-md bg-surface-100">
-                <img src={card.image} alt="" className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <img src={assetUrl(card.image)} alt="" className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             ) : (
               <div className="mt-2 flex h-20 w-full items-center justify-center rounded-md border border-dashed border-surface-300 text-2xs text-surface-400">
@@ -1351,6 +1616,15 @@ function RelatedCardsEditor({
           </div>
         ))}
       </div>
+      <MediaPickerDialog
+        open={pickerIdx !== null}
+        onClose={() => setPickerIdx(null)}
+        onSelect={(u) => {
+          if (pickerIdx !== null) updateCard(pickerIdx, 'image', u);
+          setPickerIdx(null);
+        }}
+        context={`Card ${(pickerIdx ?? 0) + 1} image`}
+      />
     </StructuredShell>
   );
 }

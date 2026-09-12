@@ -101,6 +101,19 @@ export class MediaController {
   async upload(
     @UploadedFile()
     file?: { originalname?: string; mimetype: string; size: number; buffer: Buffer },
+    // Optional metadata sent as multipart fields by the media page (category,
+    // alt text, origin from bus; the template editor's device pick sends none).
+    @Body()
+    dto?: {
+      name?: string;
+      category?: string;
+      altText?: string;
+      size?: string;
+      dimensions?: string;
+      sourcePage?: string;
+      sourceSection?: string;
+    },
+    @CurrentUser() actor?: { id: string; role: Role },
   ) {
     if (!file) {
       throw new BadRequestException('No image file provided');
@@ -122,14 +135,41 @@ export class MediaController {
 
     const baseUrl =
       process.env.PUBLIC_API_URL ?? `http://localhost:${process.env.PORT ?? 3000}/api`;
+    const url = `${baseUrl.replace(/\/$/, '')}/uploads/${filename}`;
+
+    // Auto-register every upload in the media library. Previously only the
+    // media page registered items (with a second POST /admin/media); device
+    // picks from the template editor simply wrote a file to disk and then
+    // NEVER appeared in the "Media library" pickers — which is why sections
+    // showed images as missing. Registering here makes every upload pickable.
+    const asset = await this.media.create(
+      {
+        name: dto?.name?.trim() || file.originalname || 'Untitled image',
+        url,
+        category: dto?.category?.trim() || 'General',
+        altText: dto?.altText?.trim() || undefined,
+        size:
+          dto?.size ||
+          (optimized.storedBytes
+            ? `${Math.max(1, Math.round(optimized.storedBytes / 1024))} KB`
+            : undefined),
+        dimensions:
+          optimized.width && optimized.height ? `${optimized.width}×${optimized.height}` : undefined,
+        sourcePage: dto?.sourcePage?.trim() || undefined,
+        sourceSection: dto?.sourceSection?.trim() || undefined,
+      },
+      actor?.id,
+    );
+
     return {
-      url: `${baseUrl.replace(/\/$/, '')}/uploads/${filename}`,
-      name: file.originalname,
+      id: asset.id,
+      url,
+      name: asset.name,
       // `size` is the STORED size so the dashboard/library reflect reality.
       size: optimized.storedBytes,
       originalSize: optimized.originalBytes,
       optimized: optimized.optimized,
-      dimensions: optimized.width && optimized.height ? `${optimized.width}×${optimized.height}` : undefined,
+      dimensions: asset.dimensions,
       note: optimized.note,
     };
   }

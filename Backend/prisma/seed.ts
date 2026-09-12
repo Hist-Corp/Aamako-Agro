@@ -254,7 +254,69 @@ async function main() {
   console.log('Seed complete: staff admin + customers + tiers + catalog + wholesale price lists');
 }
 
+/** Seed a small set of published demo media-library entries (pointing at the
+ *  storefront's own stock images) so the Dashboard's "Media library" pickers
+ *  are never empty on a fresh install. Only runs when the library has no
+ *  assets yet — uploaded/added images are never overwritten. */
+async function seedDemoMedia() {
+  const existing = await prisma.mediaAsset.count();
+  if (existing > 0) return;
+
+  const demo = [
+    {
+      name: 'Freeze-Dried Mango Pouch',
+      url: '/images/freeze-dried-mango-pouch.jpg',
+      category: 'Product',
+      altText: 'Freeze-dried mango pouch packaging',
+      dimensions: '900×600',
+    },
+    {
+      name: 'Freeze-Dried Mango Bowl',
+      url: '/images/freeze-dried-mango-bowl.webp',
+      category: 'Product',
+      altText: 'Freeze-dried mango cubes in a bowl',
+      dimensions: '350×196',
+    },
+    {
+      name: 'Dehydrated Apple',
+      url: '/images/dehydrated-apple.png',
+      category: 'Product',
+      altText: 'Dehydrated apple slices',
+      dimensions: '900×600',
+    },
+    {
+      name: 'Dehydrated Kiwi',
+      url: '/images/dehydrated-kiwi.jpg',
+      category: 'Product',
+      altText: 'Dehydrated kiwi coins',
+      dimensions: '640×427',
+    },
+    {
+      name: 'Dehydrated Mixed Fruits',
+      url: '/images/dehydrated-mixed-fruits.png',
+      category: 'Product',
+      altText: 'Dehydrated mixed fruit selection',
+      dimensions: '900×600',
+    },
+    {
+      name: 'Powder Packaging',
+      url: '/images/powder-packaging.jpg',
+      category: 'Product',
+      altText: 'Milled powder packaging jars',
+      dimensions: '640×427',
+    },
+  ];
+
+  for (const d of demo) {
+    await prisma.mediaAsset.create({
+      data: { ...d, type: 'IMAGE', category: d.category || 'General', isPublished: true },
+    });
+  }
+  console.log(`Seeded ${demo.length} demo media-library images (library was empty).`);
+}
+
 main()
+  .then(() => seedDemoMedia())
   .catch((e) => {
     console.error(e);
     process.exit(1);
