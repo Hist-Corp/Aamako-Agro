@@ -18,6 +18,27 @@
    slug-to-path map in sync with js/content.js (SLUG_TO_PATH). */
 (function(){try{
   var MAP={home:'/index.html',shop:'/shop.html',product:'/product.html','the-process':'/process.html','our-story':'/story.html',wholesale:'/wholesale.html',journal:'/journal.html','product-category':'/collection.html'};
+  /* PRE-PAINT AUTH STATE — signed-in visitors must never see signed-out
+     chrome flash before account-menu.js repaints it. That repaint happens
+     on DOMContentLoaded, i.e. AFTER the first paint, so the "Sign in"
+     ghost button showing and the Cart button popping in read as a header
+     flicker on every refresh. Marking auth state on <html> here lets CSS
+     show the right chrome from the very first paint. account-menu.js
+     replaces the Sign in node entirely, so this attribute stays harmless;
+     the self-heal valve below restores defaults if account-menu.js ever
+     fails to run (script error / blocked). */
+  var authed=false;
+  try{authed=!!JSON.parse(localStorage.getItem('aamako_user')||'null');}catch(_){/*ignore*/}
+  if(authed){
+    document.documentElement.setAttribute('data-aamako-auth','in');
+    var ag=document.createElement('style');ag.id='aamako-auth-guard';
+    ag.textContent='html[data-aamako-auth="in"] .nav-actions > .btn-ghost[href="signin.html"]{display:none!important}'+
+      'html[data-aamako-auth="in"] .cart-btn-wrap{display:inline-flex!important}';
+    (document.head||document.documentElement).appendChild(ag);
+    setTimeout(function(){
+      if(!document.getElementById('acctWrap')) document.documentElement.removeAttribute('data-aamako-auth');
+    },2500);
+  }
   var arr=JSON.parse(localStorage.getItem('aamako_content_cache_v1')||'null');
   if(!arr||!arr.length)return;
   var css=[],here=location.pathname.replace(/\/+$/,'')||'/';
@@ -303,10 +324,10 @@ document.addEventListener('DOMContentLoaded', function(){
           <img id="pdMainImg" src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=900&q=80" alt="Product photo">
         </div>
         <div class="ompdp-thumbs" id="pdThumbs">
-          <button type="button" class="omthumb active"><img src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=300&q=80" alt="Front view"></button>
-          <button type="button" class="omthumb"><img src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=300&q=80" alt="Texture view"></button>
-          <button type="button" class="omthumb"><img src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=300&q=80" alt="Pack detail"></button>
-          <button type="button" class="omthumb"><img src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=300&q=80" alt="Serving idea"></button>
+          <button type="button" class="omthumb active" data-large="https://images.unsplash.com/photo-1553279768-865429fa0078?w=900&q=80"><img src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=300&q=80" alt="Front view"></button>
+          <button type="button" class="omthumb" data-large="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=900&q=80"><img src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&q=80" alt="Texture view"></button>
+          <button type="button" class="omthumb" data-large="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=900&q=80"><img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=300&q=80" alt="Pack detail"></button>
+          <button type="button" class="omthumb" data-large="https://images.unsplash.com/photo-1550828520-4cb496926fc9?w=900&q=80"><img src="https://images.unsplash.com/photo-1550828520-4cb496926fc9?w=300&q=80" alt="Serving idea"></button>
         </div>
       </div>
 
@@ -479,7 +500,33 @@ document.addEventListener('DOMContentLoaded', function(){
   'use strict';
   var MEMBER_RATE=0.10;
   function fmt(n){n=Math.round(n);return 'Rs '+n.toLocaleString('en-IN');}
-  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  /* ---------- product gallery: click a thumbnail → show in main viewer ---------- */
+  function setMainImage(src, alt){
+    var main=document.getElementById('pdMainImg');
+    if(!main)return;
+    main.style.opacity='0';
+    setTimeout(function(){
+      main.src=src||main.src;
+      main.alt=alt||'Product photo';
+      main.style.opacity='1';
+    },150);
+  }
+  function initGallery(){
+    var thumbs=document.querySelectorAll('#pdThumbs .omthumb');
+    thumbs.forEach(function(t){
+      if(t.dataset.bound==='1')return;
+      t.dataset.bound='1';
+      t.addEventListener('click',function(){
+        thumbs.forEach(function(x){x.classList.remove('active');});
+        t.classList.add('active');
+        var img=t.querySelector('img');
+        var large=t.getAttribute('data-large')||(img?img.src:'');
+        setMainImage(large,img?img.alt:'Product photo');
+      });
+    });
+  }
+  initGallery();
   /* ---------- wholesale visibility: show partner pricing only to wholesale customers ---------- */
   function isWholesaleUser(){
     try{
@@ -785,17 +832,19 @@ document.addEventListener('DOMContentLoaded', function(){
       +'<span class="current">'+esc(p.name||'Product')+'</span>';
     document.title=(p.name||'Product')+' — Aama ko Agro';
     var main=document.getElementById('pdMainImg');
-    if(p.imageUrl){main.src=p.imageUrl;main.alt=p.name||'Product photo';}
     var thumbs=Array.prototype.slice.call(document.querySelectorAll('#pdThumbs .omthumb'));
-    thumbs.forEach(function(t,idx){
-      var img=t.querySelector('img');
-      if(p.imageUrl)img.src=p.imageUrl;
-      t.addEventListener('click',function(){
-        thumbs.forEach(function(x){x.classList.remove('active');});
-        t.classList.add('active');
-        main.src=img.src;
-      });
-    });
+    var heroUrl=p.imageUrl||'';
+    // First thumbnail mirrors the API hero image (active by default); the
+    // remaining thumbnails keep their own distinct gallery images so each
+    // click reveals a different view of the product.  Click handlers are
+    // attached once by initGallery() above — do not re-bind here.
+    if(thumbs[0]){
+      thumbs[0].classList.add('active');
+      var fi=thumbs[0].querySelector('img');
+      if(fi){fi.src=heroUrl;fi.alt=p.name||'Front view';}
+      thumbs[0].setAttribute('data-large',heroUrl||thumbs[0].getAttribute('data-large'));
+    }
+    if(main&&heroUrl){main.src=heroUrl;main.alt=p.name||'Product photo';}
     var desc=(p.description||'').trim();
     var shortEl=document.getElementById('pdShort');
     if(desc){
@@ -870,10 +919,15 @@ document.addEventListener('DOMContentLoaded', function(){
       if(image){
         var main=document.getElementById('pdMainImg');
         if(main){main.src=image;main.alt=name||'Product photo';}
-        Array.prototype.slice.call(document.querySelectorAll('#pdThumbs .omthumb')).forEach(function(t){
-          var img=t.querySelector('img');
-          if(img&&image)img.src=image;
-        });
+        // Only update the first (hero) thumbnail; the other gallery thumbs
+        // retain their distinct static images.  Click handlers are bound by
+        // initGallery() above, so each thumb still swaps into the main view.
+        var firstThumb=document.querySelector('#pdThumbs .omthumb');
+        if(firstThumb){
+          var fi=firstThumb.querySelector('img');
+          if(fi){fi.src=image;fi.alt=name||'Front view';}
+          firstThumb.setAttribute('data-large',image);
+        }
       }
       if(price)document.getElementById('pdPrice').textContent=fmt(parseFloat(price)||0);
       if(pack)document.getElementById('pdPack').textContent=pack;

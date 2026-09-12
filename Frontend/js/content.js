@@ -407,18 +407,21 @@
   function applyPageVisibility(itemsOverride) {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
     var items = itemsOverride || all();
-    // Fresh data has landed — clear the inline PRE-PAINT NAV GUARD (see each
-    // page's <head>). It exists only to bridge the gap until real data
-    // arrives; from here the DOM edits below are the single source of truth,
-    // so a page unhidden in the dashboard comes back on the very next fetch.
-    if (!itemsOverride) {
+    // Fresh data has landed. The inline PRE-PAINT NAV GUARD (see each page's
+    // <head>) hid links to hidden pages and optionally blanked the whole page
+    // via data-page-hidden.  We clear it AFTER all DOM edits below are done —
+    // lifting it before the edits caused hidden nav links to flash visible for
+    // one frame before content.js removed them from the DOM, a visible flicker
+    // on refresh when pages are hidden.
+    function clearNavGuard() {
+      if (itemsOverride) return;           // editor-bridge override: leave guard intact
       try {
         var guard = document.getElementById('aamako-nav-guard');
         if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
         document.documentElement.removeAttribute('data-page-hidden');
       } catch (_) { /* ignore */ }
     }
-    if (!items.length) return;
+    if (!items.length) { clearNavGuard(); return; }
 
     var hiddenPaths = {};
     for (var i = 0; i < items.length; i++) {
@@ -430,7 +433,7 @@
       if (path) hiddenPaths[path] = true;
     }
     var hiddenKeys = Object.keys(hiddenPaths);
-    if (!hiddenKeys.length) return;
+    if (!hiddenKeys.length) { clearNavGuard(); return; }
 
     // 1. Current page is hidden → swap the page CONTENT for an "unavailable"
     //    notice. Guarded so re-runs (cached pass + fresh pass) never rebuild
@@ -492,6 +495,10 @@
         target.parentNode && target.parentNode.removeChild(target);
       }
     }
+
+    // Now that hidden links are gone and content is replaced, clear the pre-paint
+    // nav guard so normal rendering takes over without a single-frame flicker.
+    clearNavGuard();
 
     // The current page's content was replaced — stop here so any per-section
     // hydration that follows never writes into elements that no longer exist.

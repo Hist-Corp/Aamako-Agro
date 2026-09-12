@@ -19,6 +19,27 @@
    slug-to-path map in sync with js/content.js (SLUG_TO_PATH). */
 (function(){try{
   var MAP={home:'/index.html',shop:'/shop.html',product:'/product.html','the-process':'/process.html','our-story':'/story.html',wholesale:'/wholesale.html',journal:'/journal.html','product-category':'/collection.html'};
+  /* PRE-PAINT AUTH STATE — signed-in visitors must never see signed-out
+     chrome flash before account-menu.js repaints it. That repaint happens
+     on DOMContentLoaded, i.e. AFTER the first paint, so the "Sign in"
+     ghost button showing and the Cart button popping in read as a header
+     flicker on every refresh. Marking auth state on <html> here lets CSS
+     show the right chrome from the very first paint. account-menu.js
+     replaces the Sign in node entirely, so this attribute stays harmless;
+     the self-heal valve below restores defaults if account-menu.js ever
+     fails to run (script error / blocked). */
+  var authed=false;
+  try{authed=!!JSON.parse(localStorage.getItem('aamako_user')||'null');}catch(_){/*ignore*/}
+  if(authed){
+    document.documentElement.setAttribute('data-aamako-auth','in');
+    var ag=document.createElement('style');ag.id='aamako-auth-guard';
+    ag.textContent='html[data-aamako-auth="in"] .nav-actions > .btn-ghost[href="signin.html"]{display:none!important}'+
+      'html[data-aamako-auth="in"] .cart-btn-wrap{display:inline-flex!important}';
+    (document.head||document.documentElement).appendChild(ag);
+    setTimeout(function(){
+      if(!document.getElementById('acctWrap')) document.documentElement.removeAttribute('data-aamako-auth');
+    },2500);
+  }
   var arr=JSON.parse(localStorage.getItem('aamako_content_cache_v1')||'null');
   if(!arr||!arr.length)return;
   var css=[],here=location.pathname.replace(/\/+$/,'')||'/';

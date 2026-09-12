@@ -50,11 +50,23 @@ http.createServer((req, res) => {
       return;
     }
     const ext = path.extname(fp);
+    // Weak ETag from mtime+size so "Cache-Control: no-cache" revalidation
+    // resolves as a fast 304 on repeat navigations (keeps cross-document
+    // View Transitions snappy).
+    const etag = 'W/"' + data.length + '"';
+    if (req.headers['if-none-match'] === etag) {
+      res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' });
+      res.end();
+      return;
+    }
     res.writeHead(200, {
       'Content-Type': MIME[ext] || 'application/octet-stream',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
+      ETag: etag,
+      // NOTE: must NOT contain "no-store" — Chrome disables cross-document
+      // View Transitions (@view-transition header morphs) when either page
+      // is served with no-store, which caused the header flicker between
+      // pages. "no-cache" still revalidates (fast 304) so dev edits show up.
+      'Cache-Control': 'no-cache'
     });
     res.end(data);
   });

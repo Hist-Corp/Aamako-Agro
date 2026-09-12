@@ -207,6 +207,29 @@
       shopNow.replaceWith(cartWrap.firstElementChild);
     }
 
+    // CART FALLBACK — slim content pages (The Process, Our Story, Wholesale,
+    // Learn) have a header whose nav-actions holds ONLY the "Sign in" ghost
+    // button: no "Shop now" CTA and no cart-btn-wrap of their own. Once the
+    // user is signed in the Sign in button above is replaced by the account
+    // avatar, so without this fallback there would be NO Cart button in the
+    // header at all on those pages. Insert one (pointing at cart.html, since
+    // these pages have no cart drawer of their own). The pre-paint auth CSS
+    // in each page's <head> (data-aamako-auth) reveals .cart-btn-wrap from
+    // the first paint, so this insertion causes no layout shift. Runs before
+    // page inline scripts (registration order of DOMContentLoaded listeners),
+    // so #cartBadge exists by the time cart scripts look for it.
+    if (!document.getElementById('cartToggle') && !document.querySelector('.nav-actions .cart-btn-wrap')) {
+      var navActions = document.querySelector('.nav-actions');
+      if (navActions) {
+        var nFallback = cartCount();
+        var cartFallback = document.createElement('span');
+        cartFallback.innerHTML =
+          '<div class="cart-btn-wrap"><a href="cart.html" class="btn btn-primary" id="cartToggle" title="View your cart">Cart' +
+          '<span class="cart-badge" id="cartBadge"' + (nFallback > 0 ? '' : ' style="display:none;"') + '>' + nFallback + '</span></a></div>';
+        navActions.appendChild(cartFallback.firstElementChild);
+      }
+    }
+
     // Mobile drawer: point the primary CTA at the dashboard
     var drawerSignin = document.querySelector('.mobile-drawer a[href="signin.html"]');
     if (drawerSignin) {

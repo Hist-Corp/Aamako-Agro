@@ -1656,3 +1656,29 @@ body.is-signed-out .cart-btn-wrap{display:none;}
   /* Add to cart button: min 44px height */
   .add-btn, .fp-btn{ min-height:44px; }
 }
+
+/* ============================================================
+   Cross-page navigation transitions (MPA View Transitions)
+   The shared chrome (header / trust strip / footer) gets stable
+   view-transition-names, so on every same-origin navigation the
+   browser morphs it between pages instead of tearing it down and
+   repainting — eliminating the header/whole-page flash when
+   moving between pages. Supported in Chromium; other browsers
+   simply ignore @view-transition and keep normal navigation.
+   ============================================================ */
+@view-transition{ navigation:auto; }
+
+header{ view-transition-name:site-header; }
+footer{ view-transition-name:site-footer; }
+.trust-strip{ view-transition-name:trust-strip; }
+
+/* Default old/new crossfade is seamless for identical chrome — no overrides
+   needed (custom animation overrides caused snapshot artifacts). */
+
+/* Respect reduced-motion users */
+@media (prefers-reduced-motion: reduce){
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-image-pair(*){ animation:none !important; transition:none !important; }
+}
