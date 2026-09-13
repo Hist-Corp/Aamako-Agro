@@ -134,7 +134,7 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'pages:view', 'pages:edit', 'pages:publish',
     'product-templates:view', 'product-templates:edit', 'product-templates:create', 'product-templates:publish',
     'journal:view', 'journal:edit', 'journal:publish',
-    'media:view', 'media:upload', 'media:delete',
+    'media:view', 'media:upload', 'media:edit', 'media:publish', 'media:delete',
     // Support
     'support:view', 'support:manage',
     // Reports & Analytics

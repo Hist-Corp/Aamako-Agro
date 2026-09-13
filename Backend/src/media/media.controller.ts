@@ -101,8 +101,9 @@ export class MediaController {
   async upload(
     @UploadedFile()
     file?: { originalname?: string; mimetype: string; size: number; buffer: Buffer },
-    // Optional metadata sent as multipart fields by the media page (category,
-    // alt text, origin from bus; the template editor's device pick sends none).
+    // Optional metadata sent as multipart fields (category, alt text, origin
+    // from bus — the page template editor and product template editor both
+    // send these so the entry is born filed under the right page's section).
     @Body()
     dto?: {
       name?: string;
@@ -142,11 +143,16 @@ export class MediaController {
     // picks from the template editor simply wrote a file to disk and then
     // NEVER appeared in the "Media library" pickers — which is why sections
     // showed images as missing. Registering here makes every upload pickable.
+    // `create` upserts by URL, so a stale client that still double-registers
+    // an upload merges into the existing entry instead of duplicating it.
+    // Category is left undefined when the caller sends none so the service
+    // applies its "General" default only when creating a NEW row — a merge
+    // must never re-file an existing asset into "General".
     const asset = await this.media.create(
       {
         name: dto?.name?.trim() || file.originalname || 'Untitled image',
         url,
-        category: dto?.category?.trim() || 'General',
+        category: dto?.category?.trim() || undefined,
         altText: dto?.altText?.trim() || undefined,
         size:
           dto?.size ||

@@ -46,11 +46,33 @@ export class MediaService {
   }
 
   async create(data: Required<Pick<MediaPayload, 'name' | 'url'>> & MediaPayload, actorId?: string) {
+    const url = data.url.trim();
+    // One library entry per file: if this URL is already registered, fold the
+    // new metadata into the existing asset instead of inserting a duplicate
+    // row. Duplicates made the same image appear under two page sections at
+    // once (e.g. filed under "Home" AND a stray copy under "General").
+    const existing = await this.prisma.mediaAsset.findFirst({ where: { url } });
+    if (existing) {
+      const merged = await this.prisma.mediaAsset.update({
+        where: { id: existing.id },
+        data: {
+          ...(data.name?.trim() ? { name: data.name.trim() } : {}),
+          ...(data.altText !== undefined ? { altText: data.altText?.trim() || null } : {}),
+          ...(data.category?.trim() ? { category: data.category.trim() } : {}),
+          ...(data.size ? { size: data.size } : {}),
+          ...(data.dimensions ? { dimensions: data.dimensions } : {}),
+          ...(data.sourcePage !== undefined ? { sourcePage: data.sourcePage?.trim() || null } : {}),
+          ...(data.sourceSection !== undefined ? { sourceSection: data.sourceSection?.trim() || null } : {}),
+        },
+      });
+      this.invalidatePublicFeed();
+      return merged;
+    }
     const asset = await this.prisma.mediaAsset.create({
       data: {
         name: data.name.trim(),
         type: 'IMAGE',
-        url: data.url.trim(),
+        url,
         altText: data.altText?.trim() || null,
         category: data.category?.trim() || 'General',
         size: data.size || null,

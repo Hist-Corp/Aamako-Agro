@@ -354,29 +354,36 @@
 
     document.addEventListener('click', function (e) {
       var t = e.target;
+      // The preview must behave EXACTLY like the real storefront. Links are
+      // prevented from navigating away mid-edit, but propagation is NEVER
+      // stopped: a [data-cms] element can wrap an interactive widget — the
+      // product page's six tab buttons carry data-cms because the tab LABEL
+      // is editable, and stopping propagation there swallowed the tab-switch
+      // handler, leaving the preview stuck on the default Description tab
+      // (same for FAQ accordions / sliders inside editable sections).
+      var link = t && t.closest ? t.closest('a[href]') : null;
       var el = t && t.closest ? t.closest('[data-cms]') : null;
-      if (!el) {
-        // Clicked somewhere without a data-cms ancestor. Keep the editor
-        // context: never let the preview navigate away while editing, but
-        // still tell the dashboard so it can hint the user. Non-link clicks
-        // (sliders, accordions) keep working normally.
-        var link = t && t.closest ? t.closest('a[href]') : null;
-        if (link) { e.preventDefault(); e.stopPropagation(); }
+      if (el) {
+        // Click on an editable section: keep the editor context (no link
+        // navigation), tell the dashboard which section was clicked.
+        if (link) e.preventDefault();
+        var key = el.getAttribute('data-cms');
         try {
           window.parent.postMessage(
-            { source: 'aamako-cms-bridge', type: 'untagged-click' },
+            { source: 'aamako-cms-bridge', type: 'section-click', key: key },
             '*'
           );
         } catch (_) { /* parent messaging must never break the page */ }
         return;
       }
-      e.preventDefault();
-      e.stopPropagation();
-      var key = el.getAttribute('data-cms');
-      if (!key) return;
+      if (link) {
+        // Clicked somewhere without a data-cms ancestor — still never let the
+        // preview navigate away while editing.
+        e.preventDefault();
+      }
       try {
         window.parent.postMessage(
-          { source: 'aamako-cms-bridge', type: 'section-click', key: key },
+          { source: 'aamako-cms-bridge', type: 'untagged-click' },
           '*'
         );
       } catch (_) { /* parent messaging must never break the page */ }

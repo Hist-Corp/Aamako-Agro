@@ -218,16 +218,31 @@ async function buildVariant(
  * (privacy + size), pixel content is never upscaled.
  */
 
-/** Longest allowed edge in px. 1920 covers every hero/banner slot on retina. */
-const maxEdge = Number(process.env.MEDIA_MAX_EDGE ?? 1920);
-/** WebP quality for photographic JPEG/WebP inputs. */
-const photoQuality = Number(process.env.MEDIA_WEBP_QUALITY ?? 82);
-/** WebP quality for PNG graphics (sharp edges, text, transparency). */
-const graphicQuality = Number(process.env.MEDIA_GRAPHIC_QUALITY ?? 90);
-/** Below this size (bytes) optimization is not worth the CPU. */
-const minBytes = 25 * 1024;
-/** Skip compression entirely above this (safety valve; endpoint caps at 25 MB). */
-const maxBytes = 25 * 1024 * 1024;
+/**
+ * SINGLE internal image-compression config (backend/env only — never
+ * user-facing). Every knob lives here so tuning or DISABLING the pipeline
+ * needs no call-site changes:
+ *
+ *   MEDIA_COMPRESSION_ENABLED=false → every upload is stored byte-for-byte
+ *     (rollback switch; the endpoint, storage layout and DB stay identical)
+ *   MEDIA_MAX_EDGE / MEDIA_WEBP_QUALITY / MEDIA_GRAPHIC_QUALITY → tuning
+ */
+export const imageCompressionConfig = {
+  /** Master switch — false stores uploads untouched (transparent rollback). */
+  enabled: process.env.MEDIA_COMPRESSION_ENABLED !== 'false',
+  /** Longest allowed edge in px. 1920 covers every hero/banner slot on retina. */
+  maxEdge: Number(process.env.MEDIA_MAX_EDGE ?? 1920),
+  /** WebP quality for photographic JPEG/WebP inputs. */
+  photoQuality: Number(process.env.MEDIA_WEBP_QUALITY ?? 82),
+  /** WebP quality for PNG graphics (sharp edges, text, transparency). */
+  graphicQuality: Number(process.env.MEDIA_GRAPHIC_QUALITY ?? 90),
+  /** Below this size (bytes) optimization is not worth the CPU. */
+  minBytes: 25 * 1024,
+  /** Skip compression entirely above this (safety valve; endpoint caps at 25 MB). */
+  maxBytes: 25 * 1024 * 1024,
+} as const;
+
+const { maxEdge, photoQuality, graphicQuality, minBytes, maxBytes } = imageCompressionConfig;
 
 /** Map an upload's MIME type to a browser-renderable extension. Skipped files
  *  are stored byte-for-byte with THIS extension — never ".bin", or the stored
@@ -293,12 +308,17 @@ export async function compressImage(
         withoutEnlargement: true,
         kernel: 'lanczos3',
       })
-      .webp({
+            .webp({
         quality: isPngSource ? graphicQuality : photoQuality,
         effort: 4, // 0-6; 4 ≈ best size/CPU trade-off
         smartSubsample: true,
-        ...(isPngSource ? { palette: true } : {}), // crisp graphics, tiny files
-      })
+        // Palette mode (lossy palette quantization) gives tiny files for crisp
+        // graphics (icons, logos) but can band gradients. Only enable it for
+        // small source images where banding is imperceptible at display sizes.
+        ...(isPngSource && (meta.width ?? 0) * (meta.height ?? 0) <= 256 * 256
+          ? { palette: true }
+          : {}),
+            })
       .toBuffer({ resolveWithObject: true });
 
     // NEVER store something bigger than what was uploaded.
@@ -306,14 +326,59 @@ export async function compressImage(
       return skipped('original already optimal', `.${meta.format}`);
     }
 
+    // SSIM quality gate: if the compressed output differs from the source by
+    // more than the threshold, retry at higher quality (up to max bump).
+    // This prevents visual artifacts from aggressive compression.
+    let finalBuffer = output.data;
+    let ssimScore = 1.0;
+    let baseQuality = isPngSource ? graphicQuality : photoQuality;
+
+    if (originalBytes > minBytes) {
+      ssimScore = await computeSSIM(buffer, finalBuffer);
+      let attempts = 0;
+      while (ssimScore < SSIM_THRESHOLD && attempts < SSIM_MAX_QUALITY_BUMP && baseQuality + (attempts + 1) * SSIM_MAX_QUALITY_BUMP <= 100) {
+        attempts++;
+        const bumpedQuality = Math.min(100, baseQuality + attempts * SSIM_MAX_QUALITY_BUMP);
+        const retry = await input
+          .clone()
+          .rotate()
+          .resize(maxEdge, maxEdge, {
+            fit: 'inside',
+            withoutEnlargement: true,
+            kernel: 'lanczos3',
+          })
+          .webp({
+            quality: bumpedQuality,
+            effort: 4,
+            smartSubsample: true,
+            ...(isPngSource && (meta.width ?? 0) * (meta.height ?? 0) <= 256 * 256
+              ? { palette: true }
+              : {}),
+          })
+          .toBuffer();
+        // Only accept if it's still smaller than the original
+        if (retry.byteLength < originalBytes) {
+          finalBuffer = retry;
+          ssimScore = await computeSSIM(buffer, finalBuffer);
+        } else {
+          break;
+        }
+      }
+
+      // If SSIM still fails even at highest quality, fall back to original
+      if (ssimScore < SSIM_THRESHOLD) {
+        return skipped('SSIM threshold not met — stored original', `.${meta.format}`);
+      }
+    }
+
     return {
-      buffer: output.data,
+      buffer: finalBuffer,
       mimetype: 'image/webp',
       extension: '.webp',
       width: output.info.width,
       height: output.info.height,
       originalBytes,
-      storedBytes: output.data.byteLength,
+      storedBytes: finalBuffer.byteLength,
       optimized: true,
     };
   } catch (err) {
