@@ -67,6 +67,10 @@ export default function ProductTemplateEditorPage({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
+  // Keys of compulsory fields that failed the publish check — rendered with a
+  // red ring + inline "Required to publish" note so the editor notices WHERE
+  // to fill without hunting for the toast.
+  const [missingKeys, setMissingKeys] = useState<string[]>([]);
   // Dragged width of the storefront preview (null = default one-third share).
   const [previewW, setPreviewW] = useState<number | null>(null);
 
@@ -231,6 +235,13 @@ export default function ProductTemplateEditorPage({
         body: nextBody,
       });
       updateItem(field, isTitle ? { title: value } : { body: value });
+      // If a compulsory field this publish attempt flagged is now being filled,
+      // clear its error ring inline — the editor sees the fix land instantly
+      // without retrying Publish.
+      const itemValue = (isTitle ? value : existing?.title) || (!isTitle ? value : existing?.body) || '';
+      if (String(itemValue).trim()) {
+        setMissingKeys((prev) => (prev.includes(field) ? prev.filter((k) => k !== field) : prev));
+      }
       refreshPreview();
     } catch (err) {
       addToast({
@@ -248,22 +259,28 @@ export default function ProductTemplateEditorPage({
     // Validate required fields before publishing — most importantly the
     // product image, which can come from either an https URL or a device upload.
     const missing: string[] = [];
+    const missingKeyList: string[] = [];
     for (const section of PRODUCT_TEMPLATE_SECTIONS) {
       for (const field of section.fields) {
         if (!field.required) continue;
         const existing = items[field.key];
         const value = (existing?.title || existing?.body || '').trim();
-        if (!value) missing.push(field.label);
+        if (!value) {
+          missing.push(field.label);
+          missingKeyList.push(field.key);
+        }
         if (field.key === 'image-url' && value && !/^https?:\/\/.+/i.test(value)) {
           addToast({
             type: 'error',
             title: 'Invalid product image',
             description: 'The product image must be an https:// URL (paste a link or upload from your device).',
           });
+          setMissingKeys(['image-url']);
           return;
         }
       }
     }
+    setMissingKeys(missingKeyList);
     if (missing.length > 0) {
       addToast({
         type: 'error',
@@ -271,6 +288,13 @@ export default function ProductTemplateEditorPage({
         description: `Please fill in: ${missing.join(', ')}. For the product image, paste a URL or upload one from your device.`,
       });
       setActiveSection(0);
+      // Scroll to the first missing compulsory field so the editor notices
+      // WHERE to fill immediately instead of hunting through sections.
+      requestAnimationFrame(() => {
+        document
+          .querySelector(`[data-field-key="${missingKeyList[0]}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       return;
     }
     setIsSaving(true);
@@ -330,6 +354,7 @@ export default function ProductTemplateEditorPage({
         title: 'Published',
         description: 'Product template published successfully.',
       });
+      setMissingKeys([]);
       await load();
     } catch (err) {
       addToast({
@@ -389,8 +414,14 @@ return (
             <h3 className="text-md font-semibold text-surface-800 mb-1">{section.label}</h3>
             <p className="text-2xs text-surface-500 mb-4">{section.description}</p>
             {section.fields.map((field) => (
-              <FieldBlock key={field.key} field={field} items={items} onSave={handleSaveField}>
-                {renderField(field, items, slug, handleSaveField, defaults)}
+              <FieldBlock
+                key={field.key}
+                field={field}
+                items={items}
+                onSave={handleSaveField}
+                missing={missingKeys.includes(field.key)}
+              >
+                {renderField(field, items, slug, handleSaveField, defaults, missingKeys.includes(field.key))}
               </FieldBlock>
             ))}
           </Card>
@@ -590,10 +621,11 @@ function renderField(
   slug: string,
   onSave: (field: string, value: string, isTitle: boolean) => void,
   defaults: Record<string, string> = {},
+  missing: boolean = false,
 ) {
   return (
-    <FieldBlock field={field} items={items} onSave={onSave}>
-      {renderFieldInner(field, items, slug, onSave, defaults)}
+    <FieldBlock field={field} items={items} onSave={onSave} missing={missing}>
+      {renderFieldInner(field, items, slug, onSave, defaults, missing)}
     </FieldBlock>
   );
 }
@@ -607,23 +639,42 @@ function FieldBlock({
   field,
   items,
   onSave,
+  missing,
   children,
 }: {
   field: any;
   items: Record<string, CmsItem>;
   onSave: (field: string, value: string, isTitle: boolean) => void;
+  missing?: boolean;
   children: React.ReactNode;
 }) {
   const hiddenKey = field.key + '__hidden';
-  const isHidden = (items[hiddenKey]?.title ?? '').trim() === 'hidden';
-  const toggleHidden = () => onSave(hiddenKey, isHidden ? '' : 'hidden', true);
+  // The companion content item's title stores the visibility flag. The backend
+  // DTO requires title to be non-empty (@MinLength(1)), so we can't use '' for
+  // the "visible" state — '' would fail validation and the PUT would 400. We
+  // use the explicit string 'visible' for the shown state and 'hidden' for the
+  // hidden state, so both directions of the toggle always validate.
+  const HIDDEN_MARKER = 'hidden';
+  const VISIBLE_MARKER = 'visible';
+  const isHidden = (items[hiddenKey]?.title ?? '').trim() === HIDDEN_MARKER;
+  const toggleHidden = () =>
+    onSave(hiddenKey, isHidden ? VISIBLE_MARKER : HIDDEN_MARKER, true);
   return (
     <div
+      data-field-key={field.key}
       className={
         'relative rounded-lg transition-opacity ' +
-        (isHidden ? 'border border-dashed border-surface-300 bg-surface-50 opacity-60' : '')
+        (isHidden ? 'border border-dashed border-surface-300 bg-surface-50 opacity-60 ' : '') +
+        // Compulsory field flagged by the publish check — a red ring jumps out
+        // in the long scroll so the editor spots WHAT to fill at a glance.
+        (missing ? 'border-2 border-red-400 bg-red-50/40 p-2' : '')
       }
     >
+      {missing && !isHidden && (
+        <p className="mb-1 inline-flex items-center gap-1 text-2xs font-semibold text-red-600">
+          * Required to publish — fill this field
+        </p>
+      )}
       <button
         type="button"
         onClick={toggleHidden}
@@ -649,12 +700,26 @@ function FieldBlock({
   );
 }
 
+/** Red asterisk marker for compulsory fields — renders next to the label so the
+ *  editor sees BEFORE publishing which fields must be filled. Used by every
+ *  field renderer (plain inputs, rich text, structured editors, gallery,
+ *  image) for a consistent compulsory cue across the template editor. */
+function RequiredMark({ required }: { required?: boolean }) {
+  if (!required) return null;
+  return (
+    <span className="ml-0.5 font-bold text-red-500" title="Compulsory — required to publish">
+      *
+    </span>
+  );
+}
+
 function renderFieldInner(
   field: any,
   items: Record<string, CmsItem>,
   slug: string,
   onSave: (field: string, value: string, isTitle: boolean) => void,
   defaults: Record<string, string> = {},
+  missing: boolean = false,
 ) {
   const existing = items[field.key];
   const fieldKey = productFieldKey(slug, field.key);
@@ -682,6 +747,7 @@ function renderFieldInner(
         prefill={prefill}
         mediaFields={mediaFields}
         onSave={onSave}
+        missing={missing}
       />
     );
   }
@@ -698,6 +764,7 @@ function renderFieldInner(
         prefill={prefill}
         mediaFields={mediaFields}
         onSave={onSave}
+        missing={missing}
       />
     );
   }
@@ -713,6 +780,7 @@ function renderFieldInner(
           hasExisting={!!existing}
           prefill={prefill}
           onSave={onSave}
+          missing={missing}
         />
       );
     }
@@ -725,6 +793,7 @@ function renderFieldInner(
           hasExisting={!!existing}
           prefill={prefill}
           onSave={onSave}
+          missing={missing}
         />
       );
     }
@@ -737,6 +806,7 @@ function renderFieldInner(
           hasExisting={!!existing}
           prefill={prefill}
           onSave={onSave}
+          missing={missing}
         />
       );
     }
@@ -748,6 +818,7 @@ function renderFieldInner(
         hasExisting={!!existing}
         prefill={prefill}
         onSave={onSave}
+        missing={missing}
       />
     );
   }
@@ -761,6 +832,7 @@ function renderFieldInner(
         fieldKey={fieldKey}
         mediaFields={mediaFields}
         onSave={onSave}
+        missing={missing}
       />
     );
   }
@@ -777,6 +849,7 @@ function renderFieldInner(
         hasExisting={!!existing}
         mediaFields={mediaFields}
         onSave={onSave}
+        missing={missing}
       />
     );
   }
@@ -788,13 +861,16 @@ function renderFieldInner(
     const html = raw && !/<[a-z][^>]*>/i.test(raw) ? plainToHtml(raw) : raw;
     return (
       <div key={field.key} className="mb-4">
-        <label className="block text-xs font-medium text-surface-600 mb-1">{field.label}</label>
+        <label className="block text-xs font-medium text-surface-600 mb-1">{field.label}<RequiredMark required={field.required} /></label>
         <RichTextEditor
           value={html}
           onChange={(h) => onSave(field.key, h, false)}
           placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
           hint={field.description}
         />
+        {missing && (
+          <p className="mt-1 text-2xs font-semibold text-red-600">* Required to publish — fill this field</p>
+        )}
         {prefillBadge()}
         <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
       </div>
@@ -802,12 +878,13 @@ function renderFieldInner(
   }
 
   if (field.type === 'number' || field.type === 'url' || field.type === 'select' || field.type === 'text') {
+    const inputInvalidCls = missing ? ' !border-red-400 !ring-2 !ring-red-200' : '';
     return (
       <div key={field.key} className="mb-4">
-        <label className="block text-xs font-medium text-surface-600 mb-1">{field.label}</label>
+        <label className="block text-xs font-medium text-surface-600 mb-1">{field.label}<RequiredMark required={field.required} /></label>
         {field.type === 'select' ? (
           <select
-            className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className={"w-full rounded-lg border border-surface-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" + inputInvalidCls}
             value={existing?.title ?? ''}
             onChange={(e) => onSave(field.key, e.target.value, true)}
           >
@@ -819,11 +896,14 @@ function renderFieldInner(
         ) : (
           <input
             type={field.type}
-            className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className={"w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" + inputInvalidCls}
             placeholder={field.placeholder}
             value={existing?.title ?? prefill}
             onChange={(e) => onSave(field.key, e.target.value, true)}
           />
+        )}
+        {missing && (
+          <p className="mt-1 text-2xs font-semibold text-red-600">* Required to publish — fill this field</p>
         )}
         {field.key === 'process-category' && (existing?.title ?? '').trim() && (
           <a
@@ -858,6 +938,7 @@ function GalleryEditor({
   hasExisting,
   mediaFields,
   onSave,
+  missing,
 }: {
   field: any;
   fieldKey: string;
@@ -865,6 +946,7 @@ function GalleryEditor({
   hasExisting: boolean;
   mediaFields?: Record<string, string>;
   onSave: (field: string, value: string, isTitle: boolean) => void;
+  missing?: boolean;
 }) {
   const { addToast } = useToast();
   const [rows, setRows] = useState<string[]>(() => (urls.length ? [...urls] : ['']));
@@ -933,7 +1015,7 @@ function GalleryEditor({
   return (
     <div className="mb-4">
       <label className="block text-xs font-medium text-surface-600 mb-1">
-        {field.label} {field.required && <span className="text-red-500">*</span>}
+        {field.label}<RequiredMark required={field.required} />
       </label>
       <div className="space-y-3">
         {rows.map((url, idx) => (
@@ -1017,6 +1099,9 @@ function GalleryEditor({
         context={`Gallery image ${(pickerIdx ?? 0) + 1}`}
       />
       <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
+      {missing && (
+        <p className="mt-1 text-2xs font-semibold text-red-600">* Required to publish — add at least one image</p>
+      )}
       <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
     </div>
   );
@@ -1091,12 +1176,14 @@ function ImageField({
   fieldKey,
   mediaFields,
   onSave,
+  missing,
 }: {
   field: any;
   value: string;
   fieldKey: string;
   mediaFields?: Record<string, string>;
   onSave: (field: string, value: string, isTitle: boolean) => void;
+  missing?: boolean;
 }) {
   const { addToast } = useToast();
   const [uploading, setUploading] = useState(false);
@@ -1133,7 +1220,7 @@ function ImageField({
   return (
     <div className="mb-4">
       <label className="block text-xs font-medium text-surface-600 mb-1">
-        {field.label} {field.required && <span className="text-red-500">*</span>}
+        {field.label}<RequiredMark required={field.required} />
       </label>
       <div className="flex flex-wrap items-start gap-3">
         {value ? (
@@ -1187,6 +1274,9 @@ function ImageField({
         context="Product image"
       />
       <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
+      {missing && (
+        <p className="mt-1 text-2xs font-semibold text-red-600">* Required to publish — add the product image</p>
+      )}
       <p className="text-2xs text-surface-400 mt-1">Key: <code>{fieldKey}</code></p>
     </div>
   );
@@ -1207,18 +1297,23 @@ function StructuredShell({
   fieldKey,
   hasExisting,
   prefill,
+  missing,
   children,
 }: {
   field: any;
   fieldKey: string;
   hasExisting: boolean;
   prefill: string;
+  missing?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="mb-4">
-      <label className="block text-xs font-medium text-surface-600 mb-1">{field.label}</label>
+      <label className="block text-xs font-medium text-surface-600 mb-1">{field.label}<RequiredMark required={field.required} /></label>
       {children}
+      {missing && (
+        <p className="mt-1 text-2xs font-semibold text-red-600">* Required to publish — fill this field</p>
+      )}
       <p className="text-2xs text-surface-400 mt-1">{field.description}</p>
       {!hasExisting && prefill ? (
         <p className="mt-1 inline-flex items-center gap-1 text-2xs font-medium text-brand-600">
@@ -1324,6 +1419,7 @@ function CertCardsEditor({
   prefill,
   mediaFields,
   onSave,
+  missing,
 }: {
   field: any;
   fieldKey: string;
@@ -1333,6 +1429,7 @@ function CertCardsEditor({
   prefill: string;
   mediaFields?: Record<string, string>;
   onSave: (field: string, value: string, isTitle: boolean) => void;
+  missing?: boolean;
 }) {
   const names = String(value || '')
     .split('\n')
@@ -1348,7 +1445,7 @@ function CertCardsEditor({
     onSave(field.key, lines.join('\n'), false);
   };
   return (
-    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
+    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill} missing={missing}>
       <div className="space-y-2">
         {names.length === 0 && (
           <p className="text-2xs text-surface-400 py-2">No certificates yet — add one below.</p>
@@ -1497,6 +1594,7 @@ function CheckListEditor({
   hasExisting,
   prefill,
   onSave,
+  missing,
 }: {
   field: any;
   fieldKey: string;
@@ -1504,6 +1602,7 @@ function CheckListEditor({
   hasExisting: boolean;
   prefill: string;
   onSave: (field: string, value: string, isTitle: boolean) => void;
+  missing?: boolean;
 }) {
   const rows = parseCheckList(value);
   // Write to BODY (isTitle=false): the editor and the storefront both read
@@ -1520,7 +1619,7 @@ function CheckListEditor({
     saveDebouncedRef.current = setTimeout(() => onSave(field.key, serializeCheckList(next), false), 300);
   };
   return (
-    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
+    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill} missing={missing}>
       <div className="space-y-1.5 rounded-lg border border-surface-200 divide-y divide-surface-200">
         {rows.length === 0 && (
           <p className="text-2xs text-surface-400 py-2">No rows yet — add one below.</p>
@@ -1598,6 +1697,7 @@ function NutritionRowsEditor({
   hasExisting,
   prefill,
   onSave,
+  missing,
 }: {
   field: any;
   fieldKey: string;
@@ -1605,6 +1705,7 @@ function NutritionRowsEditor({
   hasExisting: boolean;
   prefill: string;
   onSave: (field: string, value: string, isTitle: boolean) => void;
+  missing?: boolean;
 }) {
   const parsed = parseNutritionRows(value);
     const saveDebouncedRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1613,7 +1714,7 @@ function NutritionRowsEditor({
     saveDebouncedRef.current = setTimeout(() => onSave(field.key, serializeNutritionRows(rows, note), false), 300);
   };
   return (
-    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
+    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill} missing={missing}>
       <div className="space-y-1.5 rounded-lg border border-surface-200 divide-y divide-surface-200">
         {parsed.rows.length === 0 && (
           <p className="text-2xs text-surface-400 py-2">No nutrients yet — add one below.</p>
@@ -1697,6 +1798,7 @@ function FaqPairsEditor({
   hasExisting,
   prefill,
   onSave,
+  missing,
 }: {
   field: any;
   fieldKey: string;
@@ -1704,6 +1806,7 @@ function FaqPairsEditor({
   hasExisting: boolean;
   prefill: string;
   onSave: (field: string, value: string, isTitle: boolean) => void;
+  missing?: boolean;
 }) {
   const rows = parseFaqPairs(value);
     const saveDebouncedRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1712,7 +1815,7 @@ function FaqPairsEditor({
     saveDebouncedRef.current = setTimeout(() => onSave(field.key, serializeFaqPairs(next), false), 300);
   };
   return (
-    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
+    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill} missing={missing}>
       <div className="space-y-3">
         {rows.map((r, i) => (
           <div key={i} className="rounded-lg border border-surface-200 p-2.5">
@@ -1824,6 +1927,7 @@ function HowtoBlocksEditor({
   hasExisting,
   prefill,
   onSave,
+  missing,
 }: {
   field: any;
   fieldKey: string;
@@ -1831,6 +1935,7 @@ function HowtoBlocksEditor({
   hasExisting: boolean;
   prefill: string;
   onSave: (field: string, value: string, isTitle: boolean) => void;
+  missing?: boolean;
 }) {
   const v = parseHowtoBlocks(value);
     const saveDebouncedRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1853,7 +1958,7 @@ function HowtoBlocksEditor({
     </div>
   );
   return (
-    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
+    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill} missing={missing}>
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-1">
         {block('Usage', 'How to eat / drink it (shown under “Usage”)', v.usage, (n) => save({ ...v, usage: n }))}
         {block('Recipes', 'Ideas and recipe notes (shown under “Recipes”)', v.recipes, (n) => save({ ...v, recipes: n }))}
@@ -1870,6 +1975,7 @@ function RelatedCardsEditor({
   prefill,
   mediaFields,
   onSave,
+  missing,
 }: {
   field: any;
   fieldKey: string;
@@ -1878,6 +1984,7 @@ function RelatedCardsEditor({
   prefill: string;
   mediaFields?: Record<string, string>;
   onSave: (field: string, value: string, isTitle: boolean) => void;
+  missing?: boolean;
 }) {
   const { addToast } = useToast();
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
@@ -1923,7 +2030,7 @@ function RelatedCardsEditor({
   };
 
   return (
-    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill}>
+    <StructuredShell field={field} fieldKey={fieldKey} hasExisting={hasExisting} prefill={prefill} missing={missing}>
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         {cards.map((card, idx) => (
           <div key={idx} className="rounded-lg border border-surface-200 p-2.5">
