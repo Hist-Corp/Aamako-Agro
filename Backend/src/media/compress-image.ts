@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import sharp, { type Metadata, type Sharp } from 'sharp';
 import {
   type ImageKind,
   type PipelineRule,
@@ -72,25 +72,12 @@ export interface PipelineResult {
 }
 
 /** Infer the image kind when none is explicitly provided. */
-function inferKind(meta: sharp.Metadata): ImageKind {
+function inferKind(meta: Metadata): ImageKind {
   const hasAlpha = meta.hasAlpha;
   const isSmall = (meta.width ?? 0) * (meta.height ?? 0) < 200 * 200;
   if (hasAlpha && isSmall) return 'logo-icon';
   if (hasAlpha) return 'png-with-transparency';
     return 'auto';
-}
-
-/** Map an upload MIME type to a browser-renderable extension for SKIPPED files.
- *  Skipped files are stored byte-for-byte with THIS extension — never ".bin",
- *  or the stored URL would not render in an <img>. */
-function extForMimetype(mimetype: string): string {
-  return mimetype === 'image/png' ? '.png'
-    : mimetype === 'image/webp' ? '.webp'
-    : mimetype === 'image/gif' ? '.gif'
-    : mimetype === 'image/svg+xml' ? '.svg'
-    : mimetype === 'image/jpeg' ? '.jpg'
-    : mimetype === 'image/avif' ? '.avif'
-    : '.jpg';
 }
 
 /** Lightweight SSIM calculator using sharp raw-pixel extraction. Returns [0,1]. */
@@ -137,7 +124,7 @@ async function computeSSIM(original: Buffer, compressed: Buffer): Promise<number
 }
 
 /** Attach the correct encoder to a sharp pipeline based on the format spec. */
-function getEncoder(pipeline: sharp.Sharp, format: FormatSpec, quality: number): sharp.Sharp {
+function getEncoder(pipeline: Sharp, format: FormatSpec, quality: number): Sharp {
   const q = Math.max(1, Math.min(100, quality));
   switch (format.type) {
     case 'image/avif':  return pipeline.avif({ quality: q, effort: 6 });
@@ -152,8 +139,8 @@ function getEncoder(pipeline: sharp.Sharp, format: FormatSpec, quality: number):
 
 /** Build a single variant (one format at one target width) with SSIM validation. */
 async function buildVariant(
-  input: sharp.Sharp,
-  originalMeta: sharp.Metadata,
+  input: Sharp,
+  originalMeta: Metadata,
   width: number,
   format: FormatSpec,
   warn: (msg: string) => void,

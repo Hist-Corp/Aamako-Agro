@@ -25,7 +25,7 @@ import {
 } from './image-variant.config';
 
 // --- Re-export the original CompressionResult so existing imports still work ---
-export type { CompressionResult, CompressOptions } from './compress-image-core';
+export type { CompressionResult, CompressOptions } from './compress-image';
 
 // --- New types for the variant pipeline ---
 
@@ -57,6 +57,9 @@ export interface ImageVariantResult {
   preset: ImagePreset;
   /** Human-readable note. */
   note: string;
+  /** Warnings (e.g. SSIM fallback triggered). */
+  warnings: string[];
+}
 
 /**
  * Approximate SSIM between two raw RGBA buffers.
@@ -73,7 +76,7 @@ function approximateSSIM(
   original: Buffer,
   candidate: Buffer,
   width: number,
-  height: number,
+  height: number
 ): number {
   const pixelCount = width * height;
   if (original.length < pixelCount * 4 || candidate.length < pixelCount * 4) {
@@ -143,6 +146,4 @@ function isAlreadyOptimized(
   return false;
 }
 
-  /** Warnings (e.g. SSIM fallback triggered). */
-  warnings: string[];
-}
+export { approximateSSIM, computeSSIM, isAlreadyOptimized };
