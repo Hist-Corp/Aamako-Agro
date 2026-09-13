@@ -662,14 +662,9 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('tab-why').innerHTML='<h3>Why choose '+esc(name)+'</h3>'+ul(c.why);
     document.getElementById('tab-sourcing').innerHTML='<h3>Sourcing</h3>'+c.sourcing.map(function(p){return '<p>'+esc(p)+'</p>';}).join('')+'<p><a href="story.html" style="color:var(--sage-deep);font-weight:600;">Read our story &rarr;</a></p>';
     document.getElementById('pdFaq').innerHTML=(FAQ[kind]||FAQ.fd).map(function(pair){
-      return '<div class="omfaq-item"><button type="button" class="omfaq-head" aria-expanded="false"><span>'+esc(pair[0])+'</span><span class="ind">+</span></button><div class="omfaq-body">'+esc(pair[1])+'</div></div>';
+      return faqItemHtml(pair[0],pair[1]);
     }).join('');
-    document.querySelectorAll('#pdFaq .omfaq-item').forEach(function(item){
-      item.querySelector('.omfaq-head').addEventListener('click',function(){
-        var open=item.classList.toggle('is-open');
-        item.querySelector('.omfaq-head').setAttribute('aria-expanded',open?'true':'false');
-      });
-    });
+    bindFaqAccordion();
     document.querySelectorAll('#pdHighlights').forEach(function(el){
       el.innerHTML=c.highlights.map(function(t){return '<li>'+CHECK+'<span>'+esc(t)+'</span></li>';}).join('');
     });
@@ -1048,8 +1043,18 @@ document.addEventListener('DOMContentLoaded', function(){
     // as HTML (the same trust model as the data-cms-html slots).
     if(description)document.getElementById('pdShort').innerHTML=description;
     var kind=catSlug&&KIND_OF[catSlug]?KIND_OF[catSlug]:'fd';
+    // Static design first (so the page never breaks when a field is empty),
+    // then the managed renderers overwrite whichever tabs have published
+    // template fields — the dashboard-authored copy, at full length, in the
+    // exact same design as the static sections above.
     buildTabs(kind,name);
+    renderManagedDesc(field);
+    renderManagedHowto(field);
+    renderManagedNutrition(field);
+    renderManagedWhy(field,name);
+    renderManagedSourcing(field);
     renderManagedCerts(field);
+    renderManagedFaq(field);
   }
 
   /* Managed Certifications tab: each line of the "certifications" template
@@ -1080,6 +1085,173 @@ document.addEventListener('DOMContentLoaded', function(){
     });
     html+='</div>';
     document.getElementById('tab-certs').innerHTML=html;
+  }
+
+  /* ---------- managed tabs + FAQ (published template fields) ----------
+   * Each renderer below mirrors the static design from buildTabs() but reads
+   * the product's OWN template fields (product-template.<slug>.<field>) — the
+   * exact values the dashboard's product-template editor saves — and renders
+   * them at full length with the same markup/classes as the sections above.
+   * When a field has no value the static design from buildTabs() stays. The
+   * field resolver is passed in so BOTH the live preview (draft-aware) and
+   * the real customer page (published-only) drive it, exactly like
+   * renderManagedCerts above. Serializers referenced per renderer match the
+   * editor: howto-blocks / nutrition-rows / list-check / faq-pairs. */
+  var CROSS='<svg viewBox="0 0 24 24" style="stroke:#a33a2a;"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+  // Stored copy → paragraph HTML. Rich-text/textarea bodies arrive as HTML
+  // (the editor upgrades plain text to <p> blocks on first edit) and pass
+  // through verbatim; plain text is blank-line-split into <p> paragraphs
+  // (single newlines become <br>) so nothing is lost at full length.
+  function paragraphsHtml(raw){
+    var s=String(raw||'').trim();
+    if(!s)return '';
+    if(/<[a-z][\s\S]*>/i.test(s))return s;
+    return s.split(/\n\s*\n/).map(function(p){
+      return '<p>'+esc(p.trim()).replace(/\n/g,'<br>')+'</p>';
+    }).join('');
+  }
+
+  // Description tab — the "long-description" rich-text field, verbatim HTML.
+  function renderManagedDesc(field){
+    if(!field)return;
+    var raw=field('long-description');
+    if(!raw)return;
+    var el=document.getElementById('tab-desc');
+    if(el)el.innerHTML=paragraphsHtml(raw);
+  }
+
+  // How to use tab — "Usage: …\n\nRecipes: …\n\nStorage: …" (howto-blocks).
+  // Only filled boxes render, matching the editor's promise; each section
+  // keeps the static <h4>-label + <p> design.
+  var HOWTO_LABELS={usage:'Usage',recipes:'Recipes',storage:'Storage'};
+  function renderManagedHowto(field){
+    if(!field)return;
+    var raw=field('howto');
+    if(!raw)return;
+    var blocks=[];
+    String(raw).split(/\n\s*\n/).forEach(function(b){
+      var clean=b.replace(/^[\s\uFEFF]+/,'').trim();
+      if(!clean)return;
+      var m=/^([A-Za-z]+)\s*:\s*/.exec(clean);
+      var label=m?(HOWTO_LABELS[m[1].toLowerCase()]||m[1].charAt(0).toUpperCase()+m[1].slice(1)):'';
+      var text=m?clean.slice(m[0].length):clean;
+      if(!label||!text.trim())return;
+      blocks.push({label:label,text:text});
+    });
+    if(!blocks.length)return;
+    var html='<h3>How to use</h3>';
+    blocks.forEach(function(b){
+      html+='<h4>'+esc(b.label)+'</h4><p>'+esc(b.text).replace(/\n/g,'<br>')+'</p>';
+    });
+    var el=document.getElementById('tab-howto');
+    if(el)el.innerHTML=html;
+  }
+
+  // Nutrition tab — "Energy: 347 kcal\n…\n\n<note>" (nutrition-rows): first
+  // block = one "label: value" row per line, later blocks = the lab-status
+  // note under the table. Same .omnut-rows design as the static tab.
+  function renderManagedNutrition(field){
+    if(!field)return;
+    var raw=field('nutrition');
+    if(!raw)return;
+    var blocks=String(raw).split(/\n\s*\n/).filter(function(b){return b.trim()!=='';});
+    if(!blocks.length)return;
+    var rows=[];
+    (blocks[0]||'').split('\n').forEach(function(l){
+      var i=l.indexOf(':');
+      if(i>0)rows.push([l.slice(0,i).replace(/^[\s\uFEFF]+/,''),l.slice(i+1).replace(/^\s/,'')]);
+    });
+    if(!rows.length)return;
+    var html='<h3>Nutrition (per 100g)</h3><div class="omnut-rows">'
+      +rows.map(function(r){return '<div class="omnut-row"><span>'+esc(r[0])+'</span><span>'+esc(r[1])+'</span></div>';}).join('')
+      +'</div>';
+    if(blocks.length>1){
+      html+='<p style="margin-top:12px;">'+esc(blocks.slice(1).join('\n\n')).replace(/\n/g,'<br>')+'</p>';
+    }
+    var el=document.getElementById('tab-nutrition');
+    if(el)el.innerHTML=html;
+  }
+
+  // Why choose tab — "✓ point\n✗ point" (list-check): tick = green check
+  // like the static design, untick = red cross. A line without a marker
+  // counts as ticked (mirrors the editor's parser).
+  function renderManagedWhy(field,name){
+    if(!field)return;
+    var raw=field('why');
+    if(!raw)return;
+    var rows=[];
+    String(raw).split('\n').forEach(function(l){
+      if(l.trim()==='')return;
+      var m=/^([✓✔✗xX])\s*/.exec(l);
+      rows.push({
+        checked:!m||(m[1]!=='✗'&&m[1].toLowerCase()!=='x'),
+        text:m?l.slice(m[0].length):l.replace(/^[\s\uFEFF]+/,'')
+      });
+    });
+    if(!rows.length)return;
+    var html='<h3>Why choose '+esc(name||'this product')+'</h3><ul>'
+      +rows.map(function(r){return '<li>'+(r.checked?CHECK:CROSS)+'<span>'+esc(r.text)+'</span></li>';}).join('')
+      +'</ul>';
+    var el=document.getElementById('tab-why');
+    if(el)el.innerHTML=html;
+  }
+
+  // Sourcing tab — multi-paragraph sourcing story (textarea/richtext body),
+  // plus the same "Read our story" link as the static design.
+  function renderManagedSourcing(field){
+    if(!field)return;
+    var raw=field('sourcing');
+    if(!raw)return;
+    var html='<h3>Sourcing</h3>'+paragraphsHtml(raw)
+      +'<p><a href="story.html" style="color:var(--sage-deep);font-weight:600;">Read our story &rarr;</a></p>';
+    var el=document.getElementById('tab-sourcing');
+    if(el)el.innerHTML=html;
+  }
+
+  // FAQ accordion — "Q: …\nA: …\n\nQ: …" (faq-pairs): each blank-line
+  // separated block is one accordion row; the answer may span several lines
+  // (joined with <br>). Same .omfaq-item markup + toggle behaviour as the
+  // static design; the heading above is the CMS "product-page.faq.title".
+  function faqItemHtml(q,a){
+    return '<div class="omfaq-item"><button type="button" class="omfaq-head" aria-expanded="false"><span>'+esc(q)+'</span><span class="ind">+</span></button><div class="omfaq-body">'+esc(a).replace(/\n/g,'<br>')+'</div></div>';
+  }
+  function bindFaqAccordion(){
+    document.querySelectorAll('#pdFaq .omfaq-item').forEach(function(item){
+      var head=item.querySelector('.omfaq-head');
+      if(!head||head.getAttribute('data-faq-bound')==='1')return;
+      head.setAttribute('data-faq-bound','1');
+      head.addEventListener('click',function(){
+        var open=item.classList.toggle('is-open');
+        head.setAttribute('aria-expanded',open?'true':'false');
+      });
+    });
+  }
+  function renderManagedFaq(field){
+    if(!field)return;
+    var raw=field('faq');
+    if(!raw)return;
+    var pairs=[];
+    String(raw).split(/\n\s*\n/).forEach(function(b){
+      var lines=b.split('\n');
+      var q='';
+      var a=[];
+      lines.forEach(function(rawL,idx){
+        var l=idx===0?rawL.replace(/^[\s\uFEFF]+/,''):rawL;
+        var qm=/^Q\s*[:.]\s*/.exec(l);
+        var am=/^A\s*[:.]\s*/.exec(l);
+        if(qm&&!q)q=l.slice(qm[0].length);
+        else if(am)a.push(l.slice(am[0].length));
+        else if(!q)q=l;
+        else a.push(l);
+      });
+      if(q.trim()||a.join('').trim())pairs.push([q,a.join('\n')]);
+    });
+    if(!pairs.length)return;
+    var el=document.getElementById('pdFaq');
+    if(!el)return;
+    el.innerHTML=pairs.map(function(p){return faqItemHtml(p[0],p[1]);}).join('');
+    bindFaqAccordion();
   }
 
   // ?template=1 is set by the dashboard's live-preview iframe: skip the DB

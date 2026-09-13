@@ -1,0 +1,6 @@
+# Next.js auto-generated types
+next-env.d.ts
+.next/types/
+
+# npm lockfile (project uses pnpm)
+package-lock.json

@@ -626,6 +626,13 @@ export default function PageEditor() {
       }
       setIsUploadingImage(true);
       try {
+        // One-step upload: /admin/media/upload stores the file AND registers it
+        // in the media library. The page's media category, alt text and origin
+        // are carried as multipart fields so the entry is born filed under this
+        // page's section (Home, Shop, Product Category, …) — sending no
+        // category here would make the backend auto-register the file under
+        // "General" (a duplicate of the entry filed under the page).
+        const mediaCategory = mediaCategoryForPage(page?.slug);
         const res = await apiClient.upload<{
           url: string;
           name?: string;
@@ -633,19 +640,10 @@ export default function PageEditor() {
           originalSize?: number;
           optimized?: boolean;
           dimensions?: string;
-        }>('/admin/media/upload', file);
-        const kb = res.size / 1024;
-        const sizeLabel = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`;
-        // File the image under this page's media category so the library stays
-        // organized by website page (Home, Shop, Product Category, …) and the
-        // storefront can pull matching images into its empty image slots.
-        const mediaCategory = mediaCategoryForPage(page?.slug);
-        await apiClient.post('/admin/media', {
+        }>('/admin/media/upload', file, {
           name: file.name,
-          url: res.url,
           category: mediaCategory,
           altText: activeSection.label,
-          size: sizeLabel,
           sourcePage: page?.name ?? page?.slug ?? '',
           sourceSection: activeSection.label,
         });

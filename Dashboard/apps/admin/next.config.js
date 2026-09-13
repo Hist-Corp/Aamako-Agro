@@ -1,6 +1,15 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Project root for the pnpm workspace. Webpack and production builds
+  // need this set to the workspace root so pnpm's node_modules symlinks
+  // (which point outside apps/admin into Dashboard/node_modules/.pnpm)
+  // are within the allowed filesystem.
+  outputFileTracingRoot: path.join(__dirname, '../../'),
+
   transpilePackages: ['@aamako/shared-types'],
+
   images: {
     remotePatterns: [
       {
@@ -13,6 +22,7 @@ const nextConfig = {
       },
     ],
   },
+
   // Same-origin API proxy — mirrors Frontend/vercel.json so the dashboard
   // can call the backend via /api/* with no CORS. When the client uses this
   // same-origin base (no absolute NEXT_PUBLIC_API_URL) in local dev, this

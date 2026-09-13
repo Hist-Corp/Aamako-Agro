@@ -39,7 +39,7 @@ const PERMISSION_GROUPS = [
   { label: 'Orders & Sales', permissions: ['orders:view', 'orders:advance', 'orders:cancel', 'orders:limited-status', 'sales:view', 'sales:manage'] },
   { label: 'Wholesale & Quotes', permissions: ['wholesale:view', 'wholesale:approve', 'wholesale:reject', 'quotes:view', 'quotes:respond'] },
   { label: 'Customers', permissions: ['customers:view', 'customers:suspend', 'customers:edit', 'customers:order-history', 'customers:support-notes'] },
-  { label: 'Content', permissions: ['content:view', 'content:edit', 'content:publish', 'content:approve', 'journal:view', 'journal:edit', 'journal:publish', 'media:view', 'media:upload', 'media:delete'] },
+  { label: 'Content', permissions: ['content:view', 'content:edit', 'content:publish', 'content:approve', 'journal:view', 'journal:edit', 'journal:publish', 'media:view', 'media:upload', 'media:edit', 'media:publish', 'media:delete'] },
   { label: 'Reviews', permissions: ['reviews:view', 'reviews:moderate'] },
   { label: 'Support', permissions: ['support:view', 'support:manage'] },
   { label: 'Reports & Analytics', permissions: ['reports:view', 'reports:export', 'analytics:view'] },
