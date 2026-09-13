@@ -34,6 +34,7 @@ import {
   Check,
   Info,
   X,
+  Tag,
 } from 'lucide-react';
 
 interface MediaItem {
@@ -320,7 +321,10 @@ export default function MediaPage() {
     for (let i = 0; i < pickedFiles.length; i++) {
       const picked = pickedFiles[i];
       try {
-        const stat = await uploadOneFile(picked.file, uploadForm.category, uploadForm.altText);
+        const stat = await uploadOneFile(picked.file, uploadForm.category, uploadForm.altText, {
+          sourcePage: uploadForm.category === 'General' ? undefined : uploadForm.category,
+          sourceSection: uploadForm.category === 'General' ? undefined : uploadForm.category,
+        });
         okCount++;
         savedTotal += stat?.savedBytes ?? 0;
         beforeTotal += stat?.originalBytes ?? 0;
@@ -352,7 +356,7 @@ export default function MediaPage() {
       addToast({ type: 'error', title: 'Upload failed', description: failed.map((f) => f.file.name).join(' · ') });
     } else {
       setPickedFiles([]);
-      setUploadForm((f) => ({ ...f, altText: '' }));
+      setUploadForm((f) => ({ ...f, altText: '', category: 'General' }));
       setUploadOpen(false);
     }
   };
@@ -376,6 +380,32 @@ export default function MediaPage() {
       await load();
     } catch (err) {
       addToast({ type: 'error', title: 'Upload failed', description: err instanceof ApiError ? err.message : 'Unexpected error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ── Quick rename (inline) ──
+  const [renameTarget, setRenameTarget] = useState<MediaItem | null>(null);
+  const [renameForm, setRenameForm] = useState({ name: '' });
+  const [renameDirty, setRenameDirty] = useState(false);
+
+  const openRename = (item: MediaItem) => {
+    setRenameTarget(item);
+    setRenameForm({ name: item.name });
+    setRenameDirty(false);
+  };
+
+  const handleRename = async () => {
+    if (!renameTarget) return;
+    setIsSaving(true);
+    try {
+      await apiClient.patch(`/admin/media/${renameTarget.id}`, { name: renameForm.name.trim() });
+      addToast({ type: 'success', title: 'Renamed', description: `${renameTarget.name} → ${renameForm.name.trim()}` });
+      setRenameTarget(null);
+      await load();
+    } catch (err) {
+      addToast({ type: 'error', title: 'Rename failed', description: err instanceof ApiError ? err.message : 'Unexpected error' });
     } finally {
       setIsSaving(false);
     }
@@ -529,6 +559,17 @@ export default function MediaPage() {
         {item.type === 'IMAGE' && canEdit && (
           <Button variant="ghost" size="sm" className="bg-white/90 shadow-sm" title="Use for a product (replace product image)" onClick={() => openProductPicker(item)}>
             <PackagePlus className="h-3.5 w-3.5 text-brand-600" />
+          </Button>
+        )}
+        {canEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-white/90 shadow-sm"
+            title="Rename image (name, category, alt text, URL stay the same)"
+            onClick={() => openRename(item)}
+          >
+            <Tag className="h-3.5 w-3.5 text-surface-600" />
           </Button>
         )}
         {canEdit && (
@@ -828,6 +869,27 @@ export default function MediaPage() {
                 />
               </>
             )}
+          </div>
+        </Dialog>
+      )}
+
+      {/* Rename (quick) dialog */}
+      {renameTarget && (
+        <Dialog
+          open
+          maxWidth="sm"
+          onClose={() => setRenameTarget(null)}
+          title="Rename image"
+          description="Change the display name only — image URL, category, alt text and product usage stay the same."
+          primaryAction={{ label: 'Save', onClick: handleRename, isLoading: isSaving }}
+        >
+          <div className="space-y-4">
+            <Input
+              label="File name"
+              value={renameForm.name}
+              onChange={(e) => setRenameForm({ name: e.target.value })}
+              onKeyDown={(e) => { if (e.key === 'Enter' && renameDirty) { e.preventDefault(); handleRename(); } }}
+            />
           </div>
         </Dialog>
       )}
