@@ -38,6 +38,9 @@ interface CmsItem {
   title: string;
   body: string;
   isPublished: boolean;
+  /** Last APPROVED body — present when the item has ever been published.
+   *  The live storefront (GET /content) renders this, not the draft body. */
+  publishedBody?: string;
 }
 
 const STOREFRONT_URL =
@@ -96,15 +99,24 @@ export default function ProductTemplateEditorPage({
     setIsLoading(true);
     try {
       const data = await apiClient.get<CmsItem[]>('/content/manage');
+      // Merge the LIVE feed (what the storefront actually shows) with the
+      // manage feed (drafts). The live feed only carries published items;
+      // joining on key gives each draft its last published body so the
+      // "Published theme" strip can compare draft line 1 vs live line 1.
+      let liveByKey: Record<string, string> = {};
+      try {
+        const live = await apiClient.get<Array<{ key: string; body?: string }>>('/content');
+        for (const it of live) {
+          if (it.key.startsWith(prefix)) liveByKey[it.key.slice(prefix.length)] = it.body ?? '';
+        }
+      } catch (_) {
+        /* live feed is best-effort — the editor works without it */
+      }
       const map: Record<string, CmsItem> = {};
       for (const item of data) {
         if (item.key.startsWith(prefix)) {
           const field = item.key.slice(prefix.length);
-          if (Object.keys(map).includes(field)) {
-            map[field] = item;
-          } else {
-            map[field] = item;
-          }
+          map[field] = { ...item, publishedBody: liveByKey[field] };
         }
       }
       setItems(map);
@@ -840,6 +852,10 @@ function renderFieldInner(
   if (field.type === 'gallery') {
     const raw = (existing?.body ?? existing?.title ?? prefill).trim();
     const urls = raw ? raw.split('\n').map((u: string) => u.trim()).filter(Boolean) : [];
+    // Gallery line 1 as the storefront sees it: the published body wins over
+    // the local draft, so the "Published theme" strip shows the LIVE image.
+    const liveRaw = ((existing as any)?.publishedBody ?? existing?.body ?? '').trim();
+    const liveFirst = liveRaw ? liveRaw.split('\n').map((u: string) => u.trim()).filter(Boolean)[0] ?? '' : '';
     return (
       <GalleryEditor
         key={field.key}
@@ -850,6 +866,7 @@ function renderFieldInner(
         mediaFields={mediaFields}
         onSave={onSave}
         missing={missing}
+        publishedThemeUrl={liveFirst || undefined}
       />
     );
   }
@@ -939,6 +956,7 @@ function GalleryEditor({
   mediaFields,
   onSave,
   missing,
+  publishedThemeUrl,
 }: {
   field: any;
   fieldKey: string;
@@ -947,12 +965,27 @@ function GalleryEditor({
   mediaFields?: Record<string, string>;
   onSave: (field: string, value: string, isTitle: boolean) => void;
   missing?: boolean;
+  /** Gallery line 1 as the storefront currently shows it (post-publish).
+   *  Drives the "Published theme" strip so the row the dashboard shows
+   *  BEFORE publish and the row customers see AFTER publish are the same. */
+  publishedThemeUrl?: string;
 }) {
   const { addToast } = useToast();
   const [rows, setRows] = useState<string[]>(() => (urls.length ? [...urls] : ['']));
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
   const [pickerIdx, setPickerIdx] = useState<number | null>(null);
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
+
+  // Re-sync when the saved gallery changes underneath (publish, seed, another
+  // tab): without this the editor keeps showing stale rows after Publish.
+  const savedKey = urls.join('\n');
+  const lastSynced = React.useRef(savedKey);
+  React.useEffect(() => {
+    if (lastSynced.current !== savedKey) {
+      lastSynced.current = savedKey;
+      setRows(urls.length ? [...urls] : ['']);
+    }
+  }, [savedKey, urls]);
 
   const commit = (next: string[]) => {
     onSave(field.key, next.map((u) => u.trim()).filter(Boolean).join('\n'), false);
@@ -1017,6 +1050,32 @@ function GalleryEditor({
       <label className="block text-xs font-medium text-surface-600 mb-1">
         {field.label}<RequiredMark required={field.required} />
       </label>
+      {/* Published theme strip — pinned above the editable rows so the theme
+          image stays identifiable as row 1 even after publish / reload. Shows
+          the LIVE line 1 the storefront (and every product card) renders, so
+          "first row in the dashboard = image in the carts" always holds. */}
+      {publishedThemeUrl && (
+        <div className="mb-3 flex items-center gap-3 rounded-lg border-2 border-brand-300 bg-brand-50/60 p-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={assetUrl(publishedThemeUrl)}
+            alt="Published theme image — shown on storefront + cards"
+            className="h-14 w-14 flex-shrink-0 rounded-lg border border-brand-200 object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
+          />
+          <div className="min-w-0">
+            <p className="text-2xs font-bold uppercase tracking-wide text-brand-700">
+              ★ Published theme image
+            </p>
+            <p className="truncate font-mono text-2xs text-surface-500" title={publishedThemeUrl}>
+              {publishedThemeUrl}
+            </p>
+            <p className="text-2xs text-surface-500">
+              This is the image live on the storefront &amp; carts.{rows[0] && rows[0] !== publishedThemeUrl ? ' Draft row 1 differs — publish to update it.' : ' Draft row 1 matches.'}
+            </p>
+          </div>
+        </div>
+      )}
       <div className="space-y-3">
         {rows.map((url, idx) => (
           <div key={idx} className="flex flex-wrap items-start gap-3 rounded-lg border border-surface-200 p-3">
@@ -1035,12 +1094,18 @@ function GalleryEditor({
             )}
             <div className="min-w-[240px] flex-1 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-2xs font-semibold uppercase tracking-wide text-brand-600">
-                  {idx === 0 ? 'Theme image' : `Gallery image ${idx + 1}`}
+                <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-brand-600">
+                  {idx === 0 ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-white">
+                      ★ Theme image — row 1
+                    </span>
+                  ) : (
+                    `Gallery image ${idx + 1}`
+                  )}
                 </span>
                 <span className="text-2xs text-surface-400">
                   {idx === 0
-                    ? 'Consistent everywhere — product page hero + every product card (Shop, Collections, Related)'
+                    ? 'Product page hero + every product card (Shop, Collections, Related) + carts'
                     : 'Product page gallery thumbnail only'}
                 </span>
               </div>
@@ -1353,26 +1418,31 @@ function removeRowButton(onClick: () => void) {
 }
 
 /** Key highlights / Why choose — one row per bullet: tick (check) or untick
- *  (cross) + free text. Serialized as one line per row: "✓ text" / "✗ text". */
+ *  (cross) + free text. Serialized as one line per row: "✓ text" / "✗ text".
+ *
+ *  WHITESPACE-SAFE: trailing spaces are digits of typing, not dirt. Pressing
+ *  Space after a full stop ("…texture.|") must keep the space in the input
+ *  immediately, so neither parse nor serialize trims the live text. Trailing
+ *  whitespace is only dropped at publish/save boundaries (see handlePublish
+ *  + content.controller.ts), never in this render→type→save loop. */
 function parseCheckList(value: string): { checked: boolean; text: string }[] {
   return String(value || '')
     .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean)
+    .filter((l) => l.trim() !== '')
     .map((l) => {
       const m = /^([✓✔✗xX])\s*/.exec(l);
-      if (!m) return { checked: true, text: l };
+      if (!m) return { checked: true, text: l.replace(/^[\s\uFEFF]+/, '') };
       return {
         checked: m[1] !== '✗' && m[1].toLowerCase() !== 'x',
-        text: l.slice(m[0].length).trim(),
+        text: l.slice(m[0].length),
       };
     });
 }
 function serializeCheckList(rows: { checked: boolean; text: string }[]): string {
-  // Preserve inner whitespace (incl. inter-word spaces) so the per-keystroke
-  // save round-trip doesn't snap the controlled input back and drop spaces.
-  // Trailing whitespace on each line is dropped to keep storage tidy.
-  return rows.map((r) => `${r.checked ? '✓' : '✗'} ${r.text.replace(/\s+$/, '')}`).join('\n');
+  // Lossless round-trip: keep every space the user typed (incl. trailing
+  // spaces mid-word like "texture. |"). The save path trims before publish,
+  // so storage stays tidy without stealing the spacebar while typing.
+  return rows.map((r) => `${r.checked ? '✓' : '✗'} ${r.text}`).join('\n');
 }
 
 /** Upload provenance for images added from the product-template editor:
@@ -1431,16 +1501,15 @@ function CertCardsEditor({
   onSave: (field: string, value: string, isTitle: boolean) => void;
   missing?: boolean;
 }) {
-  const names = String(value || '')
-    .split('\n')
-    .map((s) => s.replace(/<[^>]*>/g, '').trim());
-  while (names.length && names[names.length - 1] === '') names.pop();
+  const names = String(value || '').split('\n');
+  // Drop only the trailing BLANK lines (so empty tail rows collapse) — keep
+  // every space the user typed inside a row.
+  while (names.length && names[names.length - 1].trim() === '') names.pop();
     const commit = (next: string[]) => {
-    // Preserve inner whitespace so spaces survive the round-trip (the previous
-    // .trim() snapped the controlled input and dropped inter-word spaces);
-    // only drop trailing whitespace per line so empty trailing rows still collapse.
-    const lines = next.map((s) => s.replace(/\s+$/, ''));
-    while (lines.length && lines[lines.length - 1] === '') lines.pop();
+    // Lossless round-trip: keep every typed space; drop only blank trailing
+    // rows. The save path trims before publish, never while typing.
+    const lines = next.slice();
+    while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
     // body-first (see CheckListEditor note) — the seed stores cert names in body
     onSave(field.key, lines.join('\n'), false);
   };
@@ -1669,25 +1738,26 @@ function CheckListEditor({
 /** Nutrition — one nutrient per row (label + value) + an optional note shown
  *  under the table. Serialized as "Label: value" lines + "\n\nnote". */
 function parseNutritionRows(value: string): { rows: { label: string; value: string }[]; note: string } {
-  const blocks = String(value || '').split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  const blocks = String(value || '').split(/\n\s*\n/).filter((b) => b.trim() !== '');
   const rows: { label: string; value: string }[] = [];
   let note = '';
-  (blocks[0] ?? '').split('\n').forEach((l) => {
+  (blocks[0] ?? '').split('\n').forEach((rawL) => {
+    const l = rawL.replace(/^[\s\uFEFF]+/, '');
     const i = l.indexOf(':');
-    if (i > 0) rows.push({ label: l.slice(0, i).trim(), value: l.slice(i + 1).trim() });
+    if (i > 0) rows.push({ label: l.slice(0, i), value: l.slice(i + 1).replace(/^\s/, '') });
   });
-  if (blocks.length > 1) note = blocks.slice(1).join('\n\n');
+  if (blocks.length > 1) note = blocks.slice(1).join('\n\n').replace(/^[\s\uFEFF]+/, '');
   if (blocks.length === 1 && blocks[0].split('\n').some((l) => l.indexOf(':') <= 0)) {
-    note = blocks[0].split('\n').filter((l) => l.indexOf(':') <= 0).join('\n');
+    note = blocks[0].split('\n').filter((l) => l.indexOf(':') <= 0).join('\n').replace(/^[\s\uFEFF]+/, '');
   }
   return { rows, note };
 }
 function serializeNutritionRows(rows: { label: string; value: string }[], note: string): string {
-  // Preserve inner whitespace so the keystroke round-trip doesn't snap the
-  // controlled input and drop spaces; only trim the trailing note block.
-  const lines = rows.map((r) => `${r.label.replace(/\s+$/, '')}: ${r.value.replace(/\s+$/, '')}`);
-  const trimmedNote = note.replace(/\s+$/, '');
-  return lines.length ? lines.join('\n') + (trimmedNote ? '\n\n' + trimmedNote : '') : trimmedNote;
+  // Lossless round-trip: keep every typed space (incl. trailing "…kcal |");
+  // trim only for emptiness checks so blank rows still collapse.
+  const lines = rows.filter((r) => r.label.trim() || r.value.trim()).map((r) => `${r.label.replace(/^\s+/, '')}: ${r.value.replace(/^\s/, '')}`);
+  const keepNote = note.trim() ? note.replace(/^[\s\uFEFF]+/, '') : '';
+  return lines.length ? lines.join('\n') + (keepNote ? '\n\n' + keepNote : '') : keepNote;
 }
 
 function NutritionRowsEditor({
@@ -1767,17 +1837,19 @@ function NutritionRowsEditor({
 function parseFaqPairs(value: string): { q: string; a: string }[] {
   return String(value || '')
     .split(/\n\s*\n/)
-    .map((b) => b.trim())
-    .filter(Boolean)
+    .filter((b) => b.trim() !== '')
     .map((b) => {
-      const lines = b.split('\n').map((l) => l.trim());
+      // Whitespace-safe: never trim the live text — keep trailing spaces the
+      // user typed (e.g. "…texture. |") so the spacebar works while typing.
+      const lines = b.split('\n');
       let q = '';
       const a: string[] = [];
-      lines.forEach((l) => {
+      lines.forEach((rawL, idx) => {
+        const l = idx === 0 ? rawL.replace(/^[\s\uFEFF]+/, '') : rawL;
         const qm = /^Q\s*[:.]?\s*/i.exec(l);
         const am = /^A\s*[:.]?\s*/i.exec(l);
-        if (qm && !q) q = l.slice(qm[0].length).trim();
-        else if (am) a.push(l.slice(am[0].length).trim());
+        if (qm && !q) q = l.slice(qm[0].length);
+        else if (am) a.push(l.slice(am[0].length));
         else if (!q) q = l;
         else a.push(l);
       });
@@ -1785,10 +1857,9 @@ function parseFaqPairs(value: string): { q: string; a: string }[] {
     });
 }
 function serializeFaqPairs(rows: { q: string; a: string }[]): string {
-  // Preserve inner whitespace so spaces survive the round-trip (the previous
-  // .trim() snapped the controlled textarea and dropped inter-word spaces);
-  // only drop the trailing whitespace on each value.
-  return rows.filter((r) => r.q.replace(/\s+$/, '') || r.a.replace(/\s+$/, '')).map((r) => `Q: ${r.q.replace(/\s+$/, '')}\nA: ${r.a.replace(/\s+$/, '')}`).join('\n\n');
+  // Lossless round-trip: keep every typed space; trim only for the
+  // empty-row check so blank cards still collapse.
+  return rows.filter((r) => r.q.trim() || r.a.trim()).map((r) => `Q: ${r.q.replace(/^\s+/, '')}\nA: ${r.a.replace(/^\s+/, '')}`).join('\n\n');
 }
 
 function FaqPairsEditor({
@@ -1867,24 +1938,25 @@ function parseHowtoBlocks(value: string): { usage: string; recipes: string; stor
   const out = { usage: '', recipes: '', storage: '' };
   String(value || '')
     .split(/\n\s*\n/)
-    .map((b) => b.trim())
-    .filter(Boolean)
+    .filter((b) => b.trim() !== '')
     .forEach((b) => {
-      const m = /^([A-Za-z]+)\s*:\s*/i.exec(b);
+      // Strip only leading blank lines; keep trailing spaces the user typed.
+      const clean = b.replace(/^[\s\uFEFF]+/, '');
+      const m = /^([A-Za-z]+)\s*:\s*/.exec(clean);
       if (!m) return;
       const key = m[1].toLowerCase();
-      if (key === 'usage' || key === 'recipes' || key === 'storage') out[key] = b.slice(m[0].length).trim();
+      if (key === 'usage' || key === 'recipes' || key === 'storage') out[key] = clean.slice(m[0].length);
     });
   return out;
 }
 function serializeHowtoBlocks(v: { usage: string; recipes: string; storage: string }): string {
-  // Preserve inner whitespace so spaces survive the round-trip (the previous
-  // .trim() snapped the controlled textarea and dropped inter-word spaces);
-  // only drop trailing whitespace per block.
+  // Lossless round-trip: keep every typed space (incl. "texture. |") so the
+  // spacebar works mid-sentence. Trailing whitespace is trimmed at publish,
+  // never while typing.
   const blocks: string[] = [];
-  if (v.usage.replace(/\s+$/, '')) blocks.push(`Usage: ${v.usage.replace(/\s+$/, '')}`);
-  if (v.recipes.replace(/\s+$/, '')) blocks.push(`Recipes: ${v.recipes.replace(/\s+$/, '')}`);
-  if (v.storage.replace(/\s+$/, '')) blocks.push(`Storage: ${v.storage.replace(/\s+$/, '')}`);
+  if (v.usage.trim()) blocks.push(`Usage: ${v.usage.replace(/^\s+/, '')}`);
+  if (v.recipes.trim()) blocks.push(`Recipes: ${v.recipes.replace(/^\s+/, '')}`);
+  if (v.storage.trim()) blocks.push(`Storage: ${v.storage.replace(/^\s+/, '')}`);
   return blocks.join('\n\n');
 }
 
@@ -1894,16 +1966,15 @@ function parseRelatedCards(value: string): { title: string; link: string; image:
   const cards = Array.from({ length: 4 }, () => ({ title: '', link: '', image: '' }));
   String(value || '')
     .split(/\n\s*\n/)
-    .map((b) => b.trim())
-    .filter(Boolean)
-    .map((b) => b.trim())
-    .filter(Boolean)
+    .filter((b) => b.trim() !== '')
     .forEach((b) => {
-      const m = /^Card\s*(\d+)\s*(title|link|image)\s*:\s*/i.exec(b);
+      // Whitespace-safe: keep trailing spaces the user typed in card fields.
+      const clean = b.replace(/^[\s\uFEFF]+/, '');
+      const m = /^Card\s*(\d+)\s*(title|link|image)\s*:\s*/i.exec(clean);
       if (!m) return;
       const idx = parseInt(m[1], 10) - 1;
       if (idx < 0 || idx > 3) return;
-      const val = b.slice(m[0].length).trim();
+      const val = clean.slice(m[0].length);
       const key = m[2].toLowerCase() as 'title' | 'link' | 'image';
       cards[idx][key] = val;
     });
@@ -1913,7 +1984,7 @@ function serializeRelatedCards(cards: { title: string; link: string; image: stri
   const blocks: string[] = [];
   cards.forEach((c, i) => {
     if (c.title.trim() || c.link.trim() || c.image.trim()) {
-      blocks.push(`Card ${i + 1} title: ${c.title.trim()}\nCard ${i + 1} link: ${c.link.trim()}\nCard ${i + 1} image: ${c.image.trim()}`);
+      blocks.push(`Card ${i + 1} title: ${c.title.replace(/^\s+/, '')}\nCard ${i + 1} link: ${c.link.replace(/^\s+/, '')}\nCard ${i + 1} image: ${c.image.replace(/^\s+/, '')}`);
     }
   });
   return blocks.join('\n\n');
