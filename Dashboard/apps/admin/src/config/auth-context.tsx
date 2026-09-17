@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshToken?: string;
         tokens?: { accessToken: string; refreshToken: string };
         user: { id: string; email: string; role: Role; [k: string]: unknown };
-      }>('/auth/login', { email, password, totpCode });
+      }>('/auth/login', { email, password, totpCode, scope: 'dashboard' });
 
       const accessToken = response.accessToken ?? response.tokens?.accessToken;
       const refreshToken = response.refreshToken ?? response.tokens?.refreshToken;

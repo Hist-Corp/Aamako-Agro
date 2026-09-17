@@ -12,12 +12,12 @@
   {
     "status": "PASS",
     "name": "Product fetched for cart journey",
-    "detail": "slug=timur-powder"
+    "detail": "slug=power-fruits-powder"
   },
   {
     "status": "PASS",
     "name": "Variant fetched",
-    "detail": "variantId=925dc924-41bc-42ec-8462-912db0ac7c3a"
+    "detail": "variantId=48b739a8-c7fd-400b-871a-2bb5d63b7379"
   },
   {
     "status": "PASS",
@@ -47,7 +47,7 @@
   {
     "status": "PASS",
     "name": "Checkout creates order",
-    "detail": "orderNumber=AA-1789102421854-6F3A totalCents=90000"
+    "detail": "orderNumber=AA-1789619433500-CCC5 totalCents=117000"
   },
   {
     "status": "PASS",

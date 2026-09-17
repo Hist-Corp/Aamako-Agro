@@ -7,7 +7,7 @@
   {
     "status": "PASS",
     "name": "Dashboard UI: redirected into app after login",
-    "detail": "url=http://localhost:3001/dashboard"
+    "detail": "url=http://localhost:3101/dashboard"
   },
   {
     "status": "PASS",
@@ -50,8 +50,8 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Dashboard UI: customer login rejected at the door",
-    "detail": "status=200 (server issues dashboard tokens to customers — see suite 02)"
+    "detail": "status=403"
   }
 ]

@@ -2,12 +2,12 @@
   {
     "status": "PASS",
     "name": "Load time OK: storefront index",
-    "detail": "2489ms (DCL=847ms FCP~972ms)"
+    "detail": "2418ms (DCL=555ms FCP~332ms)"
   },
   {
     "status": "PASS",
     "name": "Page weight: storefront index",
-    "detail": "1558 KB across 43 requests"
+    "detail": "1556 KB across 41 requests"
   },
   {
     "status": "PASS",
@@ -27,12 +27,12 @@
   {
     "status": "PASS",
     "name": "Load time OK: storefront collection",
-    "detail": "1116ms (DCL=272ms FCP~228ms)"
+    "detail": "967ms (DCL=146ms FCP~120ms)"
   },
   {
     "status": "PASS",
     "name": "Page weight: storefront collection",
-    "detail": "762 KB across 30 requests"
+    "detail": "760 KB across 26 requests"
   },
   {
     "status": "PASS",
@@ -52,12 +52,12 @@
   {
     "status": "PASS",
     "name": "Load time OK: dashboard login",
-    "detail": "998ms (DCL=116ms FCP~372ms)"
+    "detail": "1110ms (DCL=458ms FCP~488ms)"
   },
   {
     "status": "PASS",
     "name": "Page weight: dashboard login",
-    "detail": "26 KB across 10 requests"
+    "detail": "74 KB across 12 requests"
   },
   {
     "status": "PASS",

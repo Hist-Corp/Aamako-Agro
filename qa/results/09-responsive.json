@@ -7,7 +7,7 @@
   {
     "status": "FAIL",
     "name": "Tap targets >=44px on mobile: /index.html",
-    "detail": "<a logo 41x36> | <button hamburger 40x40> | <a link-arrow 129x22> | <a link-arrow 146x22> | <a link-arrow 129x22> | <a prod-name 293x21>"
+    "detail": "<button btn btn-primary 127x43> | <button cart-close-btn 40x40> | <a cart-continue 281x21> | <a  343x30> | <a  343x30> | <a  343x30>"
   },
   {
     "status": "PASS",
@@ -17,7 +17,7 @@
   {
     "status": "FAIL",
     "name": "Tap targets >=44px on mobile: /collection.html",
-    "detail": "<a logo 41x36> | <button hamburger 40x40> | <a  36x18> | <a  85x18> | <a omback-btn 92x42> | <a  153x35>"
+    "detail": "<a  36x18> | <a  85x18> | <button cart-close-btn 40x40> | <a cart-continue 281x21> | <a  343x30> | <a  343x30>"
   },
   {
     "status": "PASS",
@@ -27,7 +27,7 @@
   {
     "status": "FAIL",
     "name": "Tap targets >=44px on mobile: /cart.html",
-    "detail": "<a logo 41x36> | <button hamburger 40x40> | <a  102x42> | <a  142x42> | <a  117x42> | <a is-active 60x42>"
+    "detail": "<a  102x42> | <a  142x42> | <a  117x42> | <a is-active 60x42> | <a  343x30> | <a  343x30>"
   },
   {
     "status": "PASS",
@@ -37,7 +37,7 @@
   {
     "status": "FAIL",
     "name": "Tap targets >=44px on mobile: /login",
-    "detail": "<button jsx-ee210f68dd737e54 absolute  24x24> | <button inline-flex items-center justi 295x36>"
+    "detail": "<button jsx-ee210f68dd737e54 flex h-8  32x32>"
   },
   {
     "status": "PASS",

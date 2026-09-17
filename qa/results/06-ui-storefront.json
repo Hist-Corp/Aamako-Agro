@@ -42,7 +42,7 @@
   {
     "status": "PASS",
     "name": "No 4xx/5xx same-origin assets during crawl",
-    "detail": "26 unique links checked"
+    "detail": "27 unique links checked"
   },
   {
     "status": "PASS",

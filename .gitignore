@@ -34,6 +34,7 @@ Backend/.prisma/
 .freebuff/
 *-out.txt
 run-*.log
+.kilo/
 
 
 # Runtime image uploads
