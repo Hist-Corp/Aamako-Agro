@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useOrders, useUpdatePaymentStatus, useRefundOrder } from '@/lib/api-hooks';
 import { useAuth } from '@/config/auth-context';
@@ -16,17 +16,13 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+
+// recharts loads on demand (same contract as the analytics page) — the sales
+// trend chart renders below the fold, so splitting it keeps the initial
+// orders-table paint lean.
+const SalesTrendChart = lazy(() =>
+  import('@/components/charts/sales-trend-chart').then((m) => ({ default: m.SalesTrendChart })),
+);
 import { DollarSign, ShoppingCart, TrendingUp, TrendingDown } from 'lucide-react';
 import type { Order, OrderStatus } from '@aamako/shared-types';
 
@@ -273,17 +269,9 @@ export default function SalesPage() {
       {/* Sales Chart */}
       <Card>
         <CardHeader title="Sales Trend" description="Daily revenue for the last 7 days" />
-        <div className="h-64 px-4 pb-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={MOCK_SALES_DATA}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(value: number) => [formatCurrency(value), 'Revenue']} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }} />
-              <Bar dataKey="revenue" fill="#22c55e" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <Suspense fallback={<div className="h-64 px-4 pb-4 animate-pulse rounded-lg bg-surface-100" aria-hidden />}>
+          <SalesTrendChart data={MOCK_SALES_DATA} />
+        </Suspense>
       </Card>
 
       {/* Orders Table */}

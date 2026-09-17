@@ -194,6 +194,48 @@
   };
 
   /**
+   * Image URL optimization — `window.AamakoImg.url(url, width)`.
+   *
+   * Product `imageUrl`s are CMS-managed and often point at Unsplash with a
+   * fixed `w=800`, yet the storefront renders them into ~270px grid slots.
+   * That ships roughly 9x the pixels the layout can show and is one of the
+   * heaviest bytes on the shop pages. Unsplash's CDN honours `w`/`q`, and
+   * `auto=format` lets it negotiate WebP/AVIF from the request's `Accept`
+   * header, so we rewrite the request at render time to match the slot at
+   * ~2x (retina) density.
+   *
+   * Stored CMS content is never mutated, and any non-Unsplash URL (local
+   * /images/*.jpg, another CDN) is returned byte-for-byte unchanged. URLs
+   * that already ask for a rendition at or below the target are also left
+   * alone, so hand-tuned markup such as `?w=350` keeps its exact bytes.
+   */
+  var UNSPLASH_HOST = 'images.unsplash.com';
+
+  window.AamakoImg = {
+    /** Default target width: ~270px card slot at ~1.8x device pixel ratio. */
+    CARD_WIDTH: 480,
+    url: function (url, width) {
+      var src = url == null ? '' : String(url);
+      if (src.indexOf(UNSPLASH_HOST) === -1) return src;
+      var target = width || window.AamakoImg.CARD_WIDTH;
+      try {
+        var parsed = new URL(src);
+        if (parsed.hostname !== UNSPLASH_HOST) return src;
+        var current = parseInt(parsed.searchParams.get('w'), 10);
+        // Never downgrade quality below what the author already chose, and
+        // never request a rendition larger than the slot needs.
+        if (current && current <= target) return src;
+        parsed.searchParams.set('w', String(target));
+        parsed.searchParams.set('q', '72');
+        parsed.searchParams.set('auto', 'format');
+        return parsed.toString();
+      } catch (e) {
+        return src;
+      }
+    },
+  };
+
+  /**
    * Sign-in gate for cart actions. Shows a popup telling the user to sign
    * in first; the "Sign in" button links to the storefront signin page.
    * Returns true when the user IS signed in (action may proceed).

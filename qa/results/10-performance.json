@@ -2,12 +2,12 @@
   {
     "status": "PASS",
     "name": "Load time OK: storefront index",
-    "detail": "2418ms (DCL=555ms FCP~332ms)"
+    "detail": "1321ms (DCL=670ms FCP~836ms)"
   },
   {
     "status": "PASS",
     "name": "Page weight: storefront index",
-    "detail": "1556 KB across 41 requests"
+    "detail": "1463 KB across 37 requests"
   },
   {
     "status": "PASS",
@@ -15,9 +15,9 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "No images >2x rendered size: storefront index",
-    "detail": "photo-1464965911861-746a04b4bca6?w=800&q=80 nat=800 rendered=268 | photo-1619566636858-adf3ef46400b?w=800&q=80 nat=800 rendered=268"
+    "detail": "24 imgs checked"
   },
   {
     "status": "PASS",
@@ -27,12 +27,12 @@
   {
     "status": "PASS",
     "name": "Load time OK: storefront collection",
-    "detail": "967ms (DCL=146ms FCP~120ms)"
+    "detail": "986ms (DCL=218ms FCP~284ms)"
   },
   {
     "status": "PASS",
     "name": "Page weight: storefront collection",
-    "detail": "760 KB across 26 requests"
+    "detail": "1157 KB across 30 requests"
   },
   {
     "status": "PASS",
@@ -40,9 +40,9 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "No images >2x rendered size: storefront collection",
-    "detail": "photo-1532336414038-cf19250c5757?w=800&q=80 nat=800 rendered=277 | photo-1615485290382-441e4d049cb5?w=800&q=80 nat=800 rendered=277 | photo-1490474418585-ba9bad8fd0ea?w=800&q=80 nat=800 rendered=277 | photo-1550828520-4cb496926fc9?w=800&q=80 nat=800 rendered=277"
+    "detail": "17 imgs checked"
   },
   {
     "status": "PASS",
@@ -52,12 +52,12 @@
   {
     "status": "PASS",
     "name": "Load time OK: dashboard login",
-    "detail": "1110ms (DCL=458ms FCP~488ms)"
+    "detail": "1035ms (DCL=286ms FCP~696ms)"
   },
   {
     "status": "PASS",
     "name": "Page weight: dashboard login",
-    "detail": "74 KB across 12 requests"
+    "detail": "74 KB across 17 requests"
   },
   {
     "status": "PASS",

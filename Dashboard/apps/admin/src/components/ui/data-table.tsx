@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useDeferredValue, useMemo } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -58,6 +58,11 @@ export function DataTable<TData>({
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
+  // Defer the expensive row-filter recompute behind the keystroke: the input
+  // stays responsive while the table catches up on the next render. The input
+  // still shows every character (it reads `globalFilter`); only the filtered
+  // rows lag by a frame under load.
+  const deferredGlobalFilter = useDeferredValue(globalFilter);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   const allColumns = useMemo<ColumnDef<TData, any>[]>(() => {
@@ -94,7 +99,7 @@ export function DataTable<TData>({
     columns: allColumns,
     state: {
       sorting,
-      globalFilter,
+      globalFilter: deferredGlobalFilter,
       columnFilters,
       ...(enableSelection && selectedRowIds
         ? {

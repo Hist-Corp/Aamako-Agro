@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function(){
       <h1 id="collTitle" data-cms="page.collection.title">Loading collection…</h1>
       <div id="collDesc" data-cms="page.collection.desc"><p>Hand-picked foods from our partner farms, processed gently and shipped fresh from the facility.</p></div>
     </div>
-    <div class="omcoll-cats" id="collCats"></div>
+    <div class="omcoll-cats" id="collCats"><span class="omcoll-chip-sk fp-sk" style="width:110px;"></span><span class="omcoll-chip-sk fp-sk" style="width:150px;"></span><span class="omcoll-chip-sk fp-sk" style="width:130px;"></span></div>
 
   </div>
 </section>
@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="wrap">
     <div class="omcoll-layout">
       <aside class="omcoll-side">
-        <h3 data-cms="page.collection.cats.title">Categories</h3>
+        <h2 data-cms="page.collection.cats.title">Categories</h2>
         <div class="omcoll-sidecats" id="sideCats"></div>
       </aside>
       <div>
@@ -292,6 +292,9 @@ document.addEventListener('DOMContentLoaded', function(){
   var MEMBER_RATE=0.10;
   function fmt(n){n=Math.round(n);return 'Rs '+n.toLocaleString('en-IN');}
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  /* Grid cards render ~270px wide — request a card-sized CDN rendition
+     rather than the CMS default 800px. See js/api.js → AamakoImg. */
+  function imgUrl(u, w){return window.AamakoImg?window.AamakoImg.url(u, w):(u||'');}
 
   /* ---------- hamburger (site-wide pattern) ---------- */
   (function(){
@@ -422,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function(){
     return '<div class="fpcard">'
       +'<a class="fp-img" href="product.html?slug='+slug+'" aria-label="'+esc(t.name)+'">'
       +'<span class="fp-badge" style="display:none"></span>'
-      +'<img src="'+esc(t.imageUrl||'')+'" alt="'+esc(t.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
+      +'<img src="'+esc(imgUrl(t.imageUrl))+'" alt="'+esc(t.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';">'
       +'</a>'
       +'<div class="fp-body">'
       +'<a class="fp-name" href="product.html?slug='+slug+'">'+esc(t.name)+'</a>'
@@ -450,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function(){
     return '<div class="fpcard">'
       +'<a class="fp-img" href="product.html?slug='+slug+'" aria-label="'+esc(p.name)+'">'
       +(oos?'<span class="fp-badge oos">Sold out</span>':'<span class="fp-badge" style="display:none"></span>')
-      +'<img src="'+esc(p.imageUrl||'')+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
+      +'<img src="'+esc(imgUrl(p.imageUrl))+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';">'
       +'</a>'
       +'<div class="fp-body">'
       +'<a class="fp-name" href="product.html?slug='+slug+'">'+esc(p.name)+'</a>'
@@ -463,6 +466,39 @@ document.addEventListener('DOMContentLoaded', function(){
       +'</div></div>';
   }
   var currentSlug='';
+
+  /* ---------- loading skeletons ----------
+     Placeholder cards built from the REAL card classes, so a reserved slot is
+     exactly as tall as the live card that replaces it. Painting these before
+     the first fetch is what keeps the grid (and everything below it) from
+     jumping once the products arrive. */
+  function skeletonCardHtml(){
+    return '<div class="fpcard fp-skeleton" aria-hidden="true">'
+      +'<span class="fp-img fp-sk"></span>'
+      +'<div class="fp-body">'
+      +'<span class="fp-name fp-sk">&nbsp;</span>'
+      +'<div class="fp-price fp-sk">&nbsp;</div>'
+      +'<div class="fp-action"><div class="fp-variant-row">'
+      +'<span class="fp-btn fp-sk" style="flex:0 0 96px;height:42px;"></span>'
+      +'<span class="fp-btn fp-sk" style="flex:1;height:44px;"></span>'
+      +'</div></div>'
+      +'</div></div>';
+  }
+  // The storefront requests one page of products (limit=20), but the live
+  // catalog currently holds 5 — 2 rows on the 4-column desktop grid and 3 on
+  // the 2-column mobile grid. Reserving 6 skeleton cards (2/3/6 rows at
+  // 4/3/2 columns) matches that reality at both breakpoints; reserving the
+  // full page size would over-reserve and make the section SHRINK when the
+  // response lands, trading one layout shift for another.
+  var SKELETON_COUNT=6;
+  function showSkeletons(){
+    var grid=document.getElementById('collGrid');
+    if(!grid)return;
+    var html='';
+    for(var i=0;i<SKELETON_COUNT;i++)html+=skeletonCardHtml();
+    grid.innerHTML=html;
+  }
+  showSkeletons();
 
   /* ---------- back button — return to the page the user came from ---------- */
   (function(){
@@ -598,7 +634,26 @@ document.addEventListener('DOMContentLoaded', function(){
   var sortSel=document.getElementById('collSort');
   if(sortSel)sortSel.addEventListener('change',renderList);
   var searchInput=document.getElementById('collSearch');
-  if(searchInput)searchInput.addEventListener('input',renderList);
+  if(searchInput){
+    /* renderList() rebuilds the whole grid through innerHTML, so firing it on
+       every keystroke re-parses and re-lays-out every card per character. Debounce
+       the burst, but flush immediately on Enter and on the native clear (the
+       'search' event) so the field never feels unresponsive. 150ms is below the
+       threshold where typing starts to feel delayed. */
+    var searchTimer=null;
+    var runSearch=function(){ searchTimer=null; renderList(); };
+    searchInput.addEventListener('input',function(){
+      if(searchTimer)clearTimeout(searchTimer);
+      searchTimer=setTimeout(runSearch,150);
+    });
+    searchInput.addEventListener('search',function(){
+      if(searchTimer)clearTimeout(searchTimer);
+      runSearch();
+    });
+    searchInput.addEventListener('keydown',function(e){
+      if(e.key==='Enter'&&searchTimer){ clearTimeout(searchTimer); runSearch(); }
+    });
+  }
   if(window.AamakoAPI){
     window.AamakoAPI.getCategories().then(function(cats){
       paintChrome(cats||[]);

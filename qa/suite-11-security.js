@@ -75,17 +75,22 @@ async function xssAndIdor(R, api, ctx, sup) {
   // 404s these in production, so this is safe to assert either way).
   for (const p of ['/..%2f..%2fpackage.json', '/..%2f..%2f.git%2fconfig', '/%2e%2e/%2e%2e/etc/passwd']) {
     const t = await ctx.request.get(CFG.WEB + p);
-    t.status === 404
+    // `ctx.request` is a Playwright APIRequestContext, so status is a method
+    // (the suite-local `api()` helper returns a plain {status, json} object —
+    // don't mix the two shapes up).
+    const status = t.status();
+    status === 404
       ? R.pass(`Path traversal blocked ${p.slice(0, 28)}`)
-      : R.fail(`Path traversal blocked ${p.slice(0, 28)}`, `returned ${t.status}`);
+      : R.fail(`Path traversal blocked ${p.slice(0, 28)}`, `returned ${status}`);
   }
 
   // ---------- security headers on the static origin ----------
   const wh = await ctx.request.get(CFG.WEB + '/');
-  wh.headers.get('x-content-type-options') === 'nosniff'
+  const whHeaders = wh.headers(); // Playwright: plain object, lowercased keys
+  whHeaders['x-content-type-options'] === 'nosniff'
     ? R.pass('WEB serves X-Content-Type-Options: nosniff')
-    : R.warn('WEB serves X-Content-Type-Options: nosniff', `got ${wh.headers.get('x-content-type-options')}`);
-  wh.headers.get('referrer-policy')
+    : R.warn('WEB serves X-Content-Type-Options: nosniff', `got ${whHeaders['x-content-type-options']}`);
+  whHeaders['referrer-policy']
     ? R.pass('WEB serves Referrer-Policy')
     : R.warn('WEB serves Referrer-Policy', 'absent');
 

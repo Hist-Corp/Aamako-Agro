@@ -539,6 +539,48 @@ document.addEventListener('DOMContentLoaded', function(){
   var MEMBER_RATE=0.10;
   function fmt(n){n=Math.round(n);return 'Rs '+n.toLocaleString('en-IN');}
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    /* Related-product cards render ~270px wide — request a card-sized CDN
+       rendition rather than the CMS default 800px. The main gallery viewer
+       keeps the full-size URL. See js/api.js → AamakoImg. */
+    function imgUrl(u, w){return window.AamakoImg?window.AamakoImg.url(u, w):(u||'');}
+    /* "You might also like" is filled by a fetch after the product loads, so the
+       grid started a few pixels tall and grew by a full card row — shifting the
+       footer. Reserve the row with card-shaped placeholders built from the real
+       card classes. See the .fp-sk rules in shop-om.css. */
+    function relatedSkeletons(){
+      var grid=document.getElementById('relatedGrid');
+      if(!grid)return;
+      var html='';
+      for(var i=0;i<4;i++){
+        html+='<div class="fpcard fp-skeleton" aria-hidden="true">'
+          +'<span class="fp-img fp-sk"></span>'
+          +'<div class="fp-body">'
+          +'<span class="fp-cat fp-sk">&nbsp;</span>'
+          +'<span class="fp-name fp-sk">&nbsp;</span>'
+          +'<div class="fp-price fp-sk">&nbsp;</div>'
+          +'<div class="fp-action"><div class="fp-variant-row">'
+          +'<span class="fp-btn fp-sk" style="flex:1;height:44px;"></span>'
+          +'</div></div>'
+          +'</div></div>';
+      }
+      grid.innerHTML=html;
+    }
+    relatedSkeletons();
+  /* Reserve the "You might also like" grid before the recommendation fetch
+     resolves, so the footer below it does not jump in from underneath. */
+  function showRelatedSkeleton(){
+    var grid=document.getElementById('relatedGrid');
+    if(!grid)return;
+    var one='<div class="fpcard fp-skeleton" aria-hidden="true">'
+      +'<span class="fp-img fp-sk"></span>'
+      +'<div class="fp-body">'
+      +'<span class="fp-name fp-sk">&nbsp;</span>'
+      +'<div class="fp-price fp-sk">&nbsp;</div>'
+      +'<div class="fp-action"><div class="fp-variant-row">'
+      +'<span class="fp-btn fp-sk" style="flex:1;height:44px;"></span>'
+      +'</div></div></div></div>';
+    grid.innerHTML=one+one+one+one;
+  }
   /* ---------- product gallery: click a thumbnail → show in main viewer ---------- */
   function setMainImage(src, alt){
     var main=document.getElementById('pdMainImg');
@@ -821,7 +863,7 @@ document.addEventListener('DOMContentLoaded', function(){
     return '<div class="fpcard">'
       +'<a class="fp-img" href="product.html?slug='+slug+'">'
       +'<span class="fp-badge" style="display:none"></span>'
-      +'<img src="'+esc(p.imageUrl||'')+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
+      +'<img src="'+esc(imgUrl(p.imageUrl))+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';">'
       +'</a>'
       +'<div class="fp-body">'
       +'<span class="fp-cat">'+esc(p.category&&p.category.name||'')+'</span>'
@@ -1283,13 +1325,20 @@ document.addEventListener('DOMContentLoaded', function(){
       };
       applyPublished();
       var catSlug=p&&p.category&&p.category.slug;
+      showRelatedSkeleton();
       var req=catSlug?window.AamakoAPI.listProducts(1,catSlug):window.AamakoAPI.listProducts(1);
       return req.then(function(r){
         var curSlug=p&&p.slug;
         var items=((r&&r.items)||[]).filter(function(x){return x.slug!==curSlug;}).slice(0,4);
         var grid=document.getElementById('relatedGrid');
-        if(items.length)grid.innerHTML=items.map(relatedCardHtml).join('');
+        // Always replace the reserved placeholders — if the API came back with
+        // no siblings, clear the grid rather than leaving skeletons spinning.
+        grid.innerHTML=items.length?items.map(relatedCardHtml).join(''):'';
         bindRelated();
+      }).catch(function(){
+        // Keep the section from showing a permanent skeleton on failure.
+        var grid=document.getElementById('relatedGrid');
+        if(grid)grid.innerHTML='';
       });
     }).catch(function(){/* keep static fallback */});
   } else if (forceTemplate) {

@@ -17,7 +17,7 @@
   {
     "status": "PASS",
     "name": "Variant fetched",
-    "detail": "variantId=48b739a8-c7fd-400b-871a-2bb5d63b7379"
+    "detail": "variantId=8d636f9f-3809-4aef-96a2-715aea6dc588"
   },
   {
     "status": "PASS",
@@ -47,7 +47,7 @@
   {
     "status": "PASS",
     "name": "Checkout creates order",
-    "detail": "orderNumber=AA-1789619433500-CCC5 totalCents=117000"
+    "detail": "orderNumber=AA-1789663317843-BCB1 totalCents=117000"
   },
   {
     "status": "PASS",

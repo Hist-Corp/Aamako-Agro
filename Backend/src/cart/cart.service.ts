@@ -39,28 +39,31 @@ export class CartService {
     if (!anon || anon.items.length === 0) return;
 
     const userCart = await this.getOrCreateCart(userId);
-    for (const item of anon.items) {
-      await this.prisma.cartItem.upsert({
-        where: { cartId_variantId: { cartId: userCart.id, variantId: item.variantId } },
-        // Merge quantities — never overwrite
-        update: { quantity: { increment: item.quantity } },
-        create: { cartId: userCart.id, variantId: item.variantId, quantity: item.quantity },
-      });
-    }
+    // Merge all quantities in one transaction (avoids N sequential round-trips)
+    await this.prisma.$transaction(
+      anon.items.map((item) =>
+        this.prisma.cartItem.upsert({
+          where: { cartId_variantId: { cartId: userCart.id, variantId: item.variantId } },
+          // Merge quantities — never overwrite
+          update: { quantity: { increment: item.quantity } },
+          create: { cartId: userCart.id, variantId: item.variantId, quantity: item.quantity },
+        }),
+      ),
+    );
     await this.prisma.cart.delete({ where: { id: anon.id } }).catch(() => undefined);
   }
 
   async view(userId?: string, anonSessionId?: string) {
     const cart = await this.getOrCreateCart(userId, anonSessionId);
-    const quotes = await Promise.all(
-      cart.items.map((item) =>
-        this.engine.quote({
-          variantId: item.variantId,
-          quantity: item.quantity,
-          tierId: null,
-          userId,
-        }),
-      ),
+    // Batch the whole cart into one read set (variant IN (…) + one rules
+    // fetch per group) instead of 3–4 queries per line item.
+    const quotes = await this.engine.quoteCart(
+      cart.items.map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+        tierId: null,
+        userId,
+      })),
     );
     let subtotalCents = 0;
     const lines = cart.items.map((item, i) => {

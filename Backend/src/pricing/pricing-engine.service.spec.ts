@@ -13,20 +13,62 @@ describe('PricingEngineService', () => {
     basePriceCents: 10000,
   };
 
-  const makePrismaMock = (rules: any[], opts: { priceList?: number; contractPrice?: number } = {}) => ({
-    productVariant: { findUnique: jest.fn().mockResolvedValue(baseVariant) },
-    pricingRule: { findMany: jest.fn().mockResolvedValue(rules) },
-    priceList: { findUnique: jest.fn().mockResolvedValue(
-      opts.priceList != null ? { unitPriceCents: opts.priceList, effectiveTo: null } : null,
-    ) },
-    enterpriseContract: {
-      findFirst: jest.fn().mockResolvedValue(
-        opts.contractPrice != null
-          ? { id: 'c1', contractName: 'Kathmandu Mart', variantPricesJson: { v1: opts.contractPrice } }
-          : null,
-      ),
-    },
-  });
+  /** Fake Prisma client that also records every query (N+1 regression net). */
+  const makePrismaMock = (rules: any[], opts: { priceList?: number; contractPrice?: number } = {}) => {
+    const calls = {
+      productVariantFindUnique: 0,
+      productVariantFindMany: 0,
+      pricingRuleFindMany: 0,
+      priceListFindUnique: 0,
+      priceListFindMany: 0,
+      enterpriseContractFindFirst: 0,
+    };
+    return {
+      calls,
+      productVariant: {
+        findUnique: jest.fn().mockImplementation(() => {
+          calls.productVariantFindUnique++;
+          return Promise.resolve(baseVariant);
+        }),
+        findMany: jest.fn().mockImplementation(() => {
+          calls.productVariantFindMany++;
+          return Promise.resolve([baseVariant]);
+        }),
+      },
+      pricingRule: {
+        findMany: jest.fn().mockImplementation(() => {
+          calls.pricingRuleFindMany++;
+          return Promise.resolve(rules);
+        }),
+      },
+      priceList: {
+        findUnique: jest.fn().mockImplementation(() => {
+          calls.priceListFindUnique++;
+          return Promise.resolve(
+            opts.priceList != null ? { unitPriceCents: opts.priceList, effectiveTo: null } : null,
+          );
+        }),
+        findMany: jest.fn().mockImplementation(() => {
+          calls.priceListFindMany++;
+          return Promise.resolve(
+            opts.priceList != null
+              ? [{ tierId: 't-growth', variantId: 'v1', unitPriceCents: opts.priceList, effectiveTo: null }]
+              : [],
+          );
+        }),
+      },
+      enterpriseContract: {
+        findFirst: jest.fn().mockImplementation(() => {
+          calls.enterpriseContractFindFirst++;
+          return Promise.resolve(
+            opts.contractPrice != null
+              ? { id: 'c1', contractName: 'Kathmandu Mart', variantPricesJson: { v1: opts.contractPrice } }
+              : null,
+          );
+        }),
+      },
+    };
+  };
 
   const engineWith = (prismaMock: any) =>
     new PricingEngineService(prismaMock as unknown as PrismaService);
@@ -132,5 +174,60 @@ describe('PricingEngineService', () => {
     const eng = engineWith(makePrismaMock(rules as never[]));
     const q = await eng.quote({ variantId: 'v1', quantity: 12 });
     expect(q.appliedRule.ruleId).toBe('high-pri');
+  });
+
+  it('quoteCart matches quote line-by-line (N lines, one batched read set)', async () => {
+    const rules = [
+      {
+        id: 'r-vol', name: '10+ units 10% off', ruleType: 'VOLUME_DISCOUNT',
+        minQuantity: 10, maxQuantity: null, discountPercent: 10, priority: 0, isActive: true,
+      },
+    ];
+    const lines = [
+      { variantId: 'v1', quantity: 15, tierId: 't-growth' },
+      { variantId: 'v1', quantity: 2, tierId: 't-growth' },
+      { variantId: 'v1', quantity: 15, tierId: 't-growth' },
+    ];
+    const mock = makePrismaMock(rules as never[], { priceList: 8200 });
+    const eng = engineWith(mock);
+    const batch = await eng.quoteCart(lines);
+    // Query counts measured for the batch call alone (before any single quote).
+    const batchCalls = { ...mock.calls };
+    const single = await Promise.all(lines.map((l) => eng.quote(l)));
+    expect(batch).toEqual(single);
+
+    // Batched reads: 1 variant fetch, 1 rules fetch (shared group), 1 price-list fetch.
+    expect(batchCalls.productVariantFindMany).toBe(1);
+    expect(batchCalls.productVariantFindUnique).toBe(0);
+    expect(batchCalls.pricingRuleFindMany).toBe(1);
+    expect(batchCalls.priceListFindUnique).toBe(0);
+    expect(batchCalls.priceListFindMany).toBe(1);
+    expect(batchCalls.enterpriseContractFindFirst).toBe(0);
+  });
+
+  it('quoteCart applies the contract for covered lines and rules otherwise', async () => {
+    // Contract starts 2024-01-10: line at T1 (before) → rules path, line at T2 (after) → contract.
+    const contract = {
+      id: 'c1',
+      contractName: 'Kathmandu Mart',
+      variantPricesJson: { v1: 6000 },
+      isActive: true,
+      startsAt: new Date('2024-01-10T00:00:00Z'),
+      endsAt: null,
+    };
+    const mock = makePrismaMock([], {});
+    mock.enterpriseContract.findFirst.mockImplementation(() => Promise.resolve(contract));
+    const eng = engineWith(mock);
+    const lines = [
+      { variantId: 'v1', quantity: 1, userId: 'u-contract', date: new Date('2024-01-01T00:00:00Z') },
+      { variantId: 'v1', quantity: 1, userId: 'u-contract', date: new Date('2024-02-01T00:00:00Z') },
+    ];
+    const batch = await eng.quoteCart(lines);
+    const single = await Promise.all(lines.map((l) => eng.quote(l)));
+    expect(batch).toEqual(single);
+    expect(batch[0].unitPriceCents).toBe(10000);
+    expect(batch[0].appliedRule.source).toBe('BASE_LIST');
+    expect(batch[1].unitPriceCents).toBe(6000);
+    expect(batch[1].appliedRule.source).toBe('ENTERPRISE_CONTRACT');
   });
 });

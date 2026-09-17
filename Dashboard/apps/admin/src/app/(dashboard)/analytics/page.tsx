@@ -1,21 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
+import React, { useState, lazy, Suspense } from 'react';
 import { useSalesReport } from '@/lib/api-hooks';
 import { formatCurrency, formatNumber, formatChange } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
@@ -34,6 +19,17 @@ const DATE_RANGE_OPTIONS = [
 ];
 
 const PIE_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+// recharts (~120KB gzipped) loads only when charts are actually rendered —
+// it is NOT in the initial bundle for this route. The chart itself appears
+// only after the sales report loads, so the skeleton stays during the same
+// loading window and there is no extra layout shift.
+const RevenueTrendChart = lazy(() =>
+  import('@/components/charts/revenue-trend-chart').then((m) => ({ default: m.RevenueTrendChart })),
+);
+const OrdersTrendChart = lazy(() =>
+  import('@/components/charts/orders-trend-chart').then((m) => ({ default: m.OrdersTrendChart })),
+);
 
 /** Screen: Analytics
  *  Can view: ADMIN, MANAGER
@@ -111,35 +107,9 @@ export default function AnalyticsPage() {
       {report && (
         <Card>
           <CardHeader title="Revenue Trend" description={`Daily revenue over the selected period`} />
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={report.dataPoints}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12, fill: '#64748b' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 12, fill: '#64748b' }}
-                  tickLine={false}
-                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                />
-                <Tooltip
-                  formatter={(value: number) => [formatCurrency(value), 'Revenue']}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <Suspense fallback={<div className="h-72 animate-pulse rounded-lg bg-surface-100" aria-hidden />}>
+            <RevenueTrendChart data={report.dataPoints} />
+          </Suspense>
         </Card>
       )}
 
@@ -147,24 +117,9 @@ export default function AnalyticsPage() {
       {report && (
         <Card>
           <CardHeader title="Orders Trend" description="Daily order count" />
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={report.dataPoints}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12, fill: '#64748b' }}
-                  tickLine={false}
-                />
-                <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} />
-                <Tooltip
-                  formatter={(value: number) => [value, 'Orders']}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                />
-                <Bar dataKey="orders" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-surface-100" aria-hidden />}>
+            <OrdersTrendChart data={report.dataPoints} />
+          </Suspense>
         </Card>
       )}
     </div>

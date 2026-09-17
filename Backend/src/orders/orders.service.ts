@@ -75,16 +75,16 @@ export class OrdersService {
         })
       : null;
 
-    // Re-run pricing engine server-side for every line
-    const quotes = await Promise.all(
-      lines.map((l) =>
-        this.engine.quote({
-          variantId: l.variantId,
-          quantity: l.quantity,
-          tierId: account?.tierId ?? null,
-          userId: meta.userId,
-        }),
-      ),
+    // Re-run pricing engine server-side for every line — batched into one
+    // read set (variant IN (…) + one rules fetch per group) instead of
+    // 3–4 queries per line.
+    const quotes = await this.engine.quoteCart(
+      lines.map((l) => ({
+        variantId: l.variantId,
+        quantity: l.quantity,
+        tierId: account?.tierId ?? null,
+        userId: meta.userId,
+      })),
     );
 
     let subtotalCents = 0;

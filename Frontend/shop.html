@@ -585,6 +585,43 @@ document.addEventListener('DOMContentLoaded', function(){
   var MEMBER_RATE = 0.10; // indicative wholesale-partner rate shown on cards
   function fmt(n){ n = Math.round(n); return 'Rs ' + n.toLocaleString('en-IN'); }
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  /* Grid cards render ~270px wide — request a card-sized CDN rendition
+     rather than the CMS default 800px. See js/api.js → AamakoImg. */
+  function imgUrl(u, w){ return window.AamakoImg ? window.AamakoImg.url(u, w) : (u || ''); }
+  /* ---------- loading skeletons ----------
+     The three tabbed grids and the showcase are all filled by one fetch.
+     Reserving their space with real-card-shaped placeholders before the
+     response lands prevents the whole page from shifting when it arrives. */
+  function skeletonCardHtml(){
+    return '<div class="fpcard fp-skeleton" aria-hidden="true">'
+      +'<span class="fp-img fp-sk"></span>'
+      +'<div class="fp-body">'
+      +'<span class="fp-name fp-sk">&nbsp;</span>'
+      +'<div class="fp-price fp-sk">&nbsp;</div>'
+      +'<div class="fp-action"><div class="fp-variant-row">'
+      +'<span class="fp-btn fp-sk" style="flex:1;height:44px;"></span>'
+      +'</div></div>'
+      +'</div></div>';
+  }
+  function fillSkeleton(el,count){
+    if(!el)return;
+    var html='';
+    for(var i=0;i<count;i++)html+=skeletonCardHtml();
+    el.innerHTML=html;
+  }
+  function showSkeletons(){
+    fillSkeleton(document.getElementById('gridBest'),4);
+    fillSkeleton(document.getElementById('gridDeals'),4);
+    fillSkeleton(document.getElementById('gridNew'),4);
+    var showcase=document.getElementById('showcaseGrid');
+    if(showcase){
+      showcase.innerHTML='<span class="omshow2-banner fp-sk" aria-hidden="true"></span>'
+        +skeletonCardHtml().replace('fpcard fp-skeleton','fpcard fp-skeleton omshow2-card')
+        +skeletonCardHtml().replace('fpcard fp-skeleton','fpcard fp-skeleton omshow2-card')
+        +skeletonCardHtml().replace('fpcard fp-skeleton','fpcard fp-skeleton omshow2-card');
+    }
+  }
+  showSkeletons();
   /* ---------- wholesale visibility: show partner pricing only to wholesale customers ---------- */
   function isWholesaleUser(){
     try{
@@ -761,7 +798,7 @@ document.addEventListener('DOMContentLoaded', function(){
     return '<div class="fpcard">'
       +'<a class="fp-img" href="product.html?slug='+slug+'">'
       +(oos?'<span class="fp-badge oos">Sold out</span>':'<span class="fp-badge" style="display:none"></span>')
-      +'<img src="'+esc(p.imageUrl||'')+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
+      +'<img src="'+esc(imgUrl(p.imageUrl))+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';">'
       +'</a>'
       +'<div class="fp-body">'
       +'<span class="fp-cat">'+esc(p.category&&p.category.name||'')+'</span>'
@@ -808,7 +845,7 @@ document.addEventListener('DOMContentLoaded', function(){
     return '<div class="omshow2-card">'
       +'<a class="omshow2-img" href="product.html?slug='+slug+'">'
       +badge
-      +'<img src="'+esc(p.imageUrl||'')+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\';">'
+      +'<img src="'+esc(imgUrl(p.imageUrl))+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';">'
       +'</a>'
       +'<div class="omshow2-body">'
       +'<a class="omshow2-name" href="product.html?slug='+slug+'">'+esc(p.name)+'</a>'
@@ -817,6 +854,42 @@ document.addEventListener('DOMContentLoaded', function(){
       +'<div class="omshow2-actions">'+actions+'</div>'
       +'</div></div>';
   }
+  /* ---------- loading skeletons ----------
+     The three product panels and the showcase banner are all filled by a
+     fetch, so they began life a few pixels tall and then grew by hundreds
+     when the response landed — shifting the whole page below them. These
+     placeholders reuse the real .fpcard/.fp-img/.fp-name/.fp-price/.fp-action
+     classes so a reserved slot has exactly the height of the live card, and
+     the banner reuses .omshow2-banner (whose own min-height reserves it).
+     See the .fp-sk rules in shop-om.css. */
+  function skeletonCardHtml(){
+    return '<div class="fpcard fp-skeleton" aria-hidden="true">'
+      +'<span class="fp-img fp-sk"></span>'
+      +'<div class="fp-body">'
+      +'<span class="fp-name fp-sk">&nbsp;</span>'
+      +'<div class="fp-price fp-sk">&nbsp;</div>'
+      +'<div class="fp-action"><div class="fp-variant-row">'
+      +'<span class="fp-btn fp-sk" style="flex:1;height:44px;"></span>'
+      +'</div></div>'
+      +'</div></div>';
+  }
+  function showSkeletons(){
+    var html='';
+    for(var i=0;i<8;i++)html+=skeletonCardHtml();
+    ['gridBest','gridDeals','gridNew'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el)el.innerHTML=html;
+    });
+    // The showcase is one banner plus three cards (see renderShowcase).
+    var sc=document.getElementById('showcaseGrid');
+    if(sc){
+      var scHtml='<span class="omshow2-banner fp-sk" aria-hidden="true"></span>';
+      for(var j=0;j<3;j++)scHtml+=skeletonCardHtml();
+      sc.innerHTML=scHtml;
+    }
+  }
+  showSkeletons();
+
   function renderShowcase(items){
     var el=document.getElementById('showcaseGrid');
     if(!el)return;

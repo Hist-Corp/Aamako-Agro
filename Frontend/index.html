@@ -81,13 +81,22 @@
 }catch(e){}})();
 </script>
 <script src="js/content.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
-<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script src="js/motion.js" defer></script>
 <script>
-/* Section title + related content reveal animations for whole page */
+/* Section title + related content reveal animations for whole page.
+   The animation stack (GSAP/ScrollTrigger/Lenis) is fetched during browser
+   idle time by js/motion.js — its parse + ScrollTrigger layout scan was the
+   homepage's largest main-thread long task (~577ms). Registering the
+   scroll-reveals via AamakoMotion.ready moves that work off the critical
+   path; the triggers only fire at 'top 88/90%', below the fold, so nothing
+   visible changes. */
 document.addEventListener('DOMContentLoaded', function(){
+  window.AamakoMotion.ready(function(){
   if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+  /* Idempotent: also registered by the body script — whichever ready-callback
+     runs first must guarantee the plugin is registered before any tween
+     declares a scrollTrigger. */
+  gsap.registerPlugin(ScrollTrigger);
   /* Section titles and descriptions */
   document.querySelectorAll('.section-title, .section-desc').forEach(function(el){
     var isDesc = el.classList.contains('section-desc');
@@ -123,6 +132,7 @@ document.addEventListener('DOMContentLoaded', function(){
       scrollTrigger: { trigger: reviewGrid, start: 'top 88%', toggleActions: 'play none none none' }
     });
   }
+  });
 });
 </script>
 </head>
@@ -566,32 +576,36 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   })();
 
-  /* Lenis smooth scroll */
+  /* Lenis smooth scroll + GSAP ScrollTrigger reveals — run once the motion
+     stack finishes idle-loading (see js/motion.js). The reveal elements were
+     already forced visible at parse time by the no-GSAP fallback below, so
+     if the libraries never arrive nothing is left hidden. */
   var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(typeof Lenis !== 'undefined' && !prefersReducedMotion){
-    var lenis = new Lenis({ duration:1.2, easing:function(t){ return Math.min(1, 1.001 - Math.pow(2, -10*t)); } });
-    function raf(t){ lenis.raf(t); requestAnimationFrame(raf); }
-    requestAnimationFrame(raf);
-  }
-
-  /* GSAP ScrollTrigger reveals */
-  if(typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined' && !prefersReducedMotion){
-    gsap.registerPlugin(ScrollTrigger);
-    document.querySelectorAll('.reveal').forEach(function(el){
-      gsap.from(el, { opacity:0, y:30, duration:0.7, ease:'power3.out', scrollTrigger:{ trigger:el, start:'top 88%', once:true }});
+  if (!prefersReducedMotion && window.AamakoMotion) {
+    window.AamakoMotion.load();
+    window.AamakoMotion.ready(function () {
+      if (typeof Lenis !== 'undefined') {
+        var lenis = new Lenis({ duration:1.2, easing:function(t){ return Math.min(1, 1.001 - Math.pow(2, -10*t)); } });
+        function raf(t){ lenis.raf(t); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+      }
+      gsap.registerPlugin(ScrollTrigger);
+      document.querySelectorAll('.reveal').forEach(function(el){
+        gsap.from(el, { opacity:0, y:30, duration:0.7, ease:'power3.out', scrollTrigger:{ trigger:el, start:'top 88%', once:true }});
+      });
+      var prodGrid = document.querySelector('.prod-grid');
+      if(prodGrid){
+        gsap.from(prodGrid.querySelectorAll('.prod-card'), { opacity:0, y:24, duration:0.5, ease:'power3.out', stagger:0.08, scrollTrigger:{ trigger:prodGrid, start:'top 88%', once:true }});
+      }
+      var catGrid = document.querySelector('.cat-grid');
+      if(catGrid){
+        /* Fade in place — no translate, so cards never slide upward on refresh */
+        gsap.from(catGrid.querySelectorAll('.cat-card'), { opacity:0, duration:0.5, ease:'power2.out', stagger:0.06, scrollTrigger:{ trigger:catGrid, start:'top 88%', once:true }});
+      }
+      var stamp = document.querySelector('.hero-stamp-wrap .stamp');
+      if(stamp){ gsap.to(stamp, { rotation:-6, duration:3, ease:'sine.inOut', yoyo:true, repeat:-1 }); }
+      setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 3000);
     });
-    var prodGrid = document.querySelector('.prod-grid');
-    if(prodGrid){
-      gsap.from(prodGrid.querySelectorAll('.prod-card'), { opacity:0, y:24, duration:0.5, ease:'power3.out', stagger:0.08, scrollTrigger:{ trigger:prodGrid, start:'top 88%', once:true }});
-    }
-    var catGrid = document.querySelector('.cat-grid');
-    if(catGrid){
-      /* Fade in place — no translate, so cards never slide upward on refresh */
-      gsap.from(catGrid.querySelectorAll('.cat-card'), { opacity:0, duration:0.5, ease:'power2.out', stagger:0.06, scrollTrigger:{ trigger:catGrid, start:'top 88%', once:true }});
-    }
-    var stamp = document.querySelector('.hero-stamp-wrap .stamp');
-    if(stamp){ gsap.to(stamp, { rotation:-6, duration:3, ease:'sine.inOut', yoyo:true, repeat:-1 }); }
-    setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 3000);
   } else {
     document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; });
   }
@@ -685,6 +699,9 @@ document.addEventListener('DOMContentLoaded', function(){
       return vs[0] || null;
     }
     function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    /* These cards render ~270px wide. Ask the image CDN for a matching
+       rendition instead of the CMS default 800px. See js/api.js → AamakoImg. */
+    function imgUrl(u, w) { return window.AamakoImg ? window.AamakoImg.url(u, w) : (u || ''); }
     function fmtAmt(n) { n = Math.round(n); return n.toLocaleString('en-IN'); }
     function render(items) {
       if (!items || !items.length) return; /* keep fallback cards */
@@ -696,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function(){
         var cat = (p.category && p.category.name) || 'Shop';
         return '<div class="prod-card prod-card--best">'
           + '<a class="prod-photo" href="product.html?slug=' + slug + '" aria-label="' + esc(p.name) + '">'
-          + '<img draggable="false" src="' + esc(p.imageUrl || '') + '" alt="' + esc(p.name) + '" onerror="this.style.display=\'none\';">'
+          + '<img draggable="false" src="' + esc(imgUrl(p.imageUrl)) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" onerror="this.style.display=\'none\';">'
           + '<span class="prod-tag">Best seller</span>'
           + '</a>'
           + '<div class="prod-body">'

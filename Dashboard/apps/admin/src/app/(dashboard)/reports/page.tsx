@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useAuth } from '@/config/auth-context';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
@@ -8,21 +8,15 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
+
+// recharts loads on demand (same contract as the analytics page) — these
+// charts render inside the sales-report section only.
+const MonthlyRevenueChart = lazy(() =>
+  import('@/components/charts/monthly-revenue-chart').then((m) => ({ default: m.MonthlyRevenueChart })),
+);
+const CategoryShareChart = lazy(() =>
+  import('@/components/charts/category-share-chart').then((m) => ({ default: m.CategoryShareChart })),
+);
 import { FileText, Download, Calendar, Filter } from 'lucide-react';
 
 const REPORT_TYPES = [
@@ -140,44 +134,18 @@ export default function ReportsPage() {
           {/* Revenue Chart */}
           <Card>
             <CardHeader title="Monthly Revenue" description="Revenue trend over the past 12 months" />
-            <div className="h-72 px-4 pb-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={MOCK_SALES_DATA}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(value: number) => [formatCurrency(value), 'Revenue']} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }} />
-                  <Bar dataKey="revenue" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <Suspense fallback={<div className="h-72 px-4 pb-4 animate-pulse rounded-lg bg-surface-100" aria-hidden />}>
+              <MonthlyRevenueChart data={MOCK_SALES_DATA} />
+            </Suspense>
           </Card>
 
           {/* Category Breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader title="Sales by Category" description="Revenue distribution by product category" />
-              <div className="h-64 px-4 pb-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={MOCK_CATEGORY_DATA}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      {MOCK_CATEGORY_DATA.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => [`${value}%`, 'Share']} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <Suspense fallback={<div className="h-64 px-4 pb-4 animate-pulse rounded-lg bg-surface-100" aria-hidden />}>
+                <CategoryShareChart data={MOCK_CATEGORY_DATA} />
+              </Suspense>
             </Card>
 
             <Card>

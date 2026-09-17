@@ -8,6 +8,7 @@
     "test:api": "node runner.js 01 02 03 04 05",
     "test:ui": "node runner.js 06 07 08 09 10",
     "test:security": "node runner.js 11 12",
+    "verify:perf": "node --test verify-perf.js",
     "report": "node report.js"
   },
   "dependencies": {

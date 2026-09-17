@@ -27,7 +27,7 @@
   {
     "status": "PASS",
     "name": "No API keys/secrets patterns in served JS",
-    "detail": "15 JS files scanned"
+    "detail": "26 JS files scanned"
   },
   {
     "status": "PASS",
@@ -42,6 +42,31 @@
   {
     "status": "PASS",
     "name": "XSS probe not reflected unescaped on /collection.html",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Path traversal blocked /..%2f..%2fpackage.json",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Path traversal blocked /..%2f..%2f.git%2fconfig",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "Path traversal blocked /%2e%2e/%2e%2e/etc/passwd",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "WEB serves X-Content-Type-Options: nosniff",
+    "detail": ""
+  },
+  {
+    "status": "PASS",
+    "name": "WEB serves Referrer-Policy",
     "detail": ""
   },
   {

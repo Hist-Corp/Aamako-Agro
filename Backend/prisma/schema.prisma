@@ -204,6 +204,10 @@ model Product {
   variants ProductVariant[]
   batches  Batch[]
   reviews  Review[]
+
+  // Storefront listing: WHERE isPublished (AND category) ORDER BY createdAt DESC
+  @@index([isPublished, categoryId])
+  @@index([isPublished, createdAt(sort: Desc)])
 }
 
 enum Unit {
@@ -231,6 +235,8 @@ model ProductVariant {
   orderItems OrderItem[]
   priceLists PriceList[]
   pricingRules PricingRule[]
+
+  @@index([productId, isActive])
 
   @@map("product_variants")
 }
@@ -408,6 +414,12 @@ model Order {
   updatedAt       DateTime     @updatedAt
 
   items OrderItem[]
+
+  // "My orders" lookups and per-customer analytics
+  @@index([userId, createdAt(sort: Desc)])
+  // Admin order listing + date-range sales analytics (createdAt between X and Y, status not cancelled)
+  @@index([status, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
 }
 
 model OrderItem {
@@ -421,6 +433,8 @@ model OrderItem {
   appliedRuleName String?
   lineTotalCents  Int
   currency        String         @default("NPR")
+
+  @@index([orderId])
 }
 
 // ---------- Wholesale workflow ----------
@@ -623,6 +637,7 @@ model SupportMessage {
   body       String
   createdAt  DateTime      @default(now())
 
+  @@index([ticketId, createdAt])
   @@map("support_messages")
 }
 

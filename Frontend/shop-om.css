@@ -108,6 +108,40 @@
 .fp-variant-select{flex:0 0 96px;height:42px;border:1px solid var(--line);border-radius:10px;padding:0 8px;font-family:var(--body);font-size:13px;color:var(--ink);background:var(--paper);cursor:pointer;min-width:0;}
 .fp-variant-row .fp-add{flex:1;width:auto;}
 
+/* ---------- loading skeletons for async product grids ----------
+   Every product grid on the storefront is filled by a fetch, so the grid
+   container used to grow from a one-line "Loading…" placeholder to hundreds
+   of pixels of cards — the single largest Cumulative Layout Shift source on
+   the listing pages. The skeletons below reuse the real .fpcard / .fp-img /
+   .fp-name / .fp-price / .fp-action classes (with blank filler text and an
+   inline-flex control row sized like the tallest real card), so a reserved
+   row occupies exactly the same box the live card will. Reserving that space
+   before the response lands keeps the rest of the document still. */
+.fp-skeleton{pointer-events:none;}
+/* Standalone shimmer fill — applies to any element that needs to reserve and
+   decorate space (cards, the showcase banner). */
+.fp-sk{
+  color:transparent;
+  border-radius:6px;
+  background:linear-gradient(90deg,#EFEBDD 25%,#F7F4EC 37%,#EFEBDD 63%);
+  background-size:400% 100%;
+  animation:fpSkShimmer 1.4s ease-in-out infinite;
+}
+/* The image box keeps .fp-img's native 1/1 aspect ratio; only the fill and
+   radius change, so the card's height is identical to the live version. */
+.fp-skeleton .fp-img.fp-sk{border-radius:0;}
+.fp-skeleton .fp-btn.fp-sk{border-radius:10px;width:auto;}
+/* The showcase banner declares its own background/border-radius further down
+   this file, so it needs the higher specificity to keep the shimmer. */
+.omshow2-banner.fp-sk{background:linear-gradient(90deg,#EFEBDD 25%,#F7F4EC 37%,#EFEBDD 63%);background-size:400% 100%;animation:fpSkShimmer 1.4s ease-in-out infinite;}
+@keyframes fpSkShimmer{
+  0%{background-position:100% 50%;}
+  100%{background-position:0 50%;}
+}
+@media (prefers-reduced-motion:reduce){
+  .fp-sk{animation:none;background:#F2EFE6;}
+}
+
 /* ---------- comparison (regular vs wholesale) — light green section,
    dark green "partner" card keeps the brand color in view ---------- */
 .omcompare{background:#E2F0E2;border-radius:28px;padding:40px;position:relative;overflow:hidden;}
@@ -220,7 +254,18 @@
 .omcoll-banner{padding:10px 0 8px;max-width:88ch;}
 .omcoll-banner h1{font-family:var(--display);font-size:clamp(24px,3.2vw,36px);font-weight:600;color:var(--ink);line-height:1.18;margin-bottom:12px;}
 .omcoll-banner p{font-size:14.5px;line-height:1.7;color:var(--ink-soft);margin-bottom:10px;}
-.omcoll-cats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px;}
+.omcoll-cats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px;min-height:30px;}
+/* The category chips are painted by an async getCategories() fetch. An empty
+   flex-wrap row collapses to zero height, so the chips appearing after the
+   response grew this hero section and pushed the entire listing down. That was
+   the page's largest layout shift (Lighthouse reported 0.646 CLS for
+   /collection.html, minus the 0.42 that is the hero's text font-swap). The
+   min-height above reserves the real single-row height (13px chips, 7px
+   padding) and the chip skeletons fill it so the reservation reads as loading
+   rather than as an unexplained gap. The sidebar category list needs no
+   reservation: it lives in a grid row whose height is set by the much taller
+   product column, so growing it shifts nothing. */
+.omcoll-chip-sk{display:inline-block;height:30px;border-radius:999px;}
 .omcoll-cats a{font-size:13px;font-weight:600;color:var(--sage-deep);background:var(--surface);border-radius:999px;padding:7px 15px;text-decoration:none;transition:background var(--motion-micro) ease;}
 .omcoll-cats a:hover{background:var(--line);}
 .omcoll-cats a.is-current{background:var(--sage-deep);color:#FFFDF7;}
@@ -229,7 +274,7 @@
 .omcoll-count{font-family:var(--mono);font-size:12px;color:var(--ink-soft);}
 .omcoll-layout{display:grid;grid-template-columns:240px 1fr;gap:34px;align-items:start;}
 .omcoll-side{position:sticky;top:90px;}
-.omcoll-side h3{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);margin-bottom:12px;}
+.omcoll-side h2,.omcoll-side h3{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);margin-bottom:12px;}
 .omcoll-sidecats{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:12px;}
 .omcoll-sidecats a{font-size:13.5px;color:var(--ink-soft);text-decoration:none;padding:7px 10px;border-radius:8px;line-height:1.3;}
 .omcoll-sidecats a:hover{background:#E2F0E2;color:var(--sage-deep);}

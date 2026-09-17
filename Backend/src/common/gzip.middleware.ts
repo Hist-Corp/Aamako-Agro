@@ -10,19 +10,26 @@ import { gzip, isCompressibleContentType, MIN_COMPRESSIBLE_BYTES } from './compr
  * - Overrides `res.send`/`res.json` as a single choke point and hands the
  *   compressed bytes to the ORIGINAL send, so there is no recursion and each
  *   request (fresh `res` object) is independent.
+ * - `Vary: Accept-Encoding` is appended (not overwritten) so an upstream
+ *   value like `Vary: Origin` survives.
  * - Streaming (SSE/WebSocket) and static-file (express.static → sendFile)
  *   responses bypass this entirely and are never double-compressed.
  * - Set `DISABLE_GZIP=1` to turn it off (escape hatch, defaults on).
  */
+
+/** True when an Accept-Encoding value (string or string[]) opts into gzip. */
+function acceptsGzip(value: string | string[] | undefined): boolean {
+  const values = Array.isArray(value) ? value : [value];
+  return values.some((v) => typeof v === 'string' && /(?:^|,)\s*gzip\b/.test(v));
+}
 export function gzipMiddleware(req: Request, res: Response, next: NextFunction): void {
   if (process.env.DISABLE_GZIP === '1') {
     next();
     return;
   }
 
-  const acceptEncoding = req.headers['accept-encoding'];
-  const acceptsGzip = typeof acceptEncoding === 'string' && /(?:^|,)\s*gzip\b/.test(acceptEncoding);
-  if (!acceptsGzip) {
+  const acceptsGzipHeader = acceptsGzip(req.headers['accept-encoding']);
+  if (!acceptsGzipHeader) {
     next();
     return;
   }
@@ -45,7 +52,17 @@ export function gzipMiddleware(req: Request, res: Response, next: NextFunction):
 
     const compressed = gzip(text);
     res.setHeader('Content-Encoding', 'gzip');
-    res.setHeader('Vary', 'Accept-Encoding');
+    // Merge with any existing Vary instead of overwriting — dropping something
+    // like `Vary: Origin` would poison shared caches with cross-origin bodies.
+    const varyHeader = res.getHeader('Vary');
+    const varyValues = Array.isArray(varyHeader)
+      ? varyHeader
+      : typeof varyHeader === 'string'
+        ? varyHeader.split(',').map((part) => part.trim())
+        : [];
+    if (!varyValues.some((v) => v === '*' || v.toLowerCase() === 'accept-encoding')) {
+      res.setHeader('Vary', [...varyValues, 'Accept-Encoding'].filter(Boolean).join(', '));
+    }
     // Let Express recompute Content-Length for the compressed body.
     if (res.getHeader('Content-Length')) res.removeHeader('Content-Length');
     return originalSend(compressed);

@@ -26,6 +26,9 @@ const FRAME_HEADERS = {
 
 const HOP_BY_HOP = new Set(['connection', 'keep-alive', 'transfer-encoding', 'upgrade', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'content-length']);
 
+const { staticResponse } = require('./static-response');
+
+
 http.createServer((req, res) => {
     let url = decodeURIComponent(req.url.split('?')[0]);
   if (url === '/') url = '/index.html';
@@ -68,7 +71,7 @@ http.createServer((req, res) => {
     return;
   }
 
-  fs.readFile(resolved, (err, data) => {
+  fs.readFile(resolved, async (err, data) => {
     if (err) {
       // Serve the styled error page for 404s
       fs.readFile(path.join(ROOT, 'error.html'), (e2, html) => {
@@ -83,27 +86,15 @@ http.createServer((req, res) => {
       return;
     }
     const ext = path.extname(resolved);
-    // Weak ETag from mtime+size so "Cache-Control: no-cache" revalidation
-    // resolves as a fast 304 on repeat navigations (keeps cross-document
-    // View Transitions snappy).
-    const etag = 'W/"' + data.length + '"';
-    if (req.headers['if-none-match'] === etag) {
-      res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' });
-      res.end();
-      return;
-    }
-    res.writeHead(200, {
-      'Content-Type': MIME[ext] || 'application/octet-stream',
-      ETag: etag,
-      // NOTE: must NOT contain "no-store" — Chrome disables cross-document
-      // View Transitions (@view-transition header morphs) when either page
-      // is served with no-store, which caused the header flicker between
-      // pages. "no-cache" still revalidates (fast 304) so dev edits show up.
-      'Cache-Control': 'no-cache',
+    const response = await staticResponse(data, MIME[ext] || 'application/octet-stream', req.headers);
+    // Layer the site's security headers on top of the static-response headers.
+    // Cache-Control/Vary/ETag come from static-response; these are additive.
+    res.writeHead(response.status, {
+      ...response.headers,
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
       ...FRAME_HEADERS,
     });
-    res.end(data);
+    res.end(response.body);
   });
 }).listen(PORT, () => console.log('Server running at http://localhost:' + PORT));
