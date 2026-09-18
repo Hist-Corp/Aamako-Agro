@@ -18,8 +18,13 @@ services:
       - key: PORT
         value: 3000
       # Supabase Postgres (see Backend/.env.supabase.example).
-      # Use the connection-pooled URL for serverless/Prisma best practice.
+      # Use the connection-pooled URL for runtime (port 6543, pgbouncer=true):
       - key: DATABASE_URL
+        sync: false
+      # Direct (non-pooled) connection for Prisma Migrate (port 5432).
+      # Supabase Dashboard → Database → Connection string → "Session" (port 5432),
+      # or use the direct URL form: postgresql://postgres.<ref>:<pw>@db.<region>.supabase.co:5432/postgres
+      - key: DIRECT_URL
         sync: false
       # Generate strong ones, e.g. `openssl rand -hex 32` — never use defaults.
       - key: JWT_ACCESS_SECRET
@@ -37,4 +42,8 @@ services:
       # With the Vercel /api proxy the apps are same-origin, so set this to the
       # Vercel app URLs to be safe if any client calls Render directly.
       - key: CORS_ORIGINS
+        sync: false
+      # Public API URL for absolute links in emails / media. Set this to your
+      # Render service URL, e.g. https://aamako-api.onrender.com/api
+      - key: PUBLIC_API_URL
         sync: false

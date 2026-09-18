@@ -5,6 +5,10 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Direct (non-pooled) connection for Prisma Migrate (port 5432, not the 6543 pooler).
+  // Set this in your env when DATABASE_URL points at the Supabase pooler so
+  // `prisma migrate deploy` runs against the real database, not via pgbouncer.
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------- Users / Auth / RBAC ----------

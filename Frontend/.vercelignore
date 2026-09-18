@@ -1,0 +1,31 @@
+# --- Dev-only server (Vercel serves static files directly) ---
+server.js
+static-response.js
+
+# --- Alternative dev servers / scripts ---
+serve.py
+serve3.py
+daemon-serve.py
+start-server.sh
+
+# --- Local dev logs ---
+*.log
+_store.log
+_store_err.log
+fe.log
+fe_install.log
+
+# --- Dependencies / build artifacts ---
+node_modules/
+package-lock.json
+
+# --- Test files ---
+tests/
+
+# --- Docker (Vercel doesn't need these) ---
+Dockerfile
+.dockerignore
+
+# --- Env files ---
+.env
+.env.*
