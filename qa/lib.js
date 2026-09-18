@@ -28,7 +28,46 @@ class Results {
 }
 
 /* ---------------- API client ---------------- */
+const LOGIN_LIMIT = 10; // POST /auth/login = 10 requests/min per IP (see qa/README.md)
+const LOGIN_WINDOW_MS = 60_000;
+let _loginAttempts = []; // timestamps of logins this harness has issued
+
+/**
+ * Record a login attempt. Called from api() for every POST /auth/login.
+ * Conservative: attempts that came back 429 are counted too, so the harness may
+ * pause slightly longer than strictly necessary — never shorter.
+ */
+function noteLogin() {
+  const now = Date.now();
+  _loginAttempts = _loginAttempts.filter((t) => now - t < LOGIN_WINDOW_MS);
+  _loginAttempts.push(now);
+}
+
+/**
+ * Sleep until `needed` login slots are free in the API's rolling 60s window.
+ *
+ * The limit counts failed attempts, so a suite that logs in as many roles can
+ * push a later suite (or a browser-driven UI login the harness cannot
+ * intercept) into a 429 that looks like a product bug. Call this immediately
+ * before any login the harness does not issue through api() — Playwright
+ * journeys in suites 06/07 — so those get a guaranteed slot.
+ */
+async function waitForLoginBudget(needed = 1, label = '') {
+  for (let guard = 0; guard < 20; guard++) {
+    const now = Date.now();
+    _loginAttempts = _loginAttempts.filter((t) => now - t < LOGIN_WINDOW_MS);
+    if (_loginAttempts.length + needed <= LOGIN_LIMIT) return;
+    const wait = Math.max(1000, LOGIN_WINDOW_MS - (now - _loginAttempts[0]) + 1000);
+    console.log(
+      `  … login budget ${_loginAttempts.length}/${LOGIN_LIMIT} used${label ? ` (${label})` : ''}` +
+        ` — waiting ${Math.round(wait / 1000)}s for the throttle window to roll`,
+    );
+    await sleep(wait);
+  }
+}
+
 async function api(method, p, { token, body, headers, raw } = {}) {
+  if (method === 'POST' && p === '/auth/login') noteLogin();
   const res = await fetch(CFG.API + p, {
     method,
     headers: {
@@ -52,6 +91,7 @@ async function login(role, scope = 'dashboard') {
   const c = CFG.CREDS[role];
   let r = null;
   for (let attempt = 0; attempt < 5; attempt++) {
+    await waitForLoginBudget(1, `${role} login`); // don't spend an attempt on a guaranteed 429
     r = await api('POST', '/auth/login', { body: { email: c.email, password: c.password, scope } });
     if (r.status === 429) { await new Promise((res) => setTimeout(res, 20000 + attempt * 15000)); continue; }
     break;
@@ -76,4 +116,19 @@ async function shot(page, name) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const stamp = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 
-module.exports = { CFG, Results, api, login, launch, shot, sleep, stamp };
+module.exports = {
+  CFG,
+  Results,
+  api,
+  login,
+  launch,
+  shot,
+  sleep,
+  stamp,
+  LOGIN_LIMIT,
+  LOGIN_WINDOW_MS,
+  waitForLoginBudget,
+  // Record a login the harness issued outside api() (Playwright journeys in
+  // suites 06/07) so later waitForLoginBudget() calls stay accurate.
+  recordLogin: noteLogin,
+};

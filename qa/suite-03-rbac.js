@@ -12,7 +12,7 @@ const ENDPOINTS = [
   { m: 'GET',  p: '/admin/products',                allowed: ['STAFF_ADMIN', 'STAFF_MANAGER', 'CONTENT_MANAGER', 'SUPER_ADMIN'], name: 'GET /admin/products (catalog adminList)' },
   { m: 'POST', p: '/admin/products', body: {},       allowed: ['STAFF_ADMIN', 'STAFF_MANAGER', 'CONTENT_MANAGER', 'SUPER_ADMIN'], name: 'POST /admin/products (catalog write) — probe w/ invalid body' },
   { m: 'GET',  p: '/admin/orders',                     allowed: ['STAFF_SALES', 'STAFF_SUPPORT', 'STAFF_MANAGER', 'STAFF_ADMIN', 'SUPER_ADMIN'], name: 'GET /admin/orders (staff order list)' },
-  { m: 'POST', p: '/orders', body: {}, headers: { 'Idempotency-Key': 'qa-rbac-probe' }, allowed: ['RETAIL_CUSTOMER', 'WHOLESALE_CUSTOMER'], name: 'POST /orders (checkout) — customers must pass role gate' },
+  { m: 'POST', p: '/orders', body: {}, headers: { 'Idempotency-Key': 'qa-rbac-probe' }, allowed: ['RETAIL_CUSTOMER', 'WHOLESALE_CUSTOMER', 'STAFF_SUPPORT', 'STAFF_MANAGER', 'STAFF_ADMIN', 'SUPER_ADMIN'], name: 'POST /orders (checkout) — customers pass the role gate; staff-assisted checkout is intentional (orders.controller @Roles), so staff hit the empty-body 400 (non-403) here' },
   { m: 'GET',  p: '/admin/support/tickets',         allowed: ['STAFF_SUPPORT', 'STAFF_MANAGER', 'STAFF_ADMIN', 'SUPER_ADMIN'], name: 'GET /admin/support/tickets' },
   { m: 'GET',  p: '/admin/wholesale/inquiries',     allowed: ['STAFF_SUPPORT', 'STAFF_MANAGER', 'STAFF_ADMIN', 'SUPER_ADMIN'], name: 'GET /admin/wholesale/inquiries' },
   { m: 'GET',  p: '/content/manage',                allowed: ['CONTENT_MANAGER', 'STAFF_MANAGER', 'STAFF_ADMIN', 'SUPER_ADMIN'], name: 'GET /content/manage (CONTENT_EDITORS)' },

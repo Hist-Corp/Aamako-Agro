@@ -1,6 +1,6 @@
 'use strict';
 /** Suite 07 — Admin dashboard UI (CMS): login, pages render per role. */
-const { Results, CFG, launch, shot, sleep } = require('./lib');
+const { Results, CFG, launch, shot, sleep, waitForLoginBudget, recordLogin } = require('./lib');
 
 module.exports = async function run() {
   const R = new Results('07-ui-dashboard');
@@ -15,11 +15,16 @@ module.exports = async function run() {
   await page.goto(CFG.ADMIN + '/login', { waitUntil: 'networkidle' });
   await shot(page, '07-admin-login.png');
 
+  // Browser logins are invisible to the harness's throttle accounting, and this
+  // suite asserts `status === 200` with no retry — reserve slots up front.
+  await waitForLoginBudget(2, 'dashboard UI logins');
+
   await page.fill('input[type="email"], input[name="email"]', 'admin@aamako.agro');
   await page.fill('input[type="password"], input[name="password"]', 'Admin123!');
   const loginResp = page.waitForResponse((res) => res.url().includes('/auth/login'), { timeout: 10000 }).catch(() => null);
   await page.click('button[type="submit"], button:has-text("Sign")').catch(() => {});
   const resp = await loginResp;
+  recordLogin(); // the browser consumed one throttle slot
   resp && resp.status() === 200
     ? R.pass('Dashboard UI: SUPER_ADMIN login 200')
     : R.fail('Dashboard UI: SUPER_ADMIN login 200', `status=${resp ? resp.status() : 'no request'}`);
@@ -45,9 +50,11 @@ module.exports = async function run() {
   const ctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const p2 = await ctx2.newPage();
   await p2.goto(CFG.ADMIN + '/login', { waitUntil: 'networkidle' });
+  await waitForLoginBudget(1, 'dashboard UI STAFF_SUPPORT login');
   await p2.fill('input[type="email"], input[name="email"]', 'support@aamako.agro');
   await p2.fill('input[type="password"], input[name="password"]', 'Support123!');
   await p2.click('button[type="submit"], button:has-text("Sign")').catch(() => {});
+  recordLogin(); // the browser consumed one throttle slot
   await sleep(2500);
   const usersBlocked = await p2.evaluate(async () => {
     const t = localStorage.getItem('access_token') || localStorage.getItem('accessToken') || localStorage.getItem('token');

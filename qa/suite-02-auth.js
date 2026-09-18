@@ -1,6 +1,23 @@
 'use strict';
 /** Suite 02 — Auth flows: register, login, scope separation, refresh, logout, profile. */
-const { Results, api, login, CFG } = require('./lib');
+const { Results, api, CFG, sleep } = require('./lib');
+
+/**
+ * POST /auth/login that tolerates the API's per-IP throttle (10 attempts/min).
+ * The limiter counts rejected attempts too, so a login-heavy run can otherwise
+ * fail here with 429s that are not product bugs (see qa/README.md → Notes).
+ */
+async function loginReq(body) {
+  let r;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    r = await api('POST', '/auth/login', { body });
+    if (r.status !== 429) return r;
+    const wait = 20_000 + attempt * 15_000;
+    console.log(`  … login throttled (429) — retrying in ${Math.round(wait / 1000)}s`);
+    await sleep(wait);
+  }
+  return r;
+}
 
 module.exports = async function run() {
   const R = new Results('02-auth');
@@ -24,25 +41,25 @@ module.exports = async function run() {
     : R.fail('Weak password rejected with 400', `status=${r.status}`);
 
   // login with wrong password
-  r = await api('POST', '/auth/login', { body: { email, password: 'WrongPass1', scope: 'storefront' } });
+  r = await loginReq({ email, password: 'WrongPass1', scope: 'storefront' });
   r.status === 401 ? R.pass('Login with wrong password → 401')
     : R.fail('Login with wrong password → 401', `status=${r.status}`);
 
   // storefront scope login for the new retail user
-  r = await api('POST', '/auth/login', { body: { email, password: 'QaPass123', scope: 'storefront' } });
+  r = await loginReq({ email, password: 'QaPass123', scope: 'storefront' });
   r.status === 200 ? R.pass('Storefront login for retail user 200')
     : R.fail('Storefront login for retail user 200', `status=${r.status} ${JSON.stringify(r.json).slice(0, 150)}`);
   const rt = r.json?.refreshToken;
   const at = r.json?.accessToken;
 
   // surface separation: staff on storefront must fail
-  r = await api('POST', '/auth/login', { body: { ...CFG.CREDS.SUPER_ADMIN, scope: 'storefront' } });
+  r = await loginReq({ ...CFG.CREDS.SUPER_ADMIN, scope: 'storefront' });
   r.status === 403 || r.status === 401
     ? R.pass('Staff account blocked from storefront login (surface separation)', `status=${r.status}`)
     : R.fail('Staff account blocked from storefront login (surface separation)', `status=${r.status}`);
 
   // customer on dashboard scope must fail
-  r = await api('POST', '/auth/login', { body: { email, password: 'QaPass123', scope: 'dashboard' } });
+  r = await loginReq({ email, password: 'QaPass123', scope: 'dashboard' });
   r.status === 403 || r.status === 401
     ? R.pass('Customer account blocked from dashboard login (surface separation)', `status=${r.status}`)
     : R.fail('Customer account blocked from dashboard login (surface separation)', `status=${r.status}`);

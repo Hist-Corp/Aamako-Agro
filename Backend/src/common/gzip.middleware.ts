@@ -20,7 +20,13 @@ import { gzip, isCompressibleContentType, MIN_COMPRESSIBLE_BYTES } from './compr
 /** True when an Accept-Encoding value (string or string[]) opts into gzip. */
 function acceptsGzip(value: string | string[] | undefined): boolean {
   const values = Array.isArray(value) ? value : [value];
-  return values.some((v) => typeof v === 'string' && /(?:^|,)\s*gzip\b/.test(v));
+  return values.some(
+    (v) =>
+      typeof v === 'string' &&
+      /(?:^|,)\s*gzip\b/.test(v) &&
+      // An explicit `gzip;q=0` (or `q=0.0`) is a refusal — never compress for it.
+      !/(?:^|,)\s*gzip\s*;\s*q=0(?:\.0+)?\s*(?:,|$)/i.test(v),
+  );
 }
 export function gzipMiddleware(req: Request, res: Response, next: NextFunction): void {
   if (process.env.DISABLE_GZIP === '1') {
@@ -46,6 +52,9 @@ export function gzipMiddleware(req: Request, res: Response, next: NextFunction):
     }
 
     const text = typeof body === 'string' ? body : JSON.stringify(body);
+    // JSON.stringify(undefined) returns undefined (e.g. 204/304 empty sends) —
+    // pass those through untouched instead of throwing on `.length`.
+    if (text == null) return originalSend(body as never);
     if (text.length < MIN_COMPRESSIBLE_BYTES) {
       return originalSend(text);
     }

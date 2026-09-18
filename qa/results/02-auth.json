@@ -2,7 +2,7 @@
   {
     "status": "PASS",
     "name": "POST /auth/register creates account",
-    "detail": "email=qa-1789663192910@aamako.test"
+    "detail": "email=qa-1789705340397@aamako.test"
   },
   {
     "status": "PASS",

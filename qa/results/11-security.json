@@ -27,7 +27,7 @@
   {
     "status": "PASS",
     "name": "No API keys/secrets patterns in served JS",
-    "detail": "26 JS files scanned"
+    "detail": "13 JS files scanned"
   },
   {
     "status": "PASS",
@@ -70,9 +70,9 @@
     "detail": ""
   },
   {
-    "status": "WARN",
-    "name": "Stored payload kept verbatim in DB",
-    "detail": "name stored raw — safe only because React escapes on render"
+    "status": "PASS",
+    "name": "Stored payload sanitized/escaped at API layer",
+    "detail": ""
   },
   {
     "status": "PASS",

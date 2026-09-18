@@ -1,5 +1,6 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 /**
  * Adds conservative `Cache-Control` headers to PUBLIC (unauthenticated) GET
@@ -8,6 +9,11 @@ import { Observable } from 'rxjs';
  * are short (60s) so content edits surface quickly, and any header already set
  * by the route is respected (never overridden). Authenticated / mutation
  * routes are never touched.
+ *
+ * The header is attached only AFTER the handler has produced a successful
+ * response: error statuses (404/400/429/500) must stay uncacheable, otherwise
+ * a 404 for a not-yet-published product slug would stick in browser/CDN caches
+ * for the full TTL even after the product goes live.
  *
  * IMPORTANT: these patterns are matched against the REAL routed path — i.e.
  * after the `/api` global prefix and the controller's own prefix. The catalog
@@ -31,16 +37,26 @@ export class CacheControlInterceptor implements NestInterceptor {
     const req = http.getRequest();
     const res = http.getResponse();
 
-    if (req.method === 'GET') {
-      const path = String(req.originalUrl ?? req.url ?? '/').split('?')[0];
-      for (const { pattern, cacheControl } of ROUTES) {
-        if (pattern.test(path) && !res.getHeader('Cache-Control')) {
-          res.setHeader('Cache-Control', cacheControl);
-          break;
-        }
-      }
-    }
+    const stream = next.handle();
+    if (req.method !== 'GET') return stream;
 
-    return next.handle();
+    const path = String(req.originalUrl ?? req.url ?? '/').split('?')[0];
+    const match = ROUTES.find(({ pattern }) => pattern.test(path));
+    if (!match) return stream;
+
+    // Defer to the end of the (successful) handler pipeline. If the route set
+    // its own Cache-Control meanwhile (e.g. /api/content → max-age=10 + ETag),
+    // its value wins — never overridden.
+    return stream.pipe(
+      tap(() => {
+        // Belt-and-braces for handlers that set an error status manually
+        // (`res.status(404).json(...)` without throwing) — the stream emits
+        // normally for those, so the tap still runs. Never cache a 4xx/5xx.
+        if (typeof res.statusCode === 'number' && res.statusCode >= 400) return;
+        if (!res.getHeader('Cache-Control')) {
+          res.setHeader('Cache-Control', match.cacheControl);
+        }
+      }),
+    );
   }
 }

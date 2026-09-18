@@ -7,7 +7,7 @@
   {
     "status": "PASS",
     "name": "Dashboard UI: redirected into app after login",
-    "detail": "url=http://localhost:3101/dashboard"
+    "detail": "url=http://localhost:3001/dashboard"
   },
   {
     "status": "PASS",

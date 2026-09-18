@@ -241,7 +241,7 @@
 
 /* ---------- collection (category) page ---------- */
 .ombreadcrumb{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);padding:18px 0 6px;}
-.ombreadcrumb a{color:var(--ink-soft);text-decoration:none;}
+.ombreadcrumb a{color:var(--ink-soft);text-decoration:none;/* 44px hit-area without layout shift (QA suite-09): padding expands the box, negative margins cancel it */padding:15px 10px;margin:-15px -10px;}
 .ombreadcrumb a:hover{color:var(--sage-deep);text-decoration:underline;}
 .ombreadcrumb .sep{color:var(--line);}
 .ombreadcrumb .current{color:var(--ink);}

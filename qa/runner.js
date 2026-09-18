@@ -1,5 +1,68 @@
 'use strict';
 /** QA runner — executes all suites sequentially, prints summary, exits non-zero on failures. */
+const fs = require('fs');
+const path = require('path');
+
+// --- single-instance guard ---------------------------------------------------
+// The API throttles POST /auth/login to 10 requests/minute per IP. Two harness
+// runs sharing one backend (or one backend shared with manual logins) burn that
+// budget and produce cascading 429 failures that look like product bugs — e.g.
+// suite 02's *first* login 429ing. Refuse to start a second concurrent run.
+const LOCK = path.join(__dirname, '.runner.lock');
+function acquireLock() {
+  try {
+    const prev = JSON.parse(fs.readFileSync(LOCK, 'utf8'));
+    if (prev && prev.pid && prev.pid !== process.pid) {
+      let alive = true;
+      try {
+        process.kill(prev.pid, 0); // signal 0 = liveness probe, does not kill
+      } catch {
+        alive = false; // stale lock left by a killed/crashed run
+      }
+      if (alive) {
+        console.error(
+          `\nA QA run is already in progress (pid ${prev.pid}, started ${prev.startedAt}).\n` +
+            'Refusing to start a second harness: concurrent runs exhaust the API login\n' +
+            'throttle (10/min per IP) and report false 429 failures.\n' +
+            `Wait for it to finish, or delete ${LOCK} if it is stale.`,
+        );
+        process.exit(1);
+      }
+    }
+  } catch {
+    /* no lock file yet (or unreadable) — fall through and take it */
+  }
+  fs.writeFileSync(LOCK, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+  const release = () => {
+    try {
+      fs.unlinkSync(LOCK);
+    } catch {
+      /* already gone */
+    }
+  };
+  process.on('exit', release);
+  process.on('SIGINT', () => {
+    release();
+    process.exit(130);
+  });
+  process.on('SIGTERM', () => {
+    release();
+    process.exit(143);
+  });
+}
+acquireLock();
+
+// Extra cooldown (ms) after a suite, on top of the default 5s breathing room.
+// POST /auth/login is capped at 10 attempts/min per IP, and the limiter's
+// 60s window is rolling — suite 02 spends 4 logins and suite 03 immediately
+// needs 8 more for its role matrix, so without a full-window pause suite 03
+// burns its retry backoff. Waiting out the window once here keeps the rest of
+// the run deterministic (suites 04+ reuse lib.login()'s token cache).
+const COOLDOWN_AFTER = {
+  '02-auth': 60_000,
+};
+const DEFAULT_GAP_MS = 5_000;
+
 const suites = [
   ['01-api-functional', () => require('./suite-01-api-functional')()],
   ['02-auth',           () => require('./suite-02-auth')()],
@@ -37,7 +100,10 @@ const suites = [
     const p = suiteTests.filter((t) => t.status === 'PASS').length;
     const f = suiteTests.filter((t) => t.status === 'FAIL' || t.status === 'ERROR').length;
     console.log('  ' + p + ' passed, ' + f + ' failed');
-    await new Promise((res) => setTimeout(res, 5000)); // breathing room for login throttle window
+    // breathing room so the login-throttle window can roll (see COOLDOWN_AFTER)
+    const gap = COOLDOWN_AFTER[name] ?? DEFAULT_GAP_MS;
+    if (gap > DEFAULT_GAP_MS) console.log(`  … cooling down ${Math.round(gap / 1000)}s to clear the login throttle window`);
+    await new Promise((res) => setTimeout(res, gap));
   }
 
   const totals = { PASS: 0, FAIL: 0, WARN: 0, ERROR: 0 };

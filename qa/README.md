@@ -60,9 +60,19 @@ no suite also exits `1`.
 
 ## Notes
 
-- The API's login rate limiter counts rejected attempts too, so the harness retries
-  429s with exponential backoff (20–80s). Standalone re-runs of login-heavy suites
-  (03, 07) are more reliable after a short cooldown.
+- The API's login rate limiter counts rejected attempts too (10/min per IP).
+  `lib.js` tracks every login the harness issues and `waitForLoginBudget()` sleeps
+  until slots are free before a suite logs in, so suites do not fail on 429s that
+  are not product bugs. Browser logins (Playwright, suites 06/07) cannot be
+  intercepted, so those suites reserve a slot up front and call `recordLogin()`
+  after the journey. `runner.js` additionally pauses 60s after suite 02
+  (`COOLDOWN_AFTER`) — suite 03 immediately needs 8 role logins — so the pause
+  happens between suites rather than mid-suite.
 - Suites run sequentially with 5s gaps to stay inside the throttle window.
+- Only one harness may run against the stack at a time: concurrent runs share the
+  same per-IP throttle budget and report false 429 failures (a second run's suite 02
+  can 429 on its very first login). `runner.js` takes `qa/.runner.lock` and refuses
+  to start while another run holds it; a lock left by a killed run is detected by
+  PID and reclaimed automatically.
 - Current findings and their evidence live in `REPORT.md`; each failure lists the
   exact endpoint, page, or element that produced it.

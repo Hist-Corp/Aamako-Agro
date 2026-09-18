@@ -21,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CacheService } from '../common/cache.service';
 import { CacheNamespaces, CacheTtls } from '../common/cache.namespaces';
+import { sanitizeRichText, stripHtml } from '../common/sanitize';
 
 class UpsertContentDto {
   @ApiProperty() @IsString() @MinLength(1) title!: string;
@@ -266,11 +267,14 @@ export class ContentController {
     const item = await this.prisma.contentItem.create({
       data: {
         key: dto.key,
-        title: dto.title.trim(),
-        shortDescription: dto.shortDescription?.trim() || null,
-        longDescription: dto.longDescription?.trim() || null,
+        // Plain-text fields stripped, rich body neutralized at the API
+        // boundary (body renders via innerHTML on the storefront — the
+        // sanitizer removes scripts/handlers/javascript: URLs, keeps markup).
+        title: stripHtml(dto.title),
+        shortDescription: stripHtml(dto.shortDescription ?? '') || null,
+        longDescription: stripHtml(dto.longDescription ?? '') || null,
         category: dto.category?.trim() || null,
-        body: dto.body ?? '',
+        body: sanitizeRichText(dto.body ?? ''),
         isPublished: canPublishDirectly,
         updatedById: actor!.id,
       },
@@ -327,26 +331,26 @@ export class ContentController {
       where: { key },
       create: {
         key,
-        title: dto.title.trim(),
-        shortDescription: dto.shortDescription?.trim() || null,
-        longDescription: dto.longDescription?.trim() || null,
+        title: stripHtml(dto.title),
+        shortDescription: stripHtml(dto.shortDescription ?? '') || null,
+        longDescription: stripHtml(dto.longDescription ?? '') || null,
         category: dto.category?.trim() || null,
-        body: dto.body,
+        body: sanitizeRichText(dto.body ?? ''),
         isPublished: canPublishDirectly,
         isVisible: dto.isVisible ?? true,
         updatedById: actor!.id,
       },
       update: canPublishDirectly
         ? {
-            title: dto.title.trim(),
-            shortDescription: dto.shortDescription?.trim() || null,
-            longDescription: dto.longDescription?.trim() || null,
+            title: stripHtml(dto.title),
+            shortDescription: stripHtml(dto.shortDescription ?? '') || null,
+            longDescription: stripHtml(dto.longDescription ?? '') || null,
             // Only touch category when the caller sends it (journal flows do;
             // plain page edits leave the existing value alone).
             ...(dto.category !== undefined
               ? { category: dto.category?.trim() || null }
               : {}),
-            body: dto.body,
+            body: sanitizeRichText(dto.body ?? ''),
             // Visibility is editor-side — applied immediately regardless of
             // the review workflow (it never changes the approved copy).
             ...(dto.isVisible !== undefined ? { isVisible: dto.isVisible } : {}),
@@ -358,10 +362,10 @@ export class ContentController {
     const revision = await this.prisma.contentRevision.create({
       data: {
         contentItemId: item.id,
-        proposedTitle: dto.title.trim(),
-        proposedShortDescription: dto.shortDescription?.trim() || null,
-        proposedLongDescription: dto.longDescription?.trim() || null,
-        proposedBody: dto.body,
+        proposedTitle: stripHtml(dto.title),
+        proposedShortDescription: stripHtml(dto.shortDescription ?? '') || null,
+        proposedLongDescription: stripHtml(dto.longDescription ?? '') || null,
+        proposedBody: sanitizeRichText(dto.body ?? ''),
         submittedById: actor!.id,
         status: canPublishDirectly ? RevisionStatus.APPROVED : RevisionStatus.PENDING,
         reviewedById: canPublishDirectly ? actor!.id : null,
@@ -370,7 +374,7 @@ export class ContentController {
     });
 
     if (!canPublishDirectly) {
-      this.notifyManagersOfProposal('updated', item.key, dto.title.trim());
+      this.notifyManagersOfProposal('updated', item.key, stripHtml(dto.title));
     }
 
     if (canPublishDirectly) this.invalidateLiveContent();
@@ -408,10 +412,16 @@ export class ContentController {
       this.prisma.contentItem.update({
         where: { id: revision.contentItemId },
         data: {
-          title: revision.proposedTitle,
-          shortDescription: revision.proposedShortDescription,
-          longDescription: revision.proposedLongDescription,
-          body: revision.proposedBody,
+          // Re-sanitize on apply — covers PENDING revisions created before
+          // the write-path sanitizer existed.
+          title: stripHtml(revision.proposedTitle ?? ''),
+          shortDescription: revision.proposedShortDescription
+            ? stripHtml(revision.proposedShortDescription)
+            : revision.proposedShortDescription,
+          longDescription: revision.proposedLongDescription
+            ? stripHtml(revision.proposedLongDescription)
+            : revision.proposedLongDescription,
+          body: sanitizeRichText(revision.proposedBody ?? ''),
           isPublished: true,
           updatedById: revision.submittedById,
         },
@@ -503,10 +513,16 @@ export class ContentController {
             this.prisma.contentItem.update({
               where: { id: r.contentItemId },
               data: {
-                title: r.proposedTitle,
-                shortDescription: r.proposedShortDescription,
-                longDescription: r.proposedLongDescription,
-                body: r.proposedBody,
+                // Re-sanitize on apply — covers PENDING revisions created
+                // before the write-path sanitizer existed.
+                title: stripHtml(r.proposedTitle ?? ''),
+                shortDescription: r.proposedShortDescription
+                  ? stripHtml(r.proposedShortDescription)
+                  : r.proposedShortDescription,
+                longDescription: r.proposedLongDescription
+                  ? stripHtml(r.proposedLongDescription)
+                  : r.proposedLongDescription,
+                body: sanitizeRichText(r.proposedBody ?? ''),
                 isPublished: true,
                 updatedById: r.submittedById,
               },
@@ -544,7 +560,7 @@ export class ContentController {
           );
           const patch: Record<string, string> = {};
           const name = fields.find((r) => r.contentItem.key.endsWith('.name'));
-          if (name) patch.name = name.proposedTitle;
+          if (name) patch.name = stripHtml(name.proposedTitle ?? '');
           const gallery = fields.find((r) => r.contentItem.key.endsWith('.gallery'));
           if (gallery) {
             const first = String(gallery.proposedBody || '').split('\n').map((u) => u.trim()).filter(Boolean)[0];

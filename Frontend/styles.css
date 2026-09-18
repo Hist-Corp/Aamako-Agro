@@ -138,6 +138,7 @@ nav.wrap{display:flex; align-items:center; justify-content:space-between; paddin
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
   font-family:var(--body); font-weight:600; font-size:14px;
   padding:12px 28px; border-radius:var(--radius-md); cursor:pointer; border:1.5px solid transparent;
+  min-height:44px; /* WCAG 2.5.5 / mobile tap-target floor (QA suite-09) */
   transition:all var(--motion-micro) var(--ease-out);
   letter-spacing:0.01em; text-decoration:none;
 }
@@ -996,7 +997,8 @@ footer{border-top:1px solid var(--line); margin-top:var(--space-8); padding:var(
 @media (max-width:768px){ .foot-grid{grid-template-columns:repeat(2,1fr);} }
 @media (max-width:480px){ .foot-grid{grid-template-columns:1fr;} }
 .foot-col h4{font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-family:var(--mono); color:var(--ink-soft); margin-bottom:var(--space-3);}
-.foot-col a{display:block; font-size:14px; padding:4px 0; color:var(--ink-soft); transition:color var(--motion-micro) ease;}
+.foot-col a{display:flex; align-items:center; font-size:14px; padding:2px 0; color:var(--ink-soft); transition:color var(--motion-micro) ease;}
+@media (max-width:900px){ .foot-col a{ min-height:44px; } } /* mobile tap-target floor (QA suite-09) — desktop keeps the compact footer */
 .foot-col a:hover{color:var(--ink);}
 .foot-bottom{margin-top:var(--space-7); padding-top:var(--space-5); border-top:1px solid var(--line); display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); flex-wrap:wrap; gap:var(--space-3);}
 
@@ -1205,7 +1207,7 @@ body.is-signed-out .cart-btn-wrap{display:none;}
 @media (min-width:1920px){ .cart-drawer-head h3{ font-size:38px; } }
 .cart-count-label{font-family:var(--mono); font-size:12px; color:var(--ink-soft); letter-spacing:0.04em; margin-left:var(--space-2);}
 .cart-close-btn{
-  width:40px; height:40px; border-radius:50%; border:1.5px solid var(--line);
+  width:44px; height:44px; border-radius:50%; border:1.5px solid var(--line);
   background:transparent; font-size:20px; cursor:pointer; line-height:1;
   transition:all var(--motion-micro) var(--ease-out);
   display:flex; align-items:center; justify-content:center;
@@ -1318,7 +1320,8 @@ body.is-signed-out .cart-btn-wrap{display:none;}
 .cart-checkout-btn svg{width:18px; height:18px; flex-shrink:0;}
 
 .cart-continue{
-  display:block; text-align:center; margin-top:var(--space-3);
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  min-height:44px; text-align:center; margin-top:var(--space-3);
   font-size:13px; color:var(--ink-soft); font-weight:500;
   transition:color var(--motion-micro) var(--ease-out);
 }
@@ -1594,7 +1597,7 @@ body.is-signed-out .cart-btn-wrap{display:none;}
 /* Account sub-navigation (Dashboard / Profile &amp; security / Order history / Cart) */
 .account-nav{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 var(--space-6); padding:10px;
   background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);}
-.account-nav a{display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:var(--radius-sm);
+.account-nav a{display:inline-flex; align-items:center; gap:8px; padding:10px 16px; min-height:44px; border-radius:var(--radius-sm);
   font-size:13.5px; font-weight:500; color:var(--ink-soft); text-decoration:none;
   transition:background .15s ease, color .15s ease;}
 .account-nav a:hover{background:rgba(3,57,34,.08); color:var(--ink);}

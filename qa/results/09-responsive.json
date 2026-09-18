@@ -5,9 +5,9 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Tap targets >=44px on mobile: /index.html",
-    "detail": "<button cart-close-btn 40x40> | <a cart-continue 281x21> | <a  343x30> | <a  343x30> | <a  343x30> | <a  343x30>"
+    "detail": ""
   },
   {
     "status": "PASS",
@@ -15,9 +15,9 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Tap targets >=44px on mobile: /collection.html",
-    "detail": "<a  34x18> | <a  76x18> | <button cart-close-btn 40x40> | <a cart-continue 281x21> | <a  343x30> | <a  343x30>"
+    "detail": ""
   },
   {
     "status": "PASS",
@@ -25,9 +25,9 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Tap targets >=44px on mobile: /cart.html",
-    "detail": "<a  99x42> | <a  136x42> | <a  114x42> | <a is-active 58x42> | <a  343x30> | <a  343x30>"
+    "detail": ""
   },
   {
     "status": "PASS",
@@ -35,9 +35,9 @@
     "detail": ""
   },
   {
-    "status": "FAIL",
+    "status": "PASS",
     "name": "Tap targets >=44px on mobile: /login",
-    "detail": "<button jsx-877f79619967333 flex h-8 w 32x32>"
+    "detail": ""
   },
   {
     "status": "PASS",

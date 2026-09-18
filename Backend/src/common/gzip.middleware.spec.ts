@@ -56,4 +56,20 @@ describe('gzipMiddleware', () => {
     buf.send(binary);
     expect(buf.sent).toBe(binary);
   });
+
+  it('never compresses for an explicit `gzip;q=0` refusal', () => {
+    const res = makeRes();
+    gzipMiddleware({ headers: { 'accept-encoding': 'br, gzip;q=0' } } as any, res, jest.fn());
+    res.send('x'.repeat(2000));
+    expect(res.headers.get('Content-Encoding')).toBeUndefined();
+  });
+
+  it('passes a nullish body through without throwing (204/304 empty sends)', () => {
+    const res = makeRes();
+    res.type('application/json');
+    gzipMiddleware({ headers: { 'accept-encoding': 'gzip' } } as any, res, jest.fn());
+    expect(() => res.send(undefined)).not.toThrow();
+    expect(res.sent).toBeUndefined();
+    expect(res.headers.get('Content-Encoding')).toBeUndefined();
+  });
 });

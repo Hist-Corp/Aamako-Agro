@@ -1,6 +1,6 @@
 'use strict';
 /** Suite 06 — Storefront UI (Playwright): crawl links, UI login, session persistence, logout. */
-const { Results, CFG, launch, shot, sleep } = require('./lib');
+const { Results, CFG, launch, shot, sleep, waitForLoginBudget, recordLogin } = require('./lib');
 
 module.exports = async function run() {
   const R = new Results('06-ui-storefront');
@@ -44,12 +44,17 @@ module.exports = async function run() {
     const emailSel = 'input[type="email"], input[name="email"]';
     const passSel = 'input[type="password"], input[name="password"]';
     if (await page.$(emailSel)) {
+      // Reserve a throttle slot: this login happens in the browser, so the
+      // harness cannot count it — without the reservation a 429 here shows up
+      // as "no visible error text" instead of the invalid-credentials message.
+      await waitForLoginBudget(2, 'UI storefront login journey');
       await page.fill(emailSel, 'customer@aamako.agro');
       await page.fill(passSel, 'WrongPass1');
       await Promise.all([
         page.waitForResponse((res) => res.url().includes('/auth/login'), { timeout: 15000 }).catch(() => null),
         page.click('.auth-submit').catch(() => {}),
       ]);
+      recordLogin(); // the browser consumed one throttle slot
       await sleep(2000);
       const err = await page.evaluate(() => (document.body.innerText.match(/invalid|incorrect|wrong|failed|error|credentials/i) || [])[0]);
       err ? R.pass('UI: invalid login shows error message', `msg~"${err}"`) : R.warn('UI: invalid login shows error message', 'no visible error text detected');
@@ -57,10 +62,11 @@ module.exports = async function run() {
       R.fail('UI: signin form present', 'no email input found on signin.html');
     }
 
-    // valid login (retry on 429)
+    // valid login (retry on 429; the window is a full 60s, so back off that long)
     await page.goto(CFG.WEB + '/signin.html', { waitUntil: 'networkidle' });
     let loginStatus = 0;
     for (let i = 0; i < 3 && loginStatus !== 200; i++) {
+      await waitForLoginBudget(1, 'UI valid login');
       await page.fill(emailSel, 'customer@aamako.agro');
       await page.fill(passSel, 'Customer123!');
       const resp = await Promise.all([
@@ -68,7 +74,8 @@ module.exports = async function run() {
         page.click('.auth-submit').catch(() => {}),
       ]).then((a) => a[0]);
       loginStatus = resp ? resp.status() : 0;
-      if (loginStatus === 429) await sleep(16000);
+      recordLogin();
+      if (loginStatus === 429) await sleep(61000);
     }
     loginStatus === 200
       ? R.pass('UI: storefront login succeeds (200 from /auth/login)')

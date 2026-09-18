@@ -1,3 +1,4 @@
+import { of, throwError } from 'rxjs';
 import { CacheControlInterceptor } from './cache-control.interceptor';
 
 /**
@@ -7,8 +8,11 @@ import { CacheControlInterceptor } from './cache-control.interceptor';
  * exist (the catalog controller is `@Controller()` + `@Get('products')`, i.e.
  * `/api/products`). Nothing failed — the headers were simply never applied — so
  * these tests pin the patterns to the real served routes.
+ *
+ * The header is attached in a `tap` AFTER the handler emits, so the mock here
+ * must return a real observable and subscribe.
  */
-function run(path: string, method = 'GET', preset?: string) {
+function run(path: string, method = 'GET', preset?: string, onEmit?: (res: any) => unknown) {
   const headers: Record<string, string> = preset ? { 'Cache-Control': preset } : {};
   const req: any = { method, originalUrl: path, url: path };
   const res: any = {
@@ -20,8 +24,45 @@ function run(path: string, method = 'GET', preset?: string) {
   const context: any = {
     switchToHttp: () => ({ getRequest: () => req, getResponse: () => res }),
   };
-  const next: any = { handle: () => ({ pipe: () => undefined }) };
-  new CacheControlInterceptor().intercept(context, next);
+  const next: any = { handle: () => of(onEmit ? onEmit(res) : null) };
+  new CacheControlInterceptor().intercept(context, next).subscribe({ error: () => undefined });
+  return headers['Cache-Control'];
+}
+
+/** Same as run() but the handler stream errors (e.g. 404/500 from the route). */
+function runErroring(path: string, method = 'GET') {
+  const headers: Record<string, string> = {};
+  const req: any = { method, originalUrl: path, url: path };
+  const res: any = {
+    getHeader: (name: string) => headers[name],
+    setHeader: (name: string, value: string) => {
+      headers[name] = value;
+    },
+  };
+  const context: any = {
+    switchToHttp: () => ({ getRequest: () => req, getResponse: () => res }),
+  };
+  const next: any = { handle: () => throwError(() => new Error('boom')) };
+  new CacheControlInterceptor().intercept(context, next).subscribe({ error: () => undefined });
+  return headers['Cache-Control'];
+}
+
+/** Same as run() but the handler sets an error status manually instead of throwing. */
+function runWithStatus(path: string, statusCode: number) {
+  const headers: Record<string, string> = {};
+  const req: any = { method: 'GET', originalUrl: path, url: path };
+  const res: any = {
+    statusCode,
+    getHeader: (name: string) => headers[name],
+    setHeader: (name: string, value: string) => {
+      headers[name] = value;
+    },
+  };
+  const context: any = {
+    switchToHttp: () => ({ getRequest: () => req, getResponse: () => res }),
+  };
+  const next: any = { handle: () => of(null) };
+  new CacheControlInterceptor().intercept(context, next).subscribe({ error: () => undefined });
   return headers['Cache-Control'];
 }
 
@@ -65,5 +106,27 @@ describe('CacheControlInterceptor', () => {
 
   it('respects a Cache-Control already set by the route', () => {
     expect(run('/api/content', 'GET', 'private, no-store')).toBe('private, no-store');
+  });
+
+  it('respects a Cache-Control set during handling (route wins)', () => {
+    // /api/content sets `public, max-age=10` + ETag inside its handler.
+    const header = run('/api/content', 'GET', undefined, (res) =>
+      res.setHeader('Cache-Control', 'public, max-age=10'),
+    );
+    expect(header).toBe('public, max-age=10');
+  });
+
+  it('never caches an error response (404/500 must stay uncacheable)', () => {
+    // A 404 for a not-yet-published slug must not stick in browser/CDN caches.
+    expect(runErroring('/api/products/does-not-exist')).toBeUndefined();
+    expect(runErroring('/api/products')).toBeUndefined();
+    expect(runErroring('/api/categories')).toBeUndefined();
+  });
+
+  it('never caches a manually-set error status (no throw involved)', () => {
+    expect(runWithStatus('/api/products', 404)).toBeUndefined();
+    expect(runWithStatus('/api/products/power-fruits-powder', 500)).toBeUndefined();
+    // 2xx/3xx still get the header (304 keeps the route's own value, see below).
+    expect(runWithStatus('/api/products', 200)).toContain('public, max-age=60');
   });
 });

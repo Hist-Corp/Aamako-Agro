@@ -1,6 +1,6 @@
 'use strict';
 /** Suite 11 — Security (non-destructive): headers, CORS, secrets, XSS, indexability, rate limit, IDOR. */
-const { Results, api, login, CFG, launch } = require('./lib');
+const { Results, api, login, CFG, launch, LOGIN_LIMIT, waitForLoginBudget } = require('./lib');
 
 module.exports = async function run() {
   const R = new Results('11-security');
@@ -141,6 +141,10 @@ async function xssAndIdor(R, api, ctx, sup) {
     : R.fail('IDOR: /orders/mine returns only the caller’s orders', `A=${mineA.status} B=${mineB.status}`);
 
   // ---------- rate limiting (LAST so its request budget doesn't starve other checks) ----------
+  // Wait for a full window first: with a clean budget the 11th attempt is the
+  // one that must be rejected, so this asserts the real 10/min limit instead of
+  // whatever was left over from earlier suites.
+  await waitForLoginBudget(LOGIN_LIMIT, 'rate-limit probe');
   let saw429 = false;
   for (let i = 0; i < 12; i++) {
     const rr = await api('POST', '/auth/login', { body: { email: `rl-${Date.now()}-${i}@t.io`, password: 'WrongPass1', scope: 'storefront' } });

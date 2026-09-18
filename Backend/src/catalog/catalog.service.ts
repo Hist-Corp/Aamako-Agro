@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CacheService } from '../common/cache.service';
 import { CacheNamespaces, CacheTtls } from '../common/cache.namespaces';
+import { stripHtml } from '../common/sanitize';
 import {
   CreateCategoryDto,
   CreateProductDto,
@@ -89,9 +90,16 @@ export class CatalogService {
     const created = await this.prisma.product.create({
       data: {
         ...product,
+        // Plain-text fields are sanitized at the API boundary (defense-in-depth
+        // for the escaped-on-output render contract).
+        name: stripHtml(product.name),
+        ...(product.description !== undefined
+          ? { description: stripHtml(product.description) }
+          : {}),
         variants: {
           create: variants.map((v) => ({
             ...v,
+            name: stripHtml(v.name),
             inventory: { create: {} },
           })),
         },
@@ -113,7 +121,14 @@ export class CatalogService {
 
   async update(id: string, dto: UpdateProductDto) {
     await this.ensure(id);
-    const updated = await this.prisma.product.update({ where: { id }, data: dto });
+    const updated = await this.prisma.product.update({
+      where: { id },
+      data: {
+        ...dto,
+        ...(dto.name !== undefined ? { name: stripHtml(dto.name) } : {}),
+        ...(dto.description !== undefined ? { description: stripHtml(dto.description) } : {}),
+      },
+    });
     this.invalidateCatalogCache();
     return updated;
   }
@@ -133,6 +148,7 @@ export class CatalogService {
     const variant = await this.prisma.productVariant.create({
       data: {
         ...dto,
+        name: stripHtml(dto.name),
         productId,
         inventory: { create: {} },
       },
@@ -161,7 +177,13 @@ export class CatalogService {
   async updateCategory(id: string, dto: UpdateCategoryDto) {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (!category) throw new NotFoundException('Category not found');
-    const updated = await this.prisma.category.update({ where: { id }, data: dto });
+    const updated = await this.prisma.category.update({
+      where: { id },
+      data: {
+        ...dto,
+        ...(dto.name !== undefined ? { name: stripHtml(dto.name) } : {}),
+      },
+    });
     this.invalidateCatalogCache();
     return updated;
   }
@@ -181,7 +203,7 @@ export class CatalogService {
     if (!slug) throw new ConflictException('Could not derive a URL slug from that name — provide a slug.');
     try {
       const created = await this.prisma.category.create({
-        data: { name: dto.name.trim(), slug },
+        data: { name: stripHtml(dto.name), slug },
       });
       this.invalidateCatalogCache();
       return created;
