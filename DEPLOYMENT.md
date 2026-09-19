@@ -78,6 +78,20 @@ before. The deployment files are purely additive.
 Import `Dashboard/apps/admin` as a Next.js project in Vercel
 (monorepo root setting: root directory `Dashboard/apps/admin`). Set env vars:
 
+> **Required project settings** (Settings → Build and Deployment): **Root
+> Directory `Dashboard/apps/admin`**, **Framework Preset `Next.js`**, and the
+> **Build / Output / Install command overrides all empty**. Leave **Include
+> source files outside of the Root Directory in the Build Step** enabled — the
+> dashboard imports `Dashboard/packages/shared-types` (`workspace:*`) and
+> `next.config.js` sets `outputFileTracingRoot` to the pnpm workspace root, both
+> of which live *outside* the Root Directory.
+> `Dashboard/apps/admin/vercel.json` pins `"framework": "nextjs"`, the in-repo
+> way of forcing the preset (the same lever `Frontend/vercel.json` uses with
+> `null` to force **Other**). Pointing the Root Directory anywhere else
+> (`Dashboard/`, the repo root) makes Vercel miss `next.config.js`, fall back to
+> the **Other** preset and fail with
+> `No Output Directory named "public" found` — see §9.
+
 | Var | Value |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | `https://aamako-agro.onrender.com/api` |
@@ -203,6 +217,7 @@ push to main ──┬─→ Vercel Git integration ─→ build + deploy Fronte
 | `P1001: Can't reach database server` | `DATABASE_URL` is not the pooled URL, or the Supabase password/IP allow-list is wrong. Use the Transaction pooler on port `6543` with `?pgbouncer=true` for runtime and the session/direct URL on `5432` for DDL. |
 | `prepared statement "s0" already exists` | `?pgbouncer=true` is missing from the pooled `DATABASE_URL`. |
 | `Error: No entrypoint found in "/vercel/path0/Frontend"` | The project was detected as a **Node backend**, not a static site: Vercel's zero-config detection treats a root-level `server.js` as a serverless entrypoint (resolved from `package.json#main`). The storefront's dev server is therefore named `Frontend/dev-server.js` (and `.vercelignore`d), and `Frontend/vercel.json` pins `"framework": null` (= Framework Preset **Other**). On a project imported before that fix, set Settings → Build and Development Settings → Framework Preset → **Other**, clear Build/Output/Install overrides, then redeploy. |
+| `Error: No Output Directory named "public" found after the Build completed` (dashboard) | Vercel built the project with the **Other** preset, so it looked for a static `public/` output directory at the **Root Directory** — which only exists *inside* the Next.js app (`Dashboard/apps/admin/public`, 3 tracked files). The Root Directory is therefore wrong (set to `Dashboard/` or the repo root), which also made framework detection miss `next.config.js`. Fix: Settings → Build and Deployment → Root Directory = `Dashboard/apps/admin`, Framework Preset = **Next.js**, clear any Build/Output/Install overrides, keep **Include source files outside of the Root Directory in the Build Step** enabled, then redeploy (§3). `Dashboard/apps/admin/vercel.json` now pins `"framework": "nextjs"` so the preset cannot silently fall back to **Other** again. |
 | Storefront `/api/*` returns 404 in production | The `vercel.json` rewrite destination no longer matches the real Render hostname — update the literal URL (§4). |
 | CORS error in the browser console | `CORS_ORIGINS` is missing the exact origin (scheme + host, no trailing slash). Wildcards are rejected by design. |
 | Password-reset email never arrives | Resend is still in test mode: it only delivers to the account owner's address until a domain is verified. Verify a domain at resend.com/domains and set `RESEND_FROM_EMAIL` to an address on it. Check the API logs for `ResendEmailProvider ... HTTP 403`. |
@@ -228,7 +243,7 @@ Run locally against the production build (`NODE_ENV=production npm start` =
 | RBAC negative: `GET /api/admin/users` without token | ✅ 401 |
 | Storefront dev proxy `:8080/api/products` | ✅ 200 (local dev preserved) |
 | Storefront clean routes `/forgot-password`, `/reset-password`, `/signin` | ✅ 200 |
-| Dashboard `next build` (Next.js 15.5.25) | ✅ 37/37 pages prerendered |
+| Dashboard `next build` (Next.js 15.5.25) | ✅ 37/37 pages prerendered — so the Vercel `No Output Directory named "public"` failure is project configuration, never the code (§9) |
 
 Not verifiable from this machine: the deployed Render/Vercel URLs (services are
 not created yet). Run the §11 checklist once they exist.
