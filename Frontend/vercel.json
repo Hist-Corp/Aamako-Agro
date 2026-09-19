@@ -57,6 +57,7 @@
                     }
                 ],
     "$schema":  "https://openapi.vercel.sh/vercel.json",
+    "framework":  null,
     "rewrites":  [
                      {
                          "destination":  "https://aamako-agro.onrender.com/api/:path*",

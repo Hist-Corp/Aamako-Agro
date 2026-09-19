@@ -69,7 +69,7 @@ async function xssAndIdor(R, api, ctx, sup) {
       : R.pass(`XSS probe not reflected unescaped on ${p}`);
   }
 
-  // ---------- path traversal on the static origin (Frontend/server.js) ----------
+  // ---------- path traversal on the static origin (Frontend/dev-server.js) ----------
   // The dev static server must never serve a file that resolves outside the
   // web root. Encoded `..` escapes prove the containment guard (Vercel also
   // 404s these in production, so this is safe to assert either way).

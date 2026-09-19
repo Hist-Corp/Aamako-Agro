@@ -34,7 +34,7 @@ function buildResetUrl(token: string): string {
     process.env.STOREFRONT_URL ??
     'http://localhost:8080'
   ).replace(/\/+$/, '');
-  // Clean route — Frontend/server.js (and the Vercel rewrite in production)
+  // Clean route — Frontend/dev-server.js (and the Vercel rewrite in production)
   // maps `/reset-password` to reset-password.html.
   return `${base}/reset-password?token=${encodeURIComponent(token)}`;
 }

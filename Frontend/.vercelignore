@@ -1,5 +1,8 @@
 # --- Dev-only server (Vercel serves static files directly) ---
-server.js
+# Keep this file named `dev-server.js`: a root-level `server.js` makes Vercel's
+# zero-config detection classify the project as a Node backend (it expects a
+# serverless entrypoint via package.json#main) instead of a static site.
+dev-server.js
 static-response.js
 
 # --- Alternative dev servers / scripts ---

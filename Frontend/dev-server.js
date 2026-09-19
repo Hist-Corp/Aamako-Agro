@@ -1,3 +1,11 @@
+// Local development / Docker storefront server. NOT part of the Vercel deploy.
+//
+// Deliberately not named `server.js`: Vercel's zero-config framework detection
+// treats a root-level `server.js` as a Node backend and then fails the build
+// with `Error: No entrypoint found in ".../Frontend"` (it looks for a serverless
+// function entrypoint from package.json#main). The Vercel project is a plain
+// static site, so the dev-only server lives under this name and is excluded
+// from the deployment via .vercelignore.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');

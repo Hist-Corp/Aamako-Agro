@@ -93,6 +93,19 @@ Import `Dashboard/apps/admin` as a Next.js project in Vercel
 
 1. Import the repo **root directory `Frontend/`** as a static site
    (no build command, no framework preset — it is plain HTML/CSS/JS).
+
+   > The **Framework Preset must be `Other`**, and Build / Output / Install
+   > command overrides must stay empty. Vercel's zero-config detection upgrades a
+   > project to a *Node backend* as soon as it sees a root-level `server.js`,
+   > and then fails the build with `No entrypoint found in ".../Frontend"`.
+   > That is why the local dev server is `Frontend/dev-server.js` and is listed
+   > in `Frontend/.vercelignore` — do not rename it back.
+   >
+   > `Frontend/vercel.json` also pins `"framework": null`, which is Vercel's way
+   > of selecting the **Other** preset from within the repo. It overrides the
+   > Framework Preset stored in the dashboard, so the deployment stays a plain
+   > static site even if the project was previously imported as `Node.js`.
+   > (JSON has no comments, so this note lives here.)
 2. No environment variables are required. `Frontend/vercel.json`
    rewrites `/api/*` → the Render API so the storefront calls the API
    **same-origin** (no CORS, no exposed origin). The API base in `js/api.js` /
@@ -108,7 +121,7 @@ Import `Dashboard/apps/admin` as a Next.js project in Vercel
    { "source": "/api/:path*", "destination": "https://<your-service>.onrender.com/api/:path*" }
    ```
 
-   > Local development is unaffected: `Frontend/server.js` reads its own
+   > Local development is unaffected: `Frontend/dev-server.js` reads its own
    > `BACKEND_URL` env var (default `http://localhost:3000`) and proxies
    > `/api/*` the same way.
 
@@ -186,6 +199,7 @@ push to main ──┬─→ Vercel Git integration ─→ build + deploy Fronte
 | Service exits immediately after `prisma db push` | `--accept-data-loss=false` is parsed as `true` by the Prisma CLI. Remove the flag (§2). |
 | `P1001: Can't reach database server` | `DATABASE_URL` is not the pooled URL, or the Supabase password/IP allow-list is wrong. Use the Transaction pooler on port `6543` with `?pgbouncer=true` for runtime and the session/direct URL on `5432` for DDL. |
 | `prepared statement "s0" already exists` | `?pgbouncer=true` is missing from the pooled `DATABASE_URL`. |
+| `Error: No entrypoint found in "/vercel/path0/Frontend"` | The project was detected as a **Node backend**, not a static site: Vercel's zero-config detection treats a root-level `server.js` as a serverless entrypoint (resolved from `package.json#main`). The storefront's dev server is therefore named `Frontend/dev-server.js` (and `.vercelignore`d), and `Frontend/vercel.json` pins `"framework": null` (= Framework Preset **Other**). On a project imported before that fix, set Settings → Build and Development Settings → Framework Preset → **Other**, clear Build/Output/Install overrides, then redeploy. |
 | Storefront `/api/*` returns 404 in production | The `vercel.json` rewrite destination no longer matches the real Render hostname — update the literal URL (§4). |
 | CORS error in the browser console | `CORS_ORIGINS` is missing the exact origin (scheme + host, no trailing slash). Wildcards are rejected by design. |
 | Password-reset email never arrives | Resend is still in test mode: it only delivers to the account owner's address until a domain is verified. Verify a domain at resend.com/domains and set `RESEND_FROM_EMAIL` to an address on it. Check the API logs for `ResendEmailProvider ... HTTP 403`. |

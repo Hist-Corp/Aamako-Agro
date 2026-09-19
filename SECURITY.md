@@ -16,7 +16,7 @@ workflow. No schema migrations were introduced.
 | Headers | Added `Referrer-Policy: strict-origin-when-cross-origin` via Helmet. Helmet's safe CSP/X-Frame-Options/X-Content-Type-Options/HSTS defaults are retained (so the Swagger UI keeps working). | `Backend/src/main.ts` |
 | Transport | Set `trust proxy` in production so per-IP rate limiting and session IP logging are correct behind Render's proxy. | `Backend/src/main.ts` |
 | Media uploads (SVG/active content) | Served uploads now get `X-Content-Type-Options: nosniff` + `Content-Security-Policy: sandbox` at `/api/uploads`, so an admin-uploaded SVG (stored byte-for-byte) or any mislabelled blob can never execute script or be MIME-sniffed into HTML by a browser. `<img>` rendering is unaffected. | `Backend/src/main.ts` |
-| Frontend path traversal | `Frontend/server.js` (dev server) now rejects any URL that resolves outside the web root (encoded `/..%2f`). Previously `path.join(ROOT, url)` allowed arbitrary local file reads. Also added `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` to web responses. | `Frontend/server.js` |
+| Frontend path traversal | `Frontend/dev-server.js` (dev server) now rejects any URL that resolves outside the web root (encoded `/..%2f`). Previously `path.join(ROOT, url)` allowed arbitrary local file reads. Also added `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` to web responses. | `Frontend/dev-server.js` |
 | Newsletter abuse | Public `POST /newsletter/subscribe`, `/newsletter/unsubscribe` and the legacy `POST /content/subscribe` are now rate-limited (10/min per IP). | `Backend/src/newsletter/newsletter.controller.ts`, `Backend/src/content/content.controller.ts` |
 | Env separation | `.env.example` now classifies PUBLIC/browser-safe vs SERVER-ONLY vars, documents `CORS_ORIGINS` as a production allow-list, and adds the `PUBLIC_API_URL` used for stored media URLs. | `Backend/.env.example` |
 | Regression tests | Added `compress-image.spec.ts` (upload content-hardening) + path-traversal/header probes to `qa/suite-11-security.js`. | `Backend/src/media/compress-image.spec.ts`, `qa/suite-11-security.js` |
@@ -127,7 +127,7 @@ upgrade is expected to be a dependency-only change.
 | Exposed service-role / DB credentials in repo | PASS (placeholders only) |
 | Authentication bypass / session fixation | PASS |
 | Authorization / RBAC / IDOR | PASS (server-side, deny-by-default, hierarchy enforced) |
-| SQL / command / path injection | PASS (Prisma parameterized; server.js traversal now guarded) |
+| SQL / command / path injection | PASS (Prisma parameterized; dev-server.js traversal now guarded) |
 | Unrestricted dangerous upload | PASS (image-only, size-capped, nosniff + CSP sandbox) |
 | Admin isolation from storefront logins | PASS (bidirectional scope check) |
 | Security headers / CORS allow-list | PASS |
@@ -148,7 +148,7 @@ until the Next.js upgrade lands.
 | Unit + security regression tests | `Backend`: `jest` (pricing engine, RBAC guard, new `compress-image` upload-hardening spec) | **17 passed / 0 failed** |
 | Backend compile | `nest build` | RC 0 |
 | Secret scan | regex sweep over all 331 git-tracked files (service-role keys, JWTs, private keys, Stripe/AWS/Google/GitHub tokens, DB URIs, hardcoded passwords) | No production secrets committed; only `.env.example` placeholders + dev-only seed credentials (documented) |
-| Path traversal (live) | started `Frontend/server.js`, probed `/..%2f..%2f*`, `/%2e%2e/%2e%2e/*` | **404 (blocked)**; `/index.html` still 200 with security headers |
+| Path traversal (live) | started `Frontend/dev-server.js`, probed `/..%2f..%2f*`, `/%2e%2e/%2e%2e/*` | **404 (blocked)**; `/index.html` still 200 with security headers |
 | Static headers (live) | HTTP probe of `/` | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: SAMEORIGIN` present |
 | Dependency audit | `npm audit` (Backend, Frontend) + `pnpm audit` (Dashboard) | see table above |
 | E2E security suite | `qa/suite-11-security.js` + Playwright `qa/tests/07-security.spec.ts` (headers, CORS, XSS, IDOR, rate limit, **new** traversal + WEB header probes) | requires running stack (API + DB + storefront + dashboard) — run in a full dev environment |
