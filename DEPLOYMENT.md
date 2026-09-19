@@ -198,6 +198,18 @@ push to main ──┬─→ Vercel Git integration ─→ build + deploy Fronte
 - `render.yaml` declares every secret with `sync: false`, so Render prompts for
   the values on Blueprint creation and never stores them in the repo.
 - Skip a single auto-deploy with `[skip render]` in the commit message.
+- **Vercel "skip deployments" setting:** the storefront and the dashboard are two
+  separate Vercel projects on one repo, so an ordinary push otherwise rebuilds
+  both. Turn on **Settings → Build and Deployment → Root Directory → "Skip
+  deployments when there are no changes to the root directory or its
+  dependencies"** (already the default for projects created after Feb 2025). It
+  is Turborepo-powered, so it follows internal workspace dependencies: a change
+  to `Dashboard/packages/shared-types` still redeploys the dashboard.
+  Do **not** swap it for the manual `git diff HEAD^ HEAD --quiet .` command from
+  Vercel's Yarn-monorepo guide — that diffs only the Root Directory and would
+  silently skip the dashboard whenever `packages/shared-types` changes.
+  Because `NEXT_PUBLIC_*` values are baked at build time (§3), a skipped deploy
+  also means an env-var change needs a manual **Redeploy**.
 
 ## 8 — Rollback
 
