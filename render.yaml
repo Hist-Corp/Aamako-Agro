@@ -8,13 +8,22 @@ services:
     runtime: node
     plan: free
     rootDir: Backend
-    buildCommand: npm ci && npm run build
+    # Render injects the service env vars (including NODE_ENV=production) at
+    # BUILD time too. Under NODE_ENV=production npm omits devDependencies, which
+    # would remove @nestjs/cli + typescript + prisma and break `nest build`.
+    # `--include=dev` keeps the toolchain available for the build step only.
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
     # NOTE: this repo has no prisma/migrations history (schema is synced with
     # `prisma db push`), so `migrate deploy` would be a silent no-op and the
     # password_reset_tokens table would never be created in production.
     # `db push` is idempotent — it creates missing tables and leaves existing
-    # ones untouched — making it the correct deploy-time sync here.
-    startCommand: npx prisma db push --accept-data-loss=false --skip-generate && npm run start
+    # ones untouched.
+    #
+    # Do NOT pass `--accept-data-loss`: the flag is boolean, and the CLI's
+    # parser (arg) treats ANY value — including `=false` — as "true", which
+    # would silently authorise destructive drops during a production deploy.
+    # Omitting it keeps the safe default: refuse to push a destructive change.
+    startCommand: npx prisma db push --skip-generate && npm run start
     healthCheckPath: /api
     autoDeploy: true
     envVars:
