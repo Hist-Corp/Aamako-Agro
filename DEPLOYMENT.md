@@ -80,8 +80,8 @@ Import `Dashboard/apps/admin` as a Next.js project in Vercel
 
 | Var | Value |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | `https://<your-render-api>.onrender.com/api` |
-| `NEXT_PUBLIC_WS_URL` | `wss://<your-render-api>.onrender.com` |
+| `NEXT_PUBLIC_API_URL` | `https://aamako-agro.onrender.com/api` |
+| `NEXT_PUBLIC_WS_URL` | `wss://aamako-agro.onrender.com` |
 
 - These are baked at **build time** by Next.js — update them in the Vercel
   project settings and redeploy when the Render URL changes.
@@ -99,8 +99,8 @@ Import `Dashboard/apps/admin` as a Next.js project in Vercel
    `js/google-signin.js` automatically resolves to a relative `/api` when not on
    `localhost`, preserving the local dev path.
 3. The rewrite destination is a **literal URL** (currently
-   `https://aamako-api.onrender.com/api/:path*`, matching the `aamako-api`
-   service name in `render.yaml`). Vercel does **not** support environment
+   `https://aamako-agro.onrender.com/api/:path*`, matching the deployed
+   `Aamako-Agro` Render service). Vercel does **not** support environment
    variable interpolation inside a static `vercel.json`, so if your Render
    service gets a different hostname, edit that one line and redeploy:
 
@@ -218,7 +218,7 @@ not created yet). Run the §11 checklist once they exist.
 
 ## 11 — Post-deploy verification
 
-- [ ] `curl https://<render-api>.onrender.com/api` returns
+- [ ] `curl https://aamako-agro.onrender.com/api` returns
       `{ name, status: 'ok', ... }`.
 - [ ] Render logs show `[email] provider=resend` (or `provider=log`).
 - [ ] Login flow works on the deployed storefront (same-origin `/api`).

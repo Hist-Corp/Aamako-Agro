@@ -59,7 +59,7 @@
     "$schema":  "https://openapi.vercel.sh/vercel.json",
     "rewrites":  [
                      {
-                         "destination":  "https://aamako-api.onrender.com/api/:path*",
+                         "destination":  "https://aamako-agro.onrender.com/api/:path*",
                          "source":  "/api/:path*"
                      },
                      {

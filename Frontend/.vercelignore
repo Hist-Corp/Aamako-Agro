@@ -18,6 +18,15 @@ fe_install.log
 # --- Dependencies / build artifacts ---
 node_modules/
 package-lock.json
+# No npm dependencies exist, but this repo DOES have a package.json (for local
+# dev scripts only). If Vercel sees a package.json it can auto-detect the
+# "Node" application preset and run the Node *backend* builder, which then
+# fails with `No entrypoint found in "/vercel/path0/Frontend"` because it looks
+# for a server file (app.js / index.js / server.js / main.js / src/*) and
+# `server.js` above is deliberately excluded. Hiding the manifest keeps the
+# deployment unambiguously static. Local dev is unaffected: .vercelignore only
+# changes what Vercel uploads, so `npm --prefix Frontend run start` still works.
+package.json
 
 # --- Test files ---
 tests/

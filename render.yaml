@@ -1,10 +1,19 @@
 # Render Blueprint — Aamako Agro API (NestJS + Prisma on Supabase Postgres)
 # Deploy via Render Dashboard → "New +" → "Blueprint" → select this repo.
 # Working directory is Backend/ so build/start run from the API package.
+#
+# IMPORTANT — the `name` below determines the public subdomain:
+#   Aamako-Agro  →  https://aamako-agro.onrender.com
+# That literal host is hardcoded in:
+#   • Frontend/vercel.json  (rewrites /api/* → the Render API, same-origin)
+#   • Dashboard env NEXT_PUBLIC_API_URL / NEXT_PUBLIC_WS_URL
+# Renaming this service requires updating both, or the storefront's /api/*
+# calls 404. Keep `name` identical to the deployed service so a Blueprint
+# sync updates it in place instead of creating a second service.
 
 services:
   - type: web
-    name: aamako-api
+    name: Aamako-Agro
     runtime: node
     plan: free
     rootDir: Backend
@@ -58,7 +67,7 @@ services:
       - key: CORS_ORIGINS
         sync: false
       # Public API URL for absolute links in emails / media. Set this to your
-      # Render service URL, e.g. https://aamako-api.onrender.com/api
+      # Render service URL, e.g. https://aamako-agro.onrender.com/api
       - key: PUBLIC_API_URL
         sync: false
       # Password-reset link origin (storefront-only reset page).
