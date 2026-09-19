@@ -98,14 +98,17 @@ Import `Dashboard/apps/admin` as a Next.js project in Vercel
    > command overrides must stay empty. Vercel's zero-config detection upgrades a
    > project to a *Node backend* as soon as it sees a root-level `server.js`,
    > and then fails the build with `No entrypoint found in ".../Frontend"`.
-   > That is why the local dev server is `Frontend/dev-server.js` and is listed
-   > in `Frontend/.vercelignore` — do not rename it back.
-   >
-   > `Frontend/vercel.json` also pins `"framework": null`, which is Vercel's way
-   > of selecting the **Other** preset from within the repo. It overrides the
-   > Framework Preset stored in the dashboard, so the deployment stays a plain
-   > static site even if the project was previously imported as `Node.js`.
-   > (JSON has no comments, so this note lives here.)
+   > Three independent guards keep this static:
+   > (a) the dev server is `Frontend/dev-server.js` — a name that matches no
+   > Vercel detector — so do **not** rename it back to `server.js`;
+   > (b) `Frontend/.vercelignore` also hides `package.json`, so Vercel cannot
+   > resolve a Node preset from the manifest at all (local `npm start` /tests
+   > are unaffected — the file only changes what gets *uploaded*);
+   > (c) `Frontend/vercel.json` pins `"framework": null`, Vercel's in-repo way of
+   > selecting the **Other** preset, which overrides the Framework Preset stored
+   > in the dashboard — so a project imported earlier as `Node.js` still
+   > deploys as a plain static site.
+   > Vercel cannot auto-detect any framework here, so it serves the folder as-is.
 2. No environment variables are required. `Frontend/vercel.json`
    rewrites `/api/*` → the Render API so the storefront calls the API
    **same-origin** (no CORS, no exposed origin). The API base in `js/api.js` /
