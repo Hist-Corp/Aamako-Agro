@@ -8,6 +8,7 @@
     "lint": "npm --prefix apps/admin run lint"
   },
   "engines": {
-    "node": ">=18"
-  }
+    "node": "24.x"
+  },
+  "packageManager": "pnpm@9.15.9"
 }

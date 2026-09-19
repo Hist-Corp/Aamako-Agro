@@ -9,5 +9,8 @@
     "test": "node --test tests/*.test.js",
     "start": "node dev-server.js",
     "dev": "node dev-server.js"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

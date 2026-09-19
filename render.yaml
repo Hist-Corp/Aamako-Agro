@@ -40,6 +40,11 @@ services:
         value: production
       - key: PORT
         value: 3000
+      # Pin the Node runtime to match "engines": { "node": "24.x" } in
+      # Backend/package.json. Render otherwise picks its own default, which can
+      # drift from the version used for local dev and the Vercel builds.
+      - key: NODE_VERSION
+        value: "24"
       # Supabase Postgres (see Backend/.env.supabase.example).
       # Use the connection-pooled URL for runtime (port 6543, pgbouncer=true):
       - key: DATABASE_URL
