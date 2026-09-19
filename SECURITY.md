@@ -74,7 +74,10 @@ workflow. No schema migrations were introduced.
   enforcement is not wired up ("Phase 8" per code comments). Implementing full
   TOTP enrollment/verification is a feature change; schedule it before go-live
   for admin/staff accounts.
-- **Password reset flow**: no self-service "forgot password" endpoint exists yet.
+- **Password reset flow**: self-service "forgot password" exists on the
+  storefront only (`POST /api/auth/forgot-password` → emailed link →
+  `POST /api/auth/reset-password`). Staff/admin accounts have no
+  self-service reset — those credentials are managed by an admin.
 - **Persistent audit log table**: admin actions are surfaced via notifications /
   live events but not stored in a dedicated immutable audit table.
 - **CAPTCHA/bot protection** on register: currently covered by rate limiting

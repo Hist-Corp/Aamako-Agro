@@ -33,6 +33,17 @@ http.createServer((req, res) => {
     let url = decodeURIComponent(req.url.split('?')[0]);
   if (url === '/') url = '/index.html';
 
+  // Clean (extension-less) routes for the auth pages. Password-reset emails
+  // link to `/reset-password?token=…` (see Backend `buildResetUrl`), and the
+  // `/forgot-password` / `/signin` URLs mirror them. Served as the .html file
+  // so the same paths work with and without the extension.
+  const CLEAN_ROUTES = {
+    '/signin': '/signin.html',
+    '/forgot-password': '/forgot-password.html',
+    '/reset-password': '/reset-password.html',
+  };
+  if (CLEAN_ROUTES[url]) url = CLEAN_ROUTES[url];
+
   // Reverse-proxy API + uploaded media to the backend.
   if (url.startsWith('/api/')) {
     const upstream = BACKEND_URL.replace(/\/+$/, '');

@@ -88,6 +88,29 @@ export class RefreshDto {
 
 export class LogoutDto extends RefreshDto {}
 
+/** Request a password-reset email. Always returns success (anti-enumeration). */
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'ram@example.com' })
+  @IsEmail()
+  email!: string;
+}
+
+/** Exchange a reset token (from the emailed link) for a new password. */
+export class ResetPasswordDto {
+  @ApiProperty({ description: 'Opaque single-use token from the reset link (?token=…)' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(256)
+  token!: string;
+
+  @ApiProperty({ minLength: 8 })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(72)
+  @Matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, { message: passwordMessage })
+  newPassword!: string;
+}
+
 /** Fields a signed-in user may edit on their own profile. */
 export class UpdateProfileDto {
   @ApiPropertyOptional({ example: 'Ram' })

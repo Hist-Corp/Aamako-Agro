@@ -61,6 +61,18 @@
                      {
                          "destination":  "${BACKEND_URL}/api/:path*",
                          "source":  "/api/:path*"
+                     },
+                     {
+                         "destination":  "/reset-password.html",
+                         "source":  "/reset-password"
+                     },
+                     {
+                         "destination":  "/forgot-password.html",
+                         "source":  "/forgot-password"
+                     },
+                     {
+                         "destination":  "/signin.html",
+                         "source":  "/signin"
                      }
                  ]
 }

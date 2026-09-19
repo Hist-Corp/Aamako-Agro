@@ -130,6 +130,7 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   sessions             Session[]
+  passwordResetTokens  PasswordResetToken[]
   wholesaleAccounts    WholesaleAccount[]
   enterpriseContracts  EnterpriseContract[]
   carts                Cart[]
@@ -181,6 +182,26 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+}
+
+// ---------- Self-service password reset ----------
+//
+// One row per `forgot-password` request. Only the SHA-256 hash of the opaque
+// token is stored — a DB read alone can never be exchanged for an account.
+// Rows are single-use (`usedAt`) and short-lived (`expiresAt`), so no cron
+// job is required: stale rows are simply rejected and pruned lazily.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 // ---------- Catalog ----------

@@ -9,11 +9,13 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { AuthService } from './auth.service';
 import {
   ChangePasswordDto,
+  ForgotPasswordDto,
   GoogleLoginDto,
   LoginDto,
   LogoutDto,
   RefreshDto,
   RegisterDto,
+  ResetPasswordDto,
   UpdateProfileDto,
 } from './dto/auth.dto';
 
@@ -87,6 +89,32 @@ export class AuthController {
   @Post('logout')
   logout(@Body() dto: LogoutDto) {
     return this.auth.logout(dto.refreshToken);
+  }
+
+  /**
+   * Forgot password — ALWAYS returns `{ success: true }` (200) whether or
+   * not the address is registered, so attackers cannot enumerate accounts.
+   * Tight throttle (5/min) since this mints tokens + sends email.
+   */
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('forgot-password')
+  @HttpCode(200)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto.email);
+  }
+
+  /**
+   * Reset password — exchanges the single-use `?token=…` from the emailed
+   * link for a new password. Invalid/expired/used tokens all return the
+   * same 400. Tight throttle (5/min) — this is a credential-changing op.
+   */
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('reset-password')
+  @HttpCode(200)
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto.token, dto.newPassword);
   }
 
   @ApiBearerAuth()

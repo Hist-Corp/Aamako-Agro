@@ -15,6 +15,29 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 
+import { EmailService } from '../email/email.service';
+
+/** How long a password-reset link stays valid (minutes). */
+const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 30) || 30;
+
+/**
+ * Build the absolute reset URL emailed to the user. Storefront-only:
+ * `${STOREFRONT_URL}/reset-password.html?token=…`.
+ * Override STOREFRONT_URL per-environment (see .env.example); the localhost
+ * default applies in dev.
+ */
+function buildResetUrl(token: string): string {
+  // FRONTEND_URL is the canonical var (see .env.example); STOREFRONT_URL is
+  // kept as a legacy alias so already-deployed environments keep working.
+  const base = (
+    process.env.FRONTEND_URL ??
+    process.env.STOREFRONT_URL ??
+    'http://localhost:8080'
+  ).replace(/\/+$/, '');
+  // Clean route — Frontend/server.js (and the Vercel rewrite in production)
+  // maps `/reset-password` to reset-password.html.
+  return `${base}/reset-password?token=${encodeURIComponent(token)}`;
+}
 /** Roles allowed to sign in through the customer-facing storefront. */
 const STOREFRONT_ALLOWED_ROLES: Role[] = [
   Role.RETAIL_CUSTOMER,
@@ -76,6 +99,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
+    private email: EmailService,
   ) {}
 
   /**
@@ -361,6 +385,80 @@ export class AuthService {
           revokedAt: null,
           ...(dto.refreshToken ? { refreshTokenHash: { not: sha256(dto.refreshToken) } } : {}),
         },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+    return { success: true };
+  }
+
+  /**
+   * Forgot password: mint a single-use opaque token and email the reset link.
+   *
+   * SECURITY — the response is IDENTICAL whether or not the address exists
+   * (`{ success: true }`), so the endpoint can never be used to enumerate
+   * registered emails. Unknown/inactive addresses simply no-op (still 200).
+   * Delivery goes through `EmailService`, so enabling Resend later is an
+   * env-only change — this method never touches any ESP directly.
+   */
+  async forgotPassword(email: string) {
+    const normalized = email.toLowerCase().trim();
+    const user = await this.prisma.user.findUnique({ where: { email: normalized } });
+
+    if (user && user.isActive) {
+      const token = crypto.randomBytes(32).toString('base64url');
+      const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MINUTES * 60_000);
+      await this.prisma.passwordResetToken.create({
+        data: { userId: user.id, tokenHash: sha256(token), expiresAt },
+      });
+      // Prune stale rows lazily — keeps the table small with no cron job.
+      await this.prisma.passwordResetToken
+        .deleteMany({ where: { OR: [{ expiresAt: { lt: new Date() } }, { usedAt: { not: null } }] } })
+        .catch(() => undefined);
+
+      const resetUrl = buildResetUrl(token);
+      try {
+        await this.email.passwordResetEmail({
+          to: user.email,
+          resetUrl,
+          expiresMinutes: PASSWORD_RESET_TTL_MINUTES,
+        });
+      } catch (err) {
+        // Never leak ESP outages / misconfiguration to the caller — the
+        // generic message preserves the anti-enumeration guarantee.
+        // eslint-disable-next-line no-console
+        console.error('[auth] password-reset email failed:', (err as Error)?.message ?? err);
+      }
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * Reset password: exchange a valid single-use token for a new password.
+   * Invalid/expired/used tokens all produce the same 400 (no oracle).
+   * On success the token is marked used and EVERY session is revoked, so
+   * the account is signed out everywhere and must log in with the new password.
+   */
+  async resetPassword(token: string, newPassword: string) {
+    const stored = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash: sha256(token) },
+      include: { user: true },
+    });
+    if (!stored || stored.usedAt || stored.expiresAt < new Date() || !stored.user.isActive) {
+      throw new HttpException('This reset link is invalid or has expired. Please request a new one.', HttpStatus.BAD_REQUEST);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: stored.userId }, data: { passwordHash } }),
+      this.prisma.passwordResetToken.update({ where: { id: stored.id }, data: { usedAt: new Date() } }),
+      // Single-use hardening: burn any sibling tokens for this user too.
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId: stored.userId, usedAt: null, id: { not: stored.id } },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.session.updateMany({
+        where: { userId: stored.userId, revokedAt: null },
         data: { revokedAt: new Date() },
       }),
     ]);

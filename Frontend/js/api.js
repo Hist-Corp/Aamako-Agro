@@ -133,6 +133,16 @@
       return request('POST', '/auth/change-password', body);
     },
 
+    // ---- password reset (self-service, email link) ----
+    forgotPassword: function (email) {
+      // Always resolves success (anti-enumeration) — show the generic notice.
+      // NOTE: send ONLY { email } — the API rejects unknown fields.
+      return request('POST', '/auth/forgot-password', { email: email });
+    },
+    resetPassword: function (token, newPassword) {
+      return request('POST', '/auth/reset-password', { token: token, newPassword: newPassword });
+    },
+
     // ---- catalog ----
     listProducts: function (page, categorySlug) {
       var q = '?page=' + (page || 1) + '&limit=20' + (categorySlug ? '&categorySlug=' + encodeURIComponent(categorySlug) : '');

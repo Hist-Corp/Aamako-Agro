@@ -22,6 +22,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MediaModule } from './media/media.module';
 import { TasksModule } from './tasks/tasks.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { NewsletterModule } from './newsletter/newsletter.module';
     MediaModule,
     TasksModule,
     NewsletterModule,
+    EmailModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -9,7 +9,12 @@ services:
     plan: free
     rootDir: Backend
     buildCommand: npm ci && npm run build
-    startCommand: npx prisma migrate deploy && npm run start
+    # NOTE: this repo has no prisma/migrations history (schema is synced with
+    # `prisma db push`), so `migrate deploy` would be a silent no-op and the
+    # password_reset_tokens table would never be created in production.
+    # `db push` is idempotent — it creates missing tables and leaves existing
+    # ones untouched — making it the correct deploy-time sync here.
+    startCommand: npx prisma db push --accept-data-loss=false --skip-generate && npm run start
     healthCheckPath: /api
     autoDeploy: true
     envVars:
@@ -46,4 +51,21 @@ services:
       # Public API URL for absolute links in emails / media. Set this to your
       # Render service URL, e.g. https://aamako-api.onrender.com/api
       - key: PUBLIC_API_URL
+        sync: false
+      # Password-reset link origin (storefront-only reset page).
+      - key: FRONTEND_URL
+        sync: false
+      - key: PASSWORD_RESET_TTL_MINUTES
+        value: "30"
+      # Email via Resend — leave RESEND_API_KEY empty to keep the log
+      # provider (reset tokens are redacted from logs and a CRITICAL warning
+      # is logged). Set it + RESEND_FROM_EMAIL / RESEND_FROM_NAME to send
+      # real email. No code changes needed.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: RESEND_FROM_NAME
+        sync: false
+      - key: EMAIL_REPLY_TO
         sync: false
