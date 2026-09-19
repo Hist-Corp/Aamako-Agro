@@ -8,7 +8,7 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
@@ -51,7 +51,7 @@ export class CartController {
     return this.cartService.setQuantity(user?.id, this.session(req), dto.variantId, dto.quantity);
   }
 
-  @ApiBearerAuth()
+  @Public()
   @Delete('items/:variantId')
   removeLine(
     @Req() req: Request,
