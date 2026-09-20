@@ -2,54 +2,65 @@ const path = require('path');
 
 // Compiled runtime dependencies that must be forced into every serverless
 // function trace — see `outputFileTracingIncludes` below for the full story.
-// The path must stay INSIDE this app's Root Directory: Vercel cannot map traced
-// files that live outside it into the functions, and a deployment-wide include
-// reaching into Dashboard/node_modules/.pnpm fails the build with an internal
-// error. The glob goes through `apps/admin/node_modules/next` (a pnpm
-// junction), which Vercel resolves when it packages the function.
+// The glob points at the hoisted, real-directory copy of `next` in the
+// workspace root (see Dashboard/.npmrc: node-linker=hoisted). It must stay
+// inside `outputFileTracingRoot` (the workspace root) so Vercel can package it,
+// and it must NOT go through a pnpm junction — symlinked directories make
+// Vercel reject the deployment package outright.
 const NEXT_COMPILED_GLOBS = [
-  './node_modules/next/dist/compiled/**/*',
+  '../../node_modules/next/dist/compiled/**/*',
 ];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Project root for the pnpm workspace. Docker builds (§6 of DEPLOYMENT.md)
-  // need this set to the workspace root so nft file tracing can follow pnpm's
-  // node_modules symlinks into Dashboard/node_modules/.pnpm.
-  // Vercel builds MUST NOT: there the trace root has to stay inside the Vercel
-  // Root Directory (apps/admin) — when it points outside it, the @vercel/next
-  // builder cannot map the traced next-server files into the functions and the
-  // build fails with:
-  //   Cannot find module 'next/dist/compiled/next-server/server.runtime.prod.js'
-  // (see DEPLOYMENT.md §9). DOCKER_BUILD=1 is set in apps/admin/Dockerfile.
-  outputFileTracingRoot:
-    process.env.DOCKER_BUILD === '1' ? path.join(__dirname, '../../') : __dirname,
+  // Root of the pnpm workspace (Dashboard/), where the hoisted node_modules
+  // lives — see Dashboard/.npmrc (`node-linker=hoisted`).
+  //
+  // The trace root has to contain every file the serverless functions need.
+  // With the hoisted linker those are REAL directories at
+  // Dashboard/node_modules — outside this app's Root Directory (apps/admin)
+  // but inside the workspace, and Vercel's "Include source files outside of
+  // the Root Directory in the Build Step" toggle (enabled on this project)
+  // allows the builder to package them. Leaving the trace root at apps/admin
+  // made the tracer drop those targets entirely, so the deployed functions
+  // crashed at cold start with:
+  //
+  //   Cannot find module 'next/dist/compiled/source-map'
+  //
+  // and every dynamic route returned 500 while all static routes kept working
+  // (static pages are pre-rendered at build time and never execute a function).
+  // Docker uses the same hoisted layout, so one unconditional value is correct
+  // for both targets. DOCKER_BUILD=1 is still set by apps/admin/Dockerfile but
+  // no longer changes this behaviour.
+  outputFileTracingRoot: path.join(__dirname, '../../'),
 
   transpilePackages: ['@aamako/shared-types'],
 
   // ─── Serverless-function packaging ──────────────────────────────────────
-  // pnpm installs this app's dependencies as junctions/symlinks into
-  // Dashboard/node_modules/.pnpm/… — which lives OUTSIDE this app's Root
-  // Directory (apps/admin). Next's file tracer resolves those links but then
-  // drops the targets it cannot place under `outputFileTracingRoot`
-  // (= __dirname on Vercel, see above), so the packaged function ships WITHOUT
-  // parts of the `next` package itself. It then dies at cold start with:
+  // The dashboard is a pnpm workspace package, and Vercel packages its
+  // serverless functions from Next's file traces. Three failure modes were
+  // hit, all invisible on `next start` (which reads the real node_modules
+  // tree rather than these traces):
   //
-  //   Cannot find module 'next/dist/compiled/source-map'
-  //   Require stack:
-  //   - …/.pnpm/next@15.5.25_…/node_modules/next/dist/compiled/next-server/server.runtime.prod.js
-  //   - …/apps/admin/___next_launcher.cjs
+  // 1. Trace root inside the Root Directory (apps/admin) with pnpm's default
+  //    isolated linker: the tracer followed pnpm's junctions and dropped every
+  //    target outside apps/admin, so the packaged function was missing parts
+  //    of the `next` package itself and died at cold start with
+  //      Cannot find module 'next/dist/compiled/source-map'
+  //    Vercel answered with its static 500 page, so ALL dynamic routes broke
+  //    (/pages/[slug], /product-templates/[slug], /orders/[id]) while every
+  //    pre-rendered static route kept working.
+  // 2. `outputFileTracingIncludes` reaching outside the Root Directory
+  //    (../../node_modules/.pnpm/…) failed the deployment with an internal
+  //    Vercel error.
+  // 3. Pointing the include through the pnpm junction instead produced a
+  //    bundle containing symlinked directories, which Vercel rejects with
+  //    "The framework produced an invalid deployment package for a Serverless
+  //    Function … files in symlinked directories".
   //
-  // Vercel answers every request with its static 500 page, so ALL dynamic
-  // routes break (`/pages/[slug]`, `/product-templates/[slug]`, `/orders/[id]`)
-  // while every pre-rendered static route keeps working — the failure is
-  // invisible on `next start`, which reads the real node_modules tree instead
-  // of these traces.
-  //
-  // Pin the whole compiled runtime dependency set into the trace so the
-  // function bundle is self-contained. The glob resolves through the pnpm
-  // junction at apps/admin/node_modules/next, so every traced path stays inside
-  // the Root Directory and Vercel can package it into the functions.
+  // The hoisted linker removes the symlinks entirely, so the real
+  // `next/dist/compiled/**` files sit inside the workspace-root trace root.
+  // The include below pins them into every function trace as a guarantee.
   outputFileTracingIncludes: {
     '/**': NEXT_COMPILED_GLOBS,
     '/**/*': NEXT_COMPILED_GLOBS,
