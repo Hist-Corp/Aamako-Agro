@@ -2,11 +2,17 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Project root for the pnpm workspace. Webpack and production builds
-  // need this set to the workspace root so pnpm's node_modules symlinks
-  // (which point outside apps/admin into Dashboard/node_modules/.pnpm)
-  // are within the allowed filesystem.
-  outputFileTracingRoot: path.join(__dirname, '../../'),
+  // Project root for the pnpm workspace. Docker builds (§6 of DEPLOYMENT.md)
+  // need this set to the workspace root so nft file tracing can follow pnpm's
+  // node_modules symlinks into Dashboard/node_modules/.pnpm.
+  // Vercel builds MUST NOT: there the trace root has to stay inside the Vercel
+  // Root Directory (apps/admin) — when it points outside it, the @vercel/next
+  // builder cannot map the traced next-server files into the functions and the
+  // build fails with:
+  //   Cannot find module 'next/dist/compiled/next-server/server.runtime.prod.js'
+  // (see DEPLOYMENT.md §9). DOCKER_BUILD=1 is set in apps/admin/Dockerfile.
+  outputFileTracingRoot:
+    process.env.DOCKER_BUILD === '1' ? path.join(__dirname, '../../') : __dirname,
 
   transpilePackages: ['@aamako/shared-types'],
 
