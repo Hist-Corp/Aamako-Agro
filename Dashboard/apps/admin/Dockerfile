@@ -15,6 +15,15 @@ COPY apps/admin ./apps/admin
 # Point the dashboard at the API (baked at build time by Next.js)
 ARG NEXT_PUBLIC_API_URL=/api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Public storefront origin for the live-preview links/iframes (also baked at
+# build time). Defaults to the compose `web` service; without it the editors
+# show a "Live preview unavailable" notice instead of framing a page.
+ARG NEXT_PUBLIC_STOREFRONT_URL=http://localhost:8080
+ENV NEXT_PUBLIC_STOREFRONT_URL=$NEXT_PUBLIC_STOREFRONT_URL
+# Non-prefixed alias for the same value (next.config.js forwards it to the
+# browser). Set either one; NEXT_PUBLIC_STOREFRONT_URL wins when both are set.
+ARG STOREFRONT_URL=
+ENV STOREFRONT_URL=$STOREFRONT_URL
 # Keep Next's output file tracing rooted at the pnpm workspace root (see
 # next.config.js — only Docker builds should trace from outside apps/admin).
 ENV DOCKER_BUILD=1

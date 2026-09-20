@@ -23,6 +23,11 @@ services:
       dockerfile: apps/admin/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000/api}
+        # Browser-facing storefront origin for the dashboard's live previews
+        # (baked into the client bundle at image build time).
+        NEXT_PUBLIC_STOREFRONT_URL: ${NEXT_PUBLIC_STOREFRONT_URL:-http://localhost:8080}
+        # Non-prefixed alias for the same value (either one is enough).
+        STOREFRONT_URL: ${STOREFRONT_URL:-}
     ports:
       - "3001:3001"
     depends_on:

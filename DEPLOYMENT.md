@@ -15,7 +15,7 @@ before. The deployment files are purely additive.
 | Component | Location | Host | Env / Config |
 |---|---|---|---|
 | Backend API (NestJS + Prisma) | `Backend/` | Render | `render.yaml` + env vars |
-| Admin Dashboard (Next.js) | `Dashboard/apps/admin` | Vercel | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL` |
+| Admin Dashboard (Next.js) | `Dashboard/apps/admin` | Vercel | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`, `NEXT_PUBLIC_STOREFRONT_URL` |
 | Storefront (static) | `Frontend/` | Vercel | `Frontend/vercel.json` + `BACKEND_URL` env |
 | Database | — | Supabase | `Backend/.env.supabase.example` |
 
@@ -107,10 +107,32 @@ Import `Dashboard/apps/admin` as a Next.js project in Vercel
 |---|---|
 | `NEXT_PUBLIC_API_URL` | `https://aamako-agro.onrender.com/api` |
 | `NEXT_PUBLIC_WS_URL` | `wss://aamako-agro.onrender.com` |
-| `BACKEND_URL` | `https://aamako-agro.onrender.com` (**no** `/api` suffix — `next.config.js` appends it; required, none of the three has a usable default) |
+| `BACKEND_URL` | `https://aamako-agro.onrender.com` (**no** `/api` suffix — `next.config.js` appends it; required, none of these has a usable default) |
+| `NEXT_PUBLIC_STOREFRONT_URL` | The deployed storefront origin from §4, e.g. `https://aamako-agro.vercel.app` (origin only — **no** trailing slash, **no** path) |
+| `STOREFRONT_URL` | *Optional alias for the row above.* The same value under a non-prefixed name — see the note below. |
 
-- All three are baked at **build time** by Next.js — update them in the Vercel
-  project settings and redeploy when the Render URL changes.
+- All of these are baked at **build time** — update them in the Vercel project
+  settings and redeploy when the Render or storefront URL changes.
+- `NEXT_PUBLIC_STOREFRONT_URL` is what Content → **Pages**, Content → **Product
+  Templates** and both template editors use for their "View live" links and the
+  live-preview iframe. It has no usable production default, so a build that
+  omits it would otherwise send every editor to `http://localhost:8080/…` —
+  their *own* machine — and the preview would die with
+  `ERR_CONNECTION_REFUSED`. Published builds deliberately skip the localhost
+  fallback (it is only used by `next dev`) and the affected screens show a
+  "Live preview unavailable" notice naming this variable instead.
+- **About Vercel's public-prefix hint.** While typing a `NEXT_PUBLIC_*` key the
+  Vercel form shows *"Remove the public framework prefix to keep this value
+  private."* It is an informational hint, **not** a validation error — the
+  variable saves and works normally. The storefront origin is a public website
+  address that the browser must know in order to open the live links and frame
+  the previews, so no secret is exposed; the hint exists to catch people who
+  accidentally prefix a real secret (`NEXT_PUBLIC_STRIPE_SECRET_KEY`).
+  If you would rather not see the hint, put the same value in the unprefixed
+  **`STOREFRONT_URL`** instead and delete `NEXT_PUBLIC_STOREFRONT_URL`:
+  `next.config.js` lists `STOREFRONT_URL` in its `env` map, which forwards it to
+  the browser, and `src/config/pages.ts` accepts either name. Setting both is
+  harmless (`NEXT_PUBLIC_STOREFRONT_URL` wins).
 - If you'd rather keep the dashboard same-origin, add a Vercel rewrite on the
   dashboard app mirroring `Frontend/vercel.json` and point
   `NEXT_PUBLIC_API_URL` at `/api`.
@@ -153,6 +175,12 @@ Import `Dashboard/apps/admin` as a Next.js project in Vercel
    > Local development is unaffected: `Frontend/dev-server.js` reads its own
    > `BACKEND_URL` env var (default `http://localhost:3000`) and proxies
    > `/api/*` the same way.
+4. Note the project's production origin (e.g. `https://aamako-agro.vercel.app`) —
+   that origin is the value for the dashboard's **`NEXT_PUBLIC_STOREFRONT_URL`**
+   (§3), which is what makes the dashboard's live previews frame the real
+   website. Renaming or re-domain-ing the storefront means updating that
+   variable in the dashboard project and **redeploying the dashboard** (it is
+   baked in at build time).
 
 ## 5 — Security checklist
 
@@ -181,6 +209,7 @@ JWT_ACCESS_SECRET=<32+ random chars>
 JWT_REFRESH_SECRET=<32+ random chars>
 CORS_ORIGINS=https://shop.example.com,https://admin.example.com
 NEXT_PUBLIC_API_URL=https://api.example.com/api
+NEXT_PUBLIC_STOREFRONT_URL=https://shop.example.com
 
 docker compose up -d --build
 npm --prefix Backend run seed   # once

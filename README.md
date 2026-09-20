@@ -101,6 +101,16 @@ The dashboard reads its API address from `Dashboard/apps/admin/.env.local`
 (`NEXT_PUBLIC_API_URL=http://localhost:3000/api`). Create that file if it does
 not exist, then restart the dashboard.
 
+`Dashboard/apps/admin/.env.local` can also set
+`NEXT_PUBLIC_STOREFRONT_URL=http://localhost:8080` — the public website the
+Content → Pages / Product Templates "View live" links and live-preview iframes
+open (`STOREFRONT_URL` is accepted as an equivalent non-prefixed name). `npm run
+dev` sets it for you and the dashboard falls back to the same URL while running
+`next dev`, so this is only needed when you run `npm run dev:dashboard` yourself
+or point the preview at a deployed storefront. Both values are baked into the
+browser bundle at build time, so restart the dashboard after changing them (see
+`DEPLOYMENT.md` §3 for the deployed setup).
+
 ### Running Apps Individually
 
 ```bash

@@ -22,7 +22,11 @@ export function assetUrl(url?: string | null): string {
       return u;
     }
   }
-  // Anything else is a storefront static asset (/images/…).
+  // Anything else is a storefront static asset (/images/…). With no storefront
+  // origin configured for this build we can only hand back the relative path
+  // (see the note on STOREFRONT_URL in config/pages.ts) — better a broken image
+  // than silently rewriting it onto the viewer's own localhost.
   const base = STOREFRONT_URL.replace(/\/+$/, '');
-  return `${base}${u.startsWith('/') ? u : `/${u}`}`;
+  const path = u.startsWith('/') ? u : `/${u}`;
+  return base ? `${base}${path}` : path;
 }

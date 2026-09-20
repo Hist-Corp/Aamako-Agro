@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/config/auth-context';
 import { canAct } from '@/config/rbac';
 import { apiClient, ApiError } from '@/lib/api-client';
-import { SITE_PAGES, storefrontUrl, STOREFRONT_URL } from '@/config/pages';
+import { SITE_PAGES, storefrontUrl, STOREFRONT_URL, isStorefrontConfigured, STOREFRONT_MISCONFIGURED_HINT } from '@/config/pages';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { LivePreviewNotice } from '@/components/ui/live-preview-notice';
 import { useToast } from '@/components/ui/toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -75,11 +76,17 @@ export default function PagesPage() {
         title="Website Pages"
         description="Edit the live website's pages in place — preview the real page on the right while building its template. Access is restricted to Managers, Content Managers, Admins and Super Admins."
         actions={
-          <a href={STOREFRONT_URL} target="_blank" rel="noreferrer">
-            <Button variant="secondary">
+          isStorefrontConfigured ? (
+            <a href={STOREFRONT_URL} target="_blank" rel="noreferrer">
+              <Button variant="secondary">
+                <ExternalLink className="h-4 w-4" /> Open storefront
+              </Button>
+            </a>
+          ) : (
+            <Button variant="secondary" disabled title={STOREFRONT_MISCONFIGURED_HINT}>
               <ExternalLink className="h-4 w-4" /> Open storefront
             </Button>
-          </a>
+          )
         }
         breadcrumbs={[{ label: 'Content' }, { label: 'Pages' }]}
       />
@@ -91,6 +98,8 @@ export default function PagesPage() {
           and Super Admins only. All other roles cannot view or edit these pages.
         </span>
       </div>
+
+      {!isStorefrontConfigured && <LivePreviewNotice className="mb-5" />}
 
       {!user ? (
         <div className="space-y-3">
@@ -135,11 +144,22 @@ export default function PagesPage() {
                       <Pencil className="h-3.5 w-3.5" /> Edit template
                     </Button>
                   </Link>
-                  <a href={storefrontUrl(page)} target="_blank" rel="noreferrer">
-                    <Button size="sm" variant="secondary">
+                  {isStorefrontConfigured ? (
+                    <a href={storefrontUrl(page)} target="_blank" rel="noreferrer">
+                      <Button size="sm" variant="secondary">
+                        <Globe className="h-3.5 w-3.5" /> View live
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled
+                      title={STOREFRONT_MISCONFIGURED_HINT}
+                    >
                       <Globe className="h-3.5 w-3.5" /> View live
                     </Button>
-                  </a>
+                  )}
                 </div>
               </Card>
             );

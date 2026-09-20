@@ -38,6 +38,11 @@ const SERVICES = [
     cwd: path.join(ROOT, 'Dashboard'),
     args: ['run', 'dev'],
     url: 'http://localhost:3001',
+    // Where the dashboard's "View live" links and template-preview iframes
+    // point. Optional locally — the dashboard defaults to this same URL in
+    // development — but setting it keeps local dev identical to the deployed
+    // configuration (DEPLOYMENT.md §3).
+    env: { NEXT_PUBLIC_STOREFRONT_URL: 'http://localhost:8080' },
   },
   {
     name: 'web',
@@ -100,7 +105,7 @@ console.log(`${DIM}Starting Aamako-Agro development services...${RESET}\n`);
 for (const service of SERVICES) {
   const child = spawn(NPM_CMD, service.args, {
     cwd: service.cwd,
-    env: process.env,
+    env: { ...process.env, ...service.env },
     stdio: ['ignore', 'pipe', 'pipe'],
     ...SPAWN_OPTS,
   });

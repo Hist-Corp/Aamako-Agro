@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { EmptyState } from '@/components/ui/empty-state';
+import { LivePreviewNotice } from '@/components/ui/live-preview-notice';
 import { useToast } from '@/components/ui/toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -1536,42 +1537,59 @@ export default function PageEditor() {
               <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-brand-100">
                 <Globe className="h-3.5 w-3.5 text-brand-700" />
               </span>
-              <span className="truncate font-mono text-2xs text-surface-500">{previewUrl}</span>
+              <span className="truncate font-mono text-2xs text-surface-500">
+                {previewUrl || 'Live preview unavailable'}
+              </span>
             </div>
             <div className="flex flex-shrink-0 items-center gap-1.5">
-              <span className="hidden text-2xs text-surface-400 md:inline">
-                Click any section in the preview to edit it
-              </span>
-              <button
-                type="button"
-                onClick={reloadPreview}
-                title="Reload the live preview"
-                aria-label="Reload the live preview"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-surface-500 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
-              >
-                <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
-              </button>
-              <a
-                href={previewUrl}
-                target="_blank"
-                rel="noreferrer"
-                title="Open the live page in a new tab"
-                aria-label="Open the live page in a new tab"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-surface-500 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-              <Badge variant="info">Live preview</Badge>
+              {previewUrl ? (
+                <>
+                  <span className="hidden text-2xs text-surface-400 md:inline">
+                    Click any section in the preview to edit it
+                  </span>
+                  <button
+                    type="button"
+                    onClick={reloadPreview}
+                    title="Reload the live preview"
+                    aria-label="Reload the live preview"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-surface-500 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                  >
+                    <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
+                  </button>
+                  <a
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open the live page in a new tab"
+                    aria-label="Open the live page in a new tab"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-surface-500 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                  <Badge variant="info">Live preview</Badge>
+                </>
+              ) : (
+                <Badge variant="warning">Not configured</Badge>
+              )}
             </div>
           </div>
           <div className="relative flex-1 min-h-0">
-            <iframe
-              key={frameTick}
-              src={previewUrl}
-              title={`${page.name} — live preview`}
-              className="h-full w-full border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            />
+            {previewUrl ? (
+              <iframe
+                key={frameTick}
+                src={previewUrl}
+                title={`${page.name} — live preview`}
+                className="h-full w-full border-0"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              />
+            ) : (
+              /* No previewUrl means this build has no storefront origin. Frame
+                 an EXPLANATION rather than an empty/refused page — the heading
+                 and copy are just a few lines, so the editor stays usable. */
+              <div className="flex h-full items-start justify-center overflow-auto bg-surface-50/60 p-4">
+                <LivePreviewNotice />
+              </div>
+            )}
           </div>
         </Card>
       </div>

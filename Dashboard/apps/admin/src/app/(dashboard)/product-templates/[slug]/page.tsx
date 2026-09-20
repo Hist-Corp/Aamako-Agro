@@ -30,6 +30,8 @@ import {
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { MediaPickerDialog } from '@/components/media-picker-dialog';
 import { PRODUCT_TEMPLATE_SECTIONS, productFieldKey, ALL_PRODUCT_FIELD_KEYS, getProductFieldDefaults } from '@/config/product-templates';
+import { storefrontPath, isStorefrontConfigured, STOREFRONT_MISCONFIGURED_HINT } from '@/config/pages';
+import { LivePreviewNotice } from '@/components/ui/live-preview-notice';
 import { assetUrl } from '@/lib/asset-url';
 
 interface CmsItem {
@@ -42,9 +44,6 @@ interface CmsItem {
    *  The live storefront (GET /content) renders this, not the draft body. */
   publishedBody?: string;
 }
-
-const STOREFRONT_URL =
-  process.env.NEXT_PUBLIC_STOREFRONT_URL ?? 'http://localhost:8080';
 
 const FIELD_PLACEHOLDERS: Record<string, string> = {
   name: 'e.g. Freeze-Dried Mango',
@@ -381,6 +380,12 @@ export default function ProductTemplateEditorPage({
 
     if (!user || !allowed) return null;
 
+  // Live storefront targets for this product. Both are '' when this build has
+  // no storefront origin configured (see config/pages.ts) — the UI then
+  // explains the fix instead of pointing at a dead localhost URL.
+  const liveProductUrl = storefrontPath(`/product.html?slug=${slug}`);
+  const previewSrc = storefrontPath(`/product.html?template=1&slug=${slug}`);
+
 return (
   <div>
     <PageHeader
@@ -394,11 +399,23 @@ return (
               {isSaving ? 'Saving...' : 'Publish to storefront'}
             </Button>
           )}
-          <a href={`${STOREFRONT_URL}/product.html?slug=${slug}`} target="_blank" rel="noreferrer" className="whitespace-nowrap">
-            <Button size="sm" variant="secondary">
+          {isStorefrontConfigured ? (
+            <a href={liveProductUrl} target="_blank" rel="noreferrer" className="whitespace-nowrap">
+              <Button size="sm" variant="secondary">
+                <ExternalLink className="h-4 w-4" /> View live product page
+              </Button>
+            </a>
+          ) : (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled
+              title={STOREFRONT_MISCONFIGURED_HINT}
+              className="whitespace-nowrap"
+            >
               <ExternalLink className="h-4 w-4" /> View live product page
             </Button>
-          </a>
+          )}
         </div>
       }
       breadcrumbs={[
@@ -415,6 +432,8 @@ return (
         and Super Admins can edit product templates.
       </span>
     </div>
+
+    {!isStorefrontConfigured && <LivePreviewNotice className="mb-4" />}
 
     {/* Editing column (flex-1) + live storefront preview (flex-none). The
         preview's mouse-draggable handle grows it and the editing column
@@ -452,8 +471,17 @@ return (
       >
         {/* ?template=1 forces the storefront to render from the CMS template
             fields (product-template.<slug>.*) instead of the DB catalog product,
-            so the live preview reflects exactly what the editor is editing. */}
-        <ResizablePreview src={`${STOREFRONT_URL}/product.html?template=1&slug=${slug}`} onWidthChange={setPreviewW} />
+            so the live preview reflects exactly what the editor is editing.
+            With no storefront origin configured there is nothing to frame, so
+            the pane explains the misconfiguration — the editing column keeps
+            working either way. */}
+        {previewSrc ? (
+          <ResizablePreview src={previewSrc} onWidthChange={setPreviewW} />
+        ) : (
+          <Card className="p-3">
+            <LivePreviewNotice />
+          </Card>
+        )}
       </div>
     </div>
   </div>
@@ -922,9 +950,11 @@ function renderFieldInner(
         {missing && (
           <p className="mt-1 text-2xs font-semibold text-red-600">* Required to publish — fill this field</p>
         )}
-        {field.key === 'process-category' && (existing?.title ?? '').trim() && (
+        {field.key === 'process-category' && isStorefrontConfigured && (existing?.title ?? '').trim() && (
           <a
-            href={`${STOREFRONT_URL}/collection.html?cat=${encodeURIComponent((existing?.title ?? '').trim())}`}
+            href={storefrontPath(
+              `/collection.html?cat=${encodeURIComponent((existing?.title ?? '').trim())}`
+            )}
             target="_blank"
             rel="noreferrer"
             className="mt-1 inline-flex items-center gap-1 text-2xs font-medium text-brand-600 hover:text-brand-700"

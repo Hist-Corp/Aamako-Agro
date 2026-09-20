@@ -57,19 +57,77 @@ export function mediaCategoryForPage(slug?: string | null): string {
   return page?.mediaCategory ?? 'General';
 }
 
+// ─── Storefront base URL ────────────────────────────────────────────────
+// Where the public website lives. Every "View live" link, every template
+// editor's preview iframe and every storefront-relative asset is built from
+// the values below — so there is exactly one place to configure it.
+
+/** Configured storefront origin, normalised (whitespace + trailing slashes).
+ *
+ *  Two names are accepted, because both are legitimate (see DEPLOYMENT.md §3):
+ *   • `NEXT_PUBLIC_STOREFRONT_URL` — the standard Next.js way. Next.js inlines
+ *     it straight from the environment into the browser bundle. Vercel shows a
+ *     "public framework prefix" hint on it; that hint is informational — the
+ *     value is the address of your public website and the browser has to know
+ *     it to open the live links and frame the preview iframes.
+ *   • `STOREFRONT_URL` — the same value under a non-prefixed name, which
+ *     produces no such hint. It still reaches the browser because
+ *     `next.config.js` lists it in its `env` map.
+ *  Setting either one is enough; setting both is harmless. */
+const CONFIGURED_STOREFRONT_URL = (
+  process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+  process.env.STOREFRONT_URL ||
+  ''
+)
+  .trim()
+  .replace(/\/+$/, '');
+
+/** Zero-config local-development default — Frontend/dev-server.js. */
+const DEV_STOREFRONT_URL = 'http://localhost:8080';
+
 /**
  * Base URL of the public storefront used for the live page preview.
- * Configure once per deploy (or rely on the localhost development default).
+ *
+ * `NEXT_PUBLIC_STOREFRONT_URL` is inlined into the browser bundle at BUILD
+ * time, so a deployed dashboard must have it set in the dashboard project's
+ * environment **before** the build and be redeployed when it changes —
+ * see DEPLOYMENT.md §3.
+ *
+ * A published build must never fall back to localhost: that URL resolves to
+ * the *visitor's own* machine, so every live link and preview would fail with
+ * `ERR_CONNECTION_REFUSED` instead of saying what was misconfigured. Local
+ * `next dev` (NODE_ENV=development) keeps the zero-config default — `npm run
+ * dev` also sets the variable explicitly for this app.
  */
 export const STOREFRONT_URL =
-  process.env.NEXT_PUBLIC_STOREFRONT_URL ??
-  'http://localhost:8080';
+  CONFIGURED_STOREFRONT_URL ||
+  (process.env.NODE_ENV !== 'production' ? DEV_STOREFRONT_URL : '');
 
-/** Build a full URL to a real website page for live previewing. */
+/** False when a published dashboard build shipped without a storefront origin.
+ *  Callers must not render live links/previews in that case — they show
+ *  {@link STOREFRONT_MISCONFIGURED_HINT} instead of a dead localhost URL. */
+export const isStorefrontConfigured = STOREFRONT_URL !== '';
+
+/** Actionable explanation shown wherever a live link/preview can't be built. */
+export const STOREFRONT_MISCONFIGURED_HINT =
+  'This dashboard build has no storefront address, so live previews are unavailable. Set NEXT_PUBLIC_STOREFRONT_URL to your deployed website (e.g. https://your-site.vercel.app) in the dashboard project environment, then redeploy — NEXT_PUBLIC_* values are baked in at build time.';
+
+/** Build a full URL to a real website page for live previewing.
+ *  Returns '' when this build has no storefront origin (see above). */
 export function storefrontUrl(page: Pick<SitePage, 'previewPath'>): string {
+  if (!STOREFRONT_URL) return '';
   const base = STOREFRONT_URL.replace(/\/+$/, '');
   const path = page.previewPath === '/' ? '/' : `/${page.previewPath.replace(/^\/+/, '')}`;
   return `${base}${path}`;
+}
+
+/** Build a URL to an arbitrary storefront path, e.g.
+ *  `storefrontPath('/product.html?slug=fd-mango')`. Returns '' when this build
+ *  has no storefront origin (see {@link isStorefrontConfigured}). */
+export function storefrontPath(path: string): string {
+  if (!STOREFRONT_URL) return '';
+  const base = STOREFRONT_URL.replace(/\/+$/, '');
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 // Convenience builders for repeated section patterns -------------------------

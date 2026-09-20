@@ -7,11 +7,13 @@ import { useAuth } from '@/config/auth-context';
 import { canAct } from '@/config/rbac';
 import { apiClient, ApiError } from '@/lib/api-client';
 import { assetUrl } from '@/lib/asset-url';
+import { storefrontPath, isStorefrontConfigured, STOREFRONT_MISCONFIGURED_HINT } from '@/config/pages';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { LivePreviewNotice } from '@/components/ui/live-preview-notice';
 import { useToast } from '@/components/ui/toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -85,9 +87,6 @@ const FALLBACK_GROUP: (typeof CATEGORY_GROUPS)[number] = {
   description: 'Product pages without a recognised process category.',
   icon: LayoutList,
 };
-
-const STOREFRONT_URL =
-  process.env.NEXT_PUBLIC_STOREFRONT_URL ?? 'http://localhost:8080';
 
 /** Catalog product → ProductEntry (raw backend shape from /admin/products). */
 function catalogEntry(p: any): ProductEntry | null {
@@ -259,11 +258,17 @@ export default function ProductTemplatesPage() {
                 </Button>
               </Link>
             )}
-            <a href={STOREFRONT_URL} target="_blank" rel="noreferrer">
-              <Button variant="secondary">
+            {isStorefrontConfigured ? (
+              <a href={storefrontPath('/')} target="_blank" rel="noreferrer">
+                <Button variant="secondary">
+                  <ExternalLink className="h-4 w-4" /> Open storefront
+                </Button>
+              </a>
+            ) : (
+              <Button variant="secondary" disabled title={STOREFRONT_MISCONFIGURED_HINT}>
                 <ExternalLink className="h-4 w-4" /> Open storefront
               </Button>
-            </a>
+            )}
           </div>
         }
         breadcrumbs={[{ label: 'Content' }, { label: 'Product Templates' }]}
@@ -276,6 +281,8 @@ export default function ProductTemplatesPage() {
           and Super Admins only.
         </span>
       </div>
+
+      {!isStorefrontConfigured && <LivePreviewNotice className="mb-5" />}
 
       {!user ? (
         <div className="space-y-3">
@@ -325,9 +332,11 @@ export default function ProductTemplatesPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-semibold text-surface-900">{group.label}</h2>
                       <Badge variant="neutral">{group.items.length} products</Badge>
-                      {group.slug !== 'other' && (
+                      {group.slug !== 'other' && isStorefrontConfigured && (
                         <a
-                          href={`${STOREFRONT_URL}/collection.html?cat=${encodeURIComponent(group.slug)}`}
+                          href={storefrontPath(
+                            `/collection.html?cat=${encodeURIComponent(group.slug)}`
+                          )}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-800"
@@ -389,9 +398,11 @@ export default function ProductTemplatesPage() {
                         </div>
 
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-surface-500">
-                          {product.categoryName && (
+                          {product.categoryName && isStorefrontConfigured && (
                             <a
-                              href={`${STOREFRONT_URL}/collection.html?cat=${encodeURIComponent(product.categorySlug || product.categoryName)}`}
+                              href={storefrontPath(
+                                `/collection.html?cat=${encodeURIComponent(product.categorySlug || product.categoryName)}`
+                              )}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 hover:bg-brand-100"
@@ -412,15 +423,26 @@ export default function ProductTemplatesPage() {
                               <Pencil className="h-3.5 w-3.5" /> Edit template
                             </Button>
                           </Link>
-                          <a
-                            href={`${STOREFRONT_URL}/product.html?slug=${product.slug}`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <Button size="sm" variant="secondary">
+                          {isStorefrontConfigured ? (
+                            <a
+                              href={storefrontPath(`/product.html?slug=${product.slug}`)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <Button size="sm" variant="secondary">
+                                <Globe className="h-3.5 w-3.5" /> View live
+                              </Button>
+                            </a>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled
+                              title={STOREFRONT_MISCONFIGURED_HINT}
+                            >
                               <Globe className="h-3.5 w-3.5" /> View live
                             </Button>
-                          </a>
+                          )}
                         </div>
                       </Card>
                     );

@@ -16,6 +16,26 @@ const nextConfig = {
 
   transpilePackages: ['@aamako/shared-types'],
 
+  // Storefront origin, additionally forwarded to the browser under a
+  // NON-prefixed name.
+  //
+  // `NEXT_PUBLIC_*` variables are inlined into the client bundle straight from
+  // the environment; a plain name only reaches client code when it is listed
+  // here. Deployments that would rather not use a public prefix (Vercel shows a
+  // "public framework prefix" hint on NEXT_PUBLIC_*) can therefore set
+  // `STOREFRONT_URL` instead of `NEXT_PUBLIC_STOREFRONT_URL` and get exactly the
+  // same result — src/config/pages.ts accepts either.
+  //
+  // The value is a public website address, not a secret — the browser has to
+  // know it to open the "View live" links and frame the preview iframes — so
+  // this is a naming preference, not a privacy guarantee.
+  //
+  // Read from *server* env only (like BACKEND_URL below): `next.config.js` runs
+  // at build time on Vercel/Render, never in the browser.
+  env: {
+    STOREFRONT_URL: process.env.STOREFRONT_URL ?? '',
+  },
+
   images: {
     remotePatterns: [
       {
