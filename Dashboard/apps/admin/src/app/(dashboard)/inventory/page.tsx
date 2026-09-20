@@ -18,7 +18,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { Warehouse, AlertTriangle, Settings, Plus } from 'lucide-react';
-import { type InventoryItem, type AdjustmentReason } from '@aamako/shared-types';
+import { type InventoryItem, type AdjustmentReason } from '@/shared-types';
 
 const REASON_OPTIONS: { value: AdjustmentReason; label: string }[] = [
   { value: 'RECEIVED', label: 'Received' },

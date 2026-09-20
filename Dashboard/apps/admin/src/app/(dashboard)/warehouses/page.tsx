@@ -14,7 +14,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { useRouter } from 'next/navigation';
-import type { Warehouse } from '@aamako/shared-types';
+import type { Warehouse } from '@/shared-types';
 import { MapPin, Plus, Package, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 /** Screen: Warehouses

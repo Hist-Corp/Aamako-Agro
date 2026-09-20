@@ -46,7 +46,7 @@ import type {
   UpdateTicketRequest,
   User,
   Role,
-} from '@aamako/shared-types';
+} from '@/shared-types';
 
 // ─── Query Keys ─────────────────────────────────────────────────────
 export const queryKeys = {

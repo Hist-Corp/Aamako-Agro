@@ -2,8 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"],
-      "@aamako/shared-types": ["../../packages/shared-types/src"]
+      "@/*": ["./src/*"]
     },
     "plugins": [
       {

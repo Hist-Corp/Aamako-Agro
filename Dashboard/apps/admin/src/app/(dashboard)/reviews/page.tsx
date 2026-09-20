@@ -14,7 +14,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import type { Review, ReviewStatus } from '@aamako/shared-types';
+import type { Review, ReviewStatus } from '@/shared-types';
 import { Star, CheckCircle2, XCircle, Flag } from 'lucide-react';
 
 /** Screen: Reviews

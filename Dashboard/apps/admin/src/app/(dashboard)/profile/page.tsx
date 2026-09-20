@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/select';
 import { Tabs } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import { ROLE_PERMISSIONS, type Role } from '@aamako/shared-types';
+import { ROLE_PERMISSIONS, type Role } from '@/shared-types';
 import {
   UserCircle,
   Mail,

@@ -16,7 +16,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import { ORDER_TRANSITIONS, type Order, type OrderStatus } from '@aamako/shared-types';
+import { ORDER_TRANSITIONS, type Order, type OrderStatus } from '@/shared-types';
 import { Eye, ShoppingCart } from 'lucide-react';
 
 const STATUS_OPTIONS = [

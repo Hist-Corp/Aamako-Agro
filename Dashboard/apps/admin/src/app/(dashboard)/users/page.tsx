@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -16,8 +16,8 @@ import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import type { User, Role } from '@aamako/shared-types';
-import { creatableRolesFor } from '@aamako/shared-types';
+import type { User, Role } from '@/shared-types';
+import { creatableRolesFor } from '@/shared-types';
 import { Users, Plus, Shield, ShieldCheck } from 'lucide-react';
 import { TasksPanel } from '@/components/tasks/tasks-panel';
 

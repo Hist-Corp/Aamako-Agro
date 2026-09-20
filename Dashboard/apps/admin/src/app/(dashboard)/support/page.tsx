@@ -17,7 +17,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import type { SupportTicket, TicketStatus, TicketPriority } from '@aamako/shared-types';
+import type { SupportTicket, TicketStatus, TicketPriority } from '@/shared-types';
 import { Headphones, MessageSquare, Plus, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const STATUS_VARIANT: Record<TicketStatus, string> = {

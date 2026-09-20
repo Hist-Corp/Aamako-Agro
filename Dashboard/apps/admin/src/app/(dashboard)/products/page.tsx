@@ -15,7 +15,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { Tabs } from '@/components/ui/tabs';
-import type { Product } from '@aamako/shared-types';
+import type { Product } from '@/shared-types';
 import { Package, Plus, Eye, EyeOff } from 'lucide-react';
 
 /** Screen: Products

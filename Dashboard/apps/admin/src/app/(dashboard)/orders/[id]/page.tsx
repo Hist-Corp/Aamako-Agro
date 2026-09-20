@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
 import { TableSkeleton } from '@/components/ui/skeleton';
-import { ORDER_TRANSITIONS, type OrderStatus } from '@aamako/shared-types';
+import { ORDER_TRANSITIONS, type OrderStatus } from '@/shared-types';
 import { ArrowLeft, Package, Truck, CreditCard, MapPin } from 'lucide-react';
 
 export default function OrderDetailPage() {

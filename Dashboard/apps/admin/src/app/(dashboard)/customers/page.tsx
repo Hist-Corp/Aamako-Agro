@@ -14,7 +14,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import type { Customer, CustomerStatus } from '@aamako/shared-types';
+import type { Customer, CustomerStatus } from '@/shared-types';
 import { Users, UserX, UserCheck } from 'lucide-react';
 
 /** Screen: Customers

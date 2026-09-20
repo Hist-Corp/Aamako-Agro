@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tabs } from '@/components/ui/tabs';
-import type { AuditLog, AuditEntityType, AuditAction } from '@aamako/shared-types';
+import type { AuditLog, AuditEntityType, AuditAction } from '@/shared-types';
 import { FileText, ChevronRight, ChevronDown } from 'lucide-react';
 
 const ENTITY_OPTIONS = [

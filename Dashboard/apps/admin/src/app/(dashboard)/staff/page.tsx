@@ -14,8 +14,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import type { User, Role } from '@aamako/shared-types';
-import { canAddStaff, creatableRolesFor, isCustomerRole } from '@aamako/shared-types';
+import type { User, Role } from '@/shared-types';
+import { canAddStaff, creatableRolesFor, isCustomerRole } from '@/shared-types';
 import { UsersRound, Plus } from 'lucide-react';
 
 const DEPARTMENT_OPTIONS = [

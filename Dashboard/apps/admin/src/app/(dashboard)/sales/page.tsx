@@ -24,7 +24,7 @@ const SalesTrendChart = lazy(() =>
   import('@/components/charts/sales-trend-chart').then((m) => ({ default: m.SalesTrendChart })),
 );
 import { DollarSign, ShoppingCart, TrendingUp, TrendingDown } from 'lucide-react';
-import type { Order, OrderStatus } from '@aamako/shared-types';
+import type { Order, OrderStatus } from '@/shared-types';
 
 const MOCK_SALES_DATA = Array.from({ length: 7 }, (_, i) => ({
   date: new Date(Date.now() - (6 - i) * 86400000).toLocaleDateString('en-US', { weekday: 'short' }),

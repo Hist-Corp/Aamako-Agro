@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import type { User, Role } from '@aamako/shared-types';
-import { ROLE_PERMISSIONS } from '@aamako/shared-types';
+import type { User, Role } from '@/shared-types';
+import { ROLE_PERMISSIONS } from '@/shared-types';
 
 interface AuthContextValue {
   user: User | null;

@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { KPISkeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import type { DateRange } from '@aamako/shared-types';
+import type { DateRange } from '@/shared-types';
 
 const DATE_RANGE_OPTIONS = [
   { value: '7d', label: 'Last 7 days' },

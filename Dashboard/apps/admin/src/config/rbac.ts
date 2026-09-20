@@ -2,8 +2,8 @@
 // Defines what each role can see and do in the dashboard.
 // Nav rendering is driven by this config, not scattered conditionals.
 
-import type { Role } from '@aamako/shared-types';
-import { ROLE_PERMISSIONS } from '@aamako/shared-types';
+import type { Role } from '@/shared-types';
+import { ROLE_PERMISSIONS } from '@/shared-types';
 import {
   LayoutDashboard,
   ShoppingCart,

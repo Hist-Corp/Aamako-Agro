@@ -17,7 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Batch, QcStatus, RecallSeverity } from '@aamako/shared-types';
+import type { Batch, QcStatus, RecallSeverity } from '@/shared-types';
 import { FlaskConical, AlertTriangle, Shield, Users, ShoppingCart, Warehouse } from 'lucide-react';
 
 /** Screen: Batches & Recall

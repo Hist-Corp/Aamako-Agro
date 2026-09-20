@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/config/auth-context';
 import { canAct } from '@/config/rbac';
-import { ROLE_PERMISSIONS, type Role } from '@aamako/shared-types';
+import { ROLE_PERMISSIONS, type Role } from '@/shared-types';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

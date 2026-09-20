@@ -13,7 +13,7 @@ import {
   Star,
   FlaskConical,
 } from 'lucide-react';
-import type { ActivityFeedItem } from '@aamako/shared-types';
+import type { ActivityFeedItem } from '@/shared-types';
 
 const TYPE_CONFIG: Record<
   ActivityFeedItem['type'],

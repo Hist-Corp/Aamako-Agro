@@ -14,7 +14,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import type { QuoteRequest } from '@aamako/shared-types';
+import type { QuoteRequest } from '@/shared-types';
 import { MessageSquareQuote, Send, CheckCircle2, Clock } from 'lucide-react';
 
 /** Screen: Quotes

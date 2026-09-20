@@ -1,70 +1,18 @@
-const path = require('path');
-
-// Compiled runtime dependencies that must be forced into every serverless
-// function trace — see `outputFileTracingIncludes` below for the full story.
-// The glob points at the hoisted, real-directory copy of `next` in the
-// workspace root (see Dashboard/.npmrc: node-linker=hoisted). It must stay
-// inside `outputFileTracingRoot` (the workspace root) so Vercel can package it,
-// and it must NOT go through a pnpm junction — symlinked directories make
-// Vercel reject the deployment package outright.
-const NEXT_COMPILED_GLOBS = [
-  '../../node_modules/next/dist/compiled/**/*',
-];
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Root of the pnpm workspace (Dashboard/), where the hoisted node_modules
-  // lives — see Dashboard/.npmrc (`node-linker=hoisted`).
-  //
-  // The trace root has to contain every file the serverless functions need.
-  // With the hoisted linker those are REAL directories at
-  // Dashboard/node_modules — outside this app's Root Directory (apps/admin)
-  // but inside the workspace, and Vercel's "Include source files outside of
-  // the Root Directory in the Build Step" toggle (enabled on this project)
-  // allows the builder to package them. Leaving the trace root at apps/admin
-  // made the tracer drop those targets entirely, so the deployed functions
-  // crashed at cold start with:
-  //
-  //   Cannot find module 'next/dist/compiled/source-map'
-  //
-  // and every dynamic route returned 500 while all static routes kept working
-  // (static pages are pre-rendered at build time and never execute a function).
-  // Docker uses the same hoisted layout, so one unconditional value is correct
-  // for both targets. DOCKER_BUILD=1 is still set by apps/admin/Dockerfile but
-  // no longer changes this behaviour.
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-
-  transpilePackages: ['@aamako/shared-types'],
-
-  // ─── Serverless-function packaging ──────────────────────────────────────
-  // The dashboard is a pnpm workspace package, and Vercel packages its
-  // serverless functions from Next's file traces. Three failure modes were
-  // hit, all invisible on `next start` (which reads the real node_modules
-  // tree rather than these traces):
-  //
-  // 1. Trace root inside the Root Directory (apps/admin) with pnpm's default
-  //    isolated linker: the tracer followed pnpm's junctions and dropped every
-  //    target outside apps/admin, so the packaged function was missing parts
-  //    of the `next` package itself and died at cold start with
-  //      Cannot find module 'next/dist/compiled/source-map'
-  //    Vercel answered with its static 500 page, so ALL dynamic routes broke
-  //    (/pages/[slug], /product-templates/[slug], /orders/[id]) while every
-  //    pre-rendered static route kept working.
-  // 2. `outputFileTracingIncludes` reaching outside the Root Directory
-  //    (../../node_modules/.pnpm/…) failed the deployment with an internal
-  //    Vercel error.
-  // 3. Pointing the include through the pnpm junction instead produced a
-  //    bundle containing symlinked directories, which Vercel rejects with
-  //    "The framework produced an invalid deployment package for a Serverless
-  //    Function … files in symlinked directories".
-  //
-  // The hoisted linker removes the symlinks entirely, so the real
-  // `next/dist/compiled/**` files sit inside the workspace-root trace root.
-  // The include below pins them into every function trace as a guarantee.
-  outputFileTracingIncludes: {
-    '/**': NEXT_COMPILED_GLOBS,
-    '/**/*': NEXT_COMPILED_GLOBS,
-  },
+  // NOTE on serverless-function packaging (DEPLOYMENT.md §9):
+  // The dashboard must be a plain Next.js app whose dependencies live INSIDE
+  // the Vercel Root Directory (Dashboard/apps/admin). Earlier it imported the
+  // `@aamako/shared-types` pnpm workspace package, whose files lived outside
+  // the Root Directory — every attempt to bridge that gap broke production:
+  // trace root outside the Root Directory → internal Vercel error; forced
+  // trace includes → either the same internal error or an "invalid deployment
+  // package … files in symlinked directories" rejection. The shared types are
+  // therefore vendored at src/shared-types (plain relative imports via
+  // `@/shared-types`), and this config intentionally sets NO
+  // outputFileTracingRoot / outputFileTracingIncludes — defaults keep the
+  // trace inside the Root Directory so the @vercel/next builder can package
+  // the functions it collects.
 
   // Storefront origin, additionally forwarded to the browser under a
   // NON-prefixed name.

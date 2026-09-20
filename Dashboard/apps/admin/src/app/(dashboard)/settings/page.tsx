@@ -13,8 +13,8 @@ import { Select } from '@/components/ui/select';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import type { User, Role } from '@aamako/shared-types';
-import { rolesBelow, canPromoteDemote, isCustomerRole } from '@aamako/shared-types';
+import type { User, Role } from '@/shared-types';
+import { rolesBelow, canPromoteDemote, isCustomerRole } from '@/shared-types';
 import { Settings, Shield, ShieldCheck } from 'lucide-react';
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [

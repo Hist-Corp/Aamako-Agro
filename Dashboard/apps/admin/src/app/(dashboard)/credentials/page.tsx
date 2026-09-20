@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import type { User, Role } from '@aamako/shared-types';
+import type { User, Role } from '@/shared-types';
 import { KeyRound, ShieldAlert } from 'lucide-react';
 
 /** Roles allowed to open this section — mirrors the backend guard. */

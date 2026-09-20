@@ -15,7 +15,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import type { Business, BusinessStatus } from '@aamako/shared-types';
+import type { Business, BusinessStatus } from '@/shared-types';
 import { Building2, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/card';
 

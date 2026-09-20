@@ -13,7 +13,7 @@ import {
   Truck,
   CheckCircle,
 } from 'lucide-react';
-import type { FulfillmentPipeline as PipelineType } from '@aamako/shared-types';
+import type { FulfillmentPipeline as PipelineType } from '@/shared-types';
 
 const STAGES: {
   key: keyof PipelineType;
