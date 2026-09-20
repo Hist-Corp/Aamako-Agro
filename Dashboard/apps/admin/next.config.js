@@ -2,11 +2,13 @@ const path = require('path');
 
 // Compiled runtime dependencies that must be forced into every serverless
 // function trace — see `outputFileTracingIncludes` below for the full story.
-// Both the symlink path and the real pnpm store path are listed because a glob
-// is not guaranteed to traverse the junction; matching either one is enough.
+// The path must stay INSIDE this app's Root Directory: Vercel cannot map traced
+// files that live outside it into the functions, and a deployment-wide include
+// reaching into Dashboard/node_modules/.pnpm fails the build with an internal
+// error. The glob goes through `apps/admin/node_modules/next` (a pnpm
+// junction), which Vercel resolves when it packages the function.
 const NEXT_COMPILED_GLOBS = [
   './node_modules/next/dist/compiled/**/*',
-  '../../node_modules/.pnpm/next@*/node_modules/next/dist/compiled/**/*',
 ];
 
 /** @type {import('next').NextConfig} */
@@ -45,9 +47,9 @@ const nextConfig = {
   // of these traces.
   //
   // Pin the whole compiled runtime dependency set into the trace so the
-  // function bundle is self-contained. Both the link path and the real pnpm
-  // store path are listed, because a glob is not guaranteed to traverse the
-  // symlink; matching either one is enough.
+  // function bundle is self-contained. The glob resolves through the pnpm
+  // junction at apps/admin/node_modules/next, so every traced path stays inside
+  // the Root Directory and Vercel can package it into the functions.
   outputFileTracingIncludes: {
     '/**': NEXT_COMPILED_GLOBS,
     '/**/*': NEXT_COMPILED_GLOBS,
