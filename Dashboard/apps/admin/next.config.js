@@ -1,5 +1,14 @@
 const path = require('path');
 
+// Compiled runtime dependencies that must be forced into every serverless
+// function trace — see `outputFileTracingIncludes` below for the full story.
+// Both the symlink path and the real pnpm store path are listed because a glob
+// is not guaranteed to traverse the junction; matching either one is enough.
+const NEXT_COMPILED_GLOBS = [
+  './node_modules/next/dist/compiled/**/*',
+  '../../node_modules/.pnpm/next@*/node_modules/next/dist/compiled/**/*',
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Project root for the pnpm workspace. Docker builds (§6 of DEPLOYMENT.md)
@@ -15,6 +24,34 @@ const nextConfig = {
     process.env.DOCKER_BUILD === '1' ? path.join(__dirname, '../../') : __dirname,
 
   transpilePackages: ['@aamako/shared-types'],
+
+  // ─── Serverless-function packaging ──────────────────────────────────────
+  // pnpm installs this app's dependencies as junctions/symlinks into
+  // Dashboard/node_modules/.pnpm/… — which lives OUTSIDE this app's Root
+  // Directory (apps/admin). Next's file tracer resolves those links but then
+  // drops the targets it cannot place under `outputFileTracingRoot`
+  // (= __dirname on Vercel, see above), so the packaged function ships WITHOUT
+  // parts of the `next` package itself. It then dies at cold start with:
+  //
+  //   Cannot find module 'next/dist/compiled/source-map'
+  //   Require stack:
+  //   - …/.pnpm/next@15.5.25_…/node_modules/next/dist/compiled/next-server/server.runtime.prod.js
+  //   - …/apps/admin/___next_launcher.cjs
+  //
+  // Vercel answers every request with its static 500 page, so ALL dynamic
+  // routes break (`/pages/[slug]`, `/product-templates/[slug]`, `/orders/[id]`)
+  // while every pre-rendered static route keeps working — the failure is
+  // invisible on `next start`, which reads the real node_modules tree instead
+  // of these traces.
+  //
+  // Pin the whole compiled runtime dependency set into the trace so the
+  // function bundle is self-contained. Both the link path and the real pnpm
+  // store path are listed, because a glob is not guaranteed to traverse the
+  // symlink; matching either one is enough.
+  outputFileTracingIncludes: {
+    '/**': NEXT_COMPILED_GLOBS,
+    '/**/*': NEXT_COMPILED_GLOBS,
+  },
 
   // Storefront origin, additionally forwarded to the browser under a
   // NON-prefixed name.
