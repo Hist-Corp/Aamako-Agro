@@ -1,6 +1,5 @@
 /**
- * motion.js — deferred loader for the animation stack (GSAP, ScrollTrigger,
- * Lenis).
+ * motion.js — deferred loader for the animation stack (GSAP + ScrollTrigger).
  *
  * These libraries register scroll-triggered reveal animations, so none of
  * their work is needed during the first paint — but when loaded as <script
@@ -18,10 +17,11 @@
  * at parse time remains in effect.
  */
 (function () {
+  /* Lenis deliberately NOT loaded: the homepage scrolls natively (shop-page
+     behavior) — no smooth-scroll hijack. */
   var SOURCES = [
     'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js',
-    'https://unpkg.com/lenis@1.1.18/dist/lenis.min.js',
   ];
   var queued = [];
   var started = false;
@@ -54,6 +54,24 @@
         document.head.appendChild(s);
       })(0);
     });
+  }
+
+  /* Safety valve — the loader must not depend on a page script calling load()
+     at exactly the right moment. A page whose call sits in an inline script
+     that runs BEFORE this deferred file (or that throws earlier) would queue
+     its animations and never start the download, leaving the page with no
+     motion at all. If callbacks are still pending once the DOM is ready, start
+     the loader ourselves. Reduced-motion visitors are skipped on purpose:
+     pages deliberately never call load() for them. */
+  function autostart() {
+    if (started || !queued.length) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    load();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', autostart);
+  } else {
+    autostart();
   }
 
   window.AamakoMotion = { ready: ready, load: load };

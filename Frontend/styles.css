@@ -981,9 +981,9 @@ footer{background:#E2F0E2;}
 .newsletter[style*="sage-deep"]{background:var(--sage-deep) !important;}
 .newsletter[style*="sage-deep"] h2{color:#FFFDF7;}
 .newsletter[style*="sage-deep"] p{color:#C4BCA0;}
-/* Newsletter text is always visible — the section-level .reveal animation
-   handles the entrance (a previous rule hid h2/p with opacity:0 waiting for
-   a GSAP reveal that never targeted them). */
+/* Newsletter text is always visible — homepage sections are not
+   scroll-animated (motion matches shop.html: element-level reveals only), and
+   the old rule that hid h2/p with opacity:0 is gone for good. */
 .nl-form{display:flex; gap:var(--space-3); max-width:440px; margin:0 auto; flex-wrap:wrap; justify-content:center;}
 .nl-form input{
   flex:1; min-width:200px; padding:12px 16px; border:1.5px solid var(--line); border-radius:var(--radius-md);

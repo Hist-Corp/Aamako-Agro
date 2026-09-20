@@ -83,20 +83,38 @@
 <script src="js/content.js" defer></script>
 <script src="js/motion.js" defer></script>
 <script>
-/* Section title + related content reveal animations for whole page.
-   The animation stack (GSAP/ScrollTrigger/Lenis) is fetched during browser
-   idle time by js/motion.js — its parse + ScrollTrigger layout scan was the
-   homepage's largest main-thread long task (~577ms). Registering the
-   scroll-reveals via AamakoMotion.ready moves that work off the critical
-   path; the triggers only fire at 'top 88/90%', below the fold, so nothing
-   visible changes. */
+/* Section content reveals, matching the shop page's motion (shop.html):
+   eyebrows, titles, descriptions and content blocks fade/slide in as they
+   enter the viewport — element-level only. Sections themselves are never
+   animated and there is no smooth-scroll hijack, so the homepage scrolls
+   natively exactly like every other page.
+   The stack (GSAP + ScrollTrigger) is fetched during browser idle time by
+   js/motion.js — its parse + ScrollTrigger layout scan was the homepage's
+   largest main-thread long task (~577ms). Registering the scroll-reveals via
+   AamakoMotion.ready moves that work off the critical path; the triggers only
+   fire at 'top 88/90/92%', below the fold, so nothing visible changes. */
 document.addEventListener('DOMContentLoaded', function(){
+  /* js/motion.js is deferred, so it has already run by now — unless it failed
+     to load (blocked/CDN error), in which case there is nothing to animate and
+     bailing out is correct: no CSS hides anything on this page, and the
+     element reveals below only hide content once GSAP is actually present. */
+  if (!window.AamakoMotion) return;
   window.AamakoMotion.ready(function(){
   if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
   /* Idempotent: also registered by the body script — whichever ready-callback
      runs first must guarantee the plugin is registered before any tween
      declares a scrollTrigger. */
   gsap.registerPlugin(ScrollTrigger);
+  /* Eyebrows — every section label except the hero's (the hero runs its own
+     CSS entrance animation and must not be double-animated). */
+  Array.prototype.slice.call(document.querySelectorAll('.eyebrow'))
+    .filter(function(el){ return !el.closest('.hero-entrance'); })
+    .forEach(function(el){
+      gsap.from(el, {
+        opacity: 0, y: 20, duration: 0.6, ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 92%', toggleActions: 'play none none none' }
+      });
+    });
   /* Section titles and descriptions */
   document.querySelectorAll('.section-title, .section-desc').forEach(function(el){
     var isDesc = el.classList.contains('section-desc');
@@ -106,21 +124,21 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
   /* NOTE: category-card and product-card reveals are handled in the second
-     script below (once:true). They used to be animated here as well, which
+     script below. They used to be animated here as well, which
      double-registered tweens on the same elements and made cards visibly
      jump/slide upward every time the page was refreshed. */
-  /* Stat items */
+  /* Stat items — same treatment as the shop page's tile grids */
   document.querySelectorAll('.stat-row').forEach(function(row){
     gsap.from(row.querySelectorAll('.stat'), {
-      opacity: 0, scale: 0.85, duration: 0.6, ease: 'power3.out', stagger: 0.1,
-      scrollTrigger: { trigger: row, start: 'top 90%', toggleActions: 'play none none none' }
+      opacity: 0, y: 24, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: row, start: 'top 88%', toggleActions: 'play none none none' }
     });
   });
   /* Gallery items */
   var gallery = document.querySelector('.gallery-grid');
   if (gallery) {
     gsap.from(gallery.querySelectorAll('.gallery-item'), {
-      opacity: 0, y: 30, duration: 0.7, ease: 'power3.out', stagger: 0.1,
+      opacity: 0, y: 30, duration: 0.6, ease: 'power3.out', stagger: 0.1,
       scrollTrigger: { trigger: gallery, start: 'top 88%', toggleActions: 'play none none none' }
     });
   }
@@ -209,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- CATEGORIES -->
-<section id="shop-preview" class="reveal">
+<section id="shop-preview">
   <div class="wrap">
     <div class="section-head">
       <div>
@@ -250,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="wrap"><div class="tear"><span data-cms="home.tear">Torn from the same batch</span></div></div>
 
 <!-- WHY FREEZE-DRIED -->
-<section class="reveal">
+<section>
   <div class="wrap">
     <div class="why-wrap">
       <div class="why-grid">
@@ -272,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- BEST SELLERS -->
-<section class="reveal section-love">
+<section class="section-love">
   <div class="wrap">
     <div class="section-head">
       <div>
@@ -347,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- WHY DEHYDRATED -->
-<section class="reveal">
+<section>
   <div class="wrap">
     <div class="why-wrap why-wrap--dehydrated">
       <div class="why-grid">
@@ -369,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- IMAGE GALLERY -->
-<section class="reveal">
+<section>
   <div class="wrap">
     <div class="section-head">
       <div>
@@ -403,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- WHOLESALE CTA -->
-<section class="reveal wholesale-band">
+<section class="wholesale-band">
   <div class="wrap">
     <div class="wholesale">
       <div class="wholesale-copy">
@@ -432,7 +450,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- TRACEABILITY -->
-<section class="reveal">
+<section>
   <div class="wrap trace">
     <div class="photo" style="height:360px;"><img data-cms="home.trace.image" data-cms-img draggable="false" src="https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=350&q=70" alt="Batch traceability"></div>
     <div>
@@ -451,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- WHY MILLED POWDERS -->
-<section class="reveal">
+<section>
   <div class="wrap">
     <div class="why-wrap why-wrap--powder">
       <div class="why-grid">
@@ -473,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- REVIEWS -->
-<section class="reveal section-love">
+<section class="section-love">
   <div class="wrap">
     <div class="section-head"><div><h2 class="section-title" data-cms="home.reviews.title">What people say</h2></div></div>
     <div class="review-grid">
@@ -485,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- NEWSLETTER -->
-<section class="reveal">
+<section>
   <div class="wrap">
     <div class="newsletter">
       <h2 data-cms="home.newsletter">Recipes, straight from Aama's notebook</h2>
@@ -576,39 +594,52 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   })();
 
-  /* Lenis smooth scroll + GSAP ScrollTrigger reveals — run once the motion
-     stack finishes idle-loading (see js/motion.js). The reveal elements were
-     already forced visible at parse time by the no-GSAP fallback below, so
-     if the libraries never arrive nothing is left hidden. */
-  var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!prefersReducedMotion && window.AamakoMotion) {
+  /* GSAP ScrollTrigger reveals — run once the motion stack finishes
+     idle-loading (see js/motion.js).
+
+     This MUST be deferred to DOMContentLoaded. js/motion.js is fetched with
+     `defer`, i.e. it executes only after the parser has finished walking the
+     body, so reading window.AamakoMotion while this inline script runs always
+     found it undefined. That silently took the no-animation path AND meant
+     AamakoMotion.load() was never called — GSAP/ScrollTrigger were never even
+     requested, so no content on this page animated at all. Deferred scripts
+     run before DOMContentLoaded, so the loader is defined by the time this
+     handler fires.
+
+     Motion matches the shop page (shop.html): element-level reveals only.
+     Sections are NOT scroll-animated and smooth scrolling (Lenis) is NOT
+     enabled — the homepage scrolls natively. Nothing is hidden by CSS, so
+     there is no fallback to force-show content: if the stack never arrives,
+     the page is simply static and fully visible. */
+  document.addEventListener('DOMContentLoaded', function(){
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!window.AamakoMotion) return; /* motion.js failed to load — stay static */
     window.AamakoMotion.load();
     window.AamakoMotion.ready(function () {
-      if (typeof Lenis !== 'undefined') {
-        var lenis = new Lenis({ duration:1.2, easing:function(t){ return Math.min(1, 1.001 - Math.pow(2, -10*t)); } });
-        function raf(t){ lenis.raf(t); requestAnimationFrame(raf); }
-        requestAnimationFrame(raf);
-      }
+      if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
       gsap.registerPlugin(ScrollTrigger);
-      document.querySelectorAll('.reveal').forEach(function(el){
-        gsap.from(el, { opacity:0, y:30, duration:0.7, ease:'power3.out', scrollTrigger:{ trigger:el, start:'top 88%', once:true }});
-      });
+      /* Best-sellers — same treatment as the shop page's product grid */
       var prodGrid = document.querySelector('.prod-grid');
-      if(prodGrid){
-        gsap.from(prodGrid.querySelectorAll('.prod-card'), { opacity:0, y:24, duration:0.5, ease:'power3.out', stagger:0.08, scrollTrigger:{ trigger:prodGrid, start:'top 88%', once:true }});
+      if (prodGrid) {
+        gsap.from(prodGrid.querySelectorAll('.prod-card'), {
+          opacity: 0, y: 24, duration: 0.6, ease: 'power3.out', stagger: 0.08,
+          scrollTrigger: { trigger: prodGrid, start: 'top 88%', toggleActions: 'play none none none' }
+        });
       }
+      /* Category cards — fade in place; no translate, so cards never slide
+         upward on refresh (a bug that was fixed here on purpose) */
       var catGrid = document.querySelector('.cat-grid');
-      if(catGrid){
-        /* Fade in place — no translate, so cards never slide upward on refresh */
-        gsap.from(catGrid.querySelectorAll('.cat-card'), { opacity:0, duration:0.5, ease:'power2.out', stagger:0.06, scrollTrigger:{ trigger:catGrid, start:'top 88%', once:true }});
+      if (catGrid) {
+        gsap.from(catGrid.querySelectorAll('.cat-card'), {
+          opacity: 0, duration: 0.5, ease: 'power2.out', stagger: 0.06,
+          scrollTrigger: { trigger: catGrid, start: 'top 88%', toggleActions: 'play none none none' }
+        });
       }
+      /* Rotating hero stamp — idle decoration, not tied to scrolling */
       var stamp = document.querySelector('.hero-stamp-wrap .stamp');
-      if(stamp){ gsap.to(stamp, { rotation:-6, duration:3, ease:'sine.inOut', yoyo:true, repeat:-1 }); }
-      setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 3000);
+      if (stamp) { gsap.to(stamp, { rotation: -6, duration: 3, ease: 'sine.inOut', yoyo: true, repeat: -1 }); }
     });
-  } else {
-    document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; });
-  }
+  });
 
   /* Mini cart */
   var cart = JSON.parse(localStorage.getItem('aka-cart') || '[]');
