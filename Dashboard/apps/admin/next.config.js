@@ -30,16 +30,41 @@ const nextConfig = {
   },
 
   // Same-origin API proxy — mirrors Frontend/vercel.json so the dashboard
-  // can call the backend via /api/* with no CORS. When the client uses this
-  // same-origin base (no absolute NEXT_PUBLIC_API_URL) in local dev, this
-  // forwards to the NestJS dev server on port 3000. On Vercel, set the
-  // BACKEND_URL env var to point at the deployed API.
+  // can call the backend via /api/* with no CORS. Server-side only
+  // (rewrites are evaluated on Vercel's edge from next.config.js, so this
+  // file must never read NEXT_PUBLIC_* — those are bundled to the browser):
+  // on Vercel set BACKEND_URL to the Render host; `BACKEND_URL` is REQUIRED,
+  // and the build fails fast if the deployment forgot it. Local dev needs
+  // nothing: it falls back to the NestJS dev server on port 3000.
   async rewrites() {
-    const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:3000';
+    const backendUrl =
+      process.env.BACKEND_URL ??
+      (process.env.VERCEL ? undefined : 'http://localhost:3000');
+    if (!backendUrl) {
+      throw new Error(
+        'Dashboard misconfigured: set BACKEND_URL to the backend origin ' +
+          '(e.g. https://aamako-agro.onrender.com) so /api/* can be rewritten there.'
+      );
+    }
+    let normalized = String(backendUrl).replace(/\/+$/, '');
+    let parsed;
+    try {
+      parsed = new URL(normalized);
+    } catch {
+      parsed = null;
+    }
+    if (!parsed || (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')) {
+      throw new Error(
+        `Dashboard misconfigured: BACKEND_URL must be an absolute http(s) URL, got ${JSON.stringify(
+          backendUrl
+        )}.`
+      );
+    }
+    normalized = parsed.origin + parsed.pathname.replace(/\/+$/, '');
     return [
       {
         source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
+        destination: `${normalized}/api/:path*`,
       },
     ];
   },

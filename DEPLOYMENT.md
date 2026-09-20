@@ -95,13 +95,21 @@ Import `Dashboard/apps/admin` as a Next.js project in Vercel
 > the Root Directory **after** install, and pnpm does not hoist `next` to
 > `Dashboard/node_modules` (it lives in `apps/admin/node_modules`), so a build
 > rooted at `Dashboard/` can never find it. Both are §9.
+>
+> The server-side `/api/*` rewrite needs a third var, **`BACKEND_URL`**
+> (literal host, no `/api` suffix), which `next.config.js` reads from
+> *server* env only — it never touches `NEXT_PUBLIC_*`, so nothing secret
+> leaks to the browser. The build throws if it's missing or not an absolute
+> http(s) URL, so a `/api/*` → `404` (empty body) can no longer hide a missing
+> upstream behind the login page.
 
 | Var | Value |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | `https://aamako-agro.onrender.com/api` |
 | `NEXT_PUBLIC_WS_URL` | `wss://aamako-agro.onrender.com` |
+| `BACKEND_URL` | `https://aamako-agro.onrender.com` (**no** `/api` suffix — `next.config.js` appends it; required, none of the three has a usable default) |
 
-- These are baked at **build time** by Next.js — update them in the Vercel
+- All three are baked at **build time** by Next.js — update them in the Vercel
   project settings and redeploy when the Render URL changes.
 - If you'd rather keep the dashboard same-origin, add a Vercel rewrite on the
   dashboard app mirroring `Frontend/vercel.json` and point
