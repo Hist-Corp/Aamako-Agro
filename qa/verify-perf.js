@@ -3,8 +3,9 @@
  * Targeted verification for the storefront performance pass.
  *
  * Asserts the behaviours that cannot be checked from static markup alone:
- * CDN image-rendition rewriting, skeleton reserve/replace, and debounced
- * search. Read-only — it never mutates app data.
+ * CDN image-rendition rewriting, skeleton reserve/replace, debounced
+ * search, and that the idle-loaded motion stack still boots. Read-only — it
+ * never mutates app data.
  *
  *   node verify-perf.js                 # against http://localhost:8080
  *   WEB=http://localhost:8080 node verify-perf.js
@@ -285,4 +286,127 @@ test('reserved skeleton box matches the live card box', async () => {
         `reserved height ~= live height (${sizes.skeleton.h} vs ${sizes.live.h})`);
     }
   }, '/collection.html');
+});
+
+/* ------------------------------------------------------------------ */
+/* 8. Home motion: shop-style element reveals, native scrolling       */
+/* ------------------------------------------------------------------ */
+const SELECTORS = ['section', '.section-title', '.section-desc', '.eyebrow',
+  '.stat', '.gallery-item', '.review-card', '.prod-card', '.cat-card'];
+
+/**
+ * Resting opacity per selector, measured with animations disabled
+ * (prefers-reduced-motion keeps the GSAP stack from ever loading). Some
+ * elements sit below 1 by design — e.g. .why-wrap--powder .section-desc rests
+ * at 0.86 on the dark powder background — so "revealed" means "settled at its
+ * CSS resting opacity", not literally 1.
+ */
+async function restingOpacityBySelector() {
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  try {
+    const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    await page.goto(WEB + '/index.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    return await page.evaluate((sels) => {
+      const out = {};
+      for (const sel of sels) {
+        out[sel] = [...document.querySelectorAll(sel)]
+          .reduce((min, el) => Math.min(min, Number(getComputedStyle(el).opacity)), 1);
+      }
+      return out;
+    }, SELECTORS);
+  } finally {
+    await browser.close();
+  }
+}
+
+test('homepage boots the motion stack with shop-style element reveals', async () => {
+  const resting = await restingOpacityBySelector();
+  await withPage(async (page, errors) => {
+    // js/motion.js injects GSAP + ScrollTrigger during idle time, so nothing
+    // is on the page in the first frames — poll instead of asserting. If the
+    // bootstrap ran before the deferred loader defined window.AamakoMotion,
+    // none of these libraries is ever requested and reveals silently stop
+    // playing (page renders, content just static).
+    await page.waitForFunction(
+      () => typeof window.gsap === 'object' && typeof window.ScrollTrigger === 'function',
+      null,
+      { timeout: 15000 },
+    );
+    // Wait until the reveal tweens are actually created (GSAP's immediateRender
+    // writes inline styles), so the audit below sees the settled state.
+    await page.waitForFunction(
+      () => {
+        const titles = [...document.querySelectorAll('.section-title')];
+        return titles.length > 0 && titles.every((el) => el.getAttribute('style') !== null);
+      },
+      null,
+      { timeout: 10000 },
+    );
+
+    const state = await page.evaluate(() => ({
+      lenis: typeof window.Lenis,
+      titles: document.querySelectorAll('.section-title').length,
+      sections: document.querySelectorAll('section').length,
+      sectionsHidden: [...document.querySelectorAll('section')]
+        .filter((el) => Number(getComputedStyle(el).opacity) < 1).length,
+    }));
+
+    assert.equal(state.lenis, 'undefined',
+      'Lenis must not load: the homepage scrolls natively, like the shop page');
+    assert.ok(state.titles > 0, 'homepage has section titles');
+    assert.ok(state.sections > 0, 'homepage has sections');
+    assert.equal(state.sectionsHidden, 0,
+      'no <section> is scroll-animated — every section is visible without scrolling');
+
+    // Element-level reveals still exist (shop behavior): a below-fold block
+    // starts hidden and reveals as it enters the viewport.
+    const hiddenBelowFold = await page.evaluate(() =>
+      [...document.querySelectorAll('.section-title, .prod-card, .gallery-item')]
+        .filter((el) => el.getBoundingClientRect().top > window.innerHeight
+          && Number(getComputedStyle(el).opacity) < 0.85).length,
+    );
+    assert.ok(hiddenBelowFold > 0, 'below-fold content is reveal-animated (shop style)');
+
+    // Walk the page: revealed content must settle at its design resting
+    // opacity, never stuck mid-reveal. Scroll instantly — <html> has
+    // scroll-behavior:smooth, which would turn scrollTo() into a slow crawl
+    // and skew every timing below.
+    await page.evaluate(async () => {
+      for (let y = 0; y <= document.body.scrollHeight; y += 600) {
+        window.scrollTo({ top: y, behavior: 'instant' });
+        await new Promise((r) => setTimeout(r, 60));
+      }
+    });
+    const pairs = SELECTORS.map((sel) => [sel, resting[sel]]);
+    const stuck = await page
+      .waitForFunction(
+        (entries) => entries.every(([sel, min]) => [...document.querySelectorAll(sel)]
+          .every((el) => Number(getComputedStyle(el).opacity) >= min - 0.02)),
+        pairs,
+        { timeout: 10000 },
+      )
+      .then(() => [])
+      .catch(() =>
+        page.evaluate((entries) => {
+          const out = [];
+          for (const [sel, min] of entries) {
+            for (const el of document.querySelectorAll(sel)) {
+              if (Number(getComputedStyle(el).opacity) < min - 0.02) {
+                out.push(`${sel}:${el.id || el.className} (opacity `
+                  + `${Number(getComputedStyle(el).opacity).toFixed(2)}, resting ${min})`);
+              }
+            }
+          }
+          return out;
+        }, pairs),
+      );
+    assert.deepEqual(stuck, [],
+      'no content left below its resting opacity after scrolling the page');
+
+    // Only JS exceptions are disqualifying here: this test does not need the
+    // API up, so a stopped backend must not be reported as a motion failure.
+    const pageErrors = errors.filter((e) => !/Failed to load resource|ERR_CONNECTION_REFUSED/.test(e));
+    assert.deepEqual(pageErrors, [], 'no page errors while animating the homepage');
+  }, '/index.html');
 });
